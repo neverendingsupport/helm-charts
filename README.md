@@ -13,8 +13,8 @@ nes` to see the charts.
 
 To install the <chart-name> chart:
 
-    helm install my-<chart-name> nes/<chart-name>
+    helm install <chart-name> nes/<chart-name>
 
 To uninstall the chart:
 
-    helm delete my-<chart-name>
+    helm delete <chart-name>
