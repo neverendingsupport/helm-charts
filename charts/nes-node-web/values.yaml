@@ -1,9 +1,0 @@
-replicaCount: 1
-
-image:
-  pullPolicy: Always
-  tag: ""
-  
-host: ""
-version: ""
-urlPrefix: ""
