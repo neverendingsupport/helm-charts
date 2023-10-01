@@ -1,0 +1,6 @@
+apiVersion: v2
+name: nes-node-web
+description: A Helm chart for NES Node apps on Kubernetes
+
+type: application
+version: 0.1.0
