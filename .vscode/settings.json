@@ -1,0 +1,3 @@
+{
+  "helm-intellisense.customValueFileNames": [ "charts/nes-node-web/values.yml"]
+}

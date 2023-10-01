@@ -4,6 +4,7 @@ image:
   pullPolicy: Always
   tag: ""
   
+port: ""
 host: ""
 version: ""
 urlPrefix: ""
