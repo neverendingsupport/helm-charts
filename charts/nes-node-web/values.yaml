@@ -8,3 +8,10 @@ port: ""
 host: ""
 version: ""
 urlPrefix: ""
+
+# env:
+#   - name: SOME_SVC_SECRET
+#     valueFrom:
+#       secretKeyRef:
+#         name: some-secret
+#         key: svc-env-value

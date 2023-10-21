@@ -5,7 +5,7 @@ metadata:
   namespace:
 spec:
   progressDeadlineSeconds: 600
-  replicas: 1
+  replicas: {{ default 1 .Values.replicaCount }}
   strategy:
     rollingUpdate:
       maxSurge: 1
@@ -40,3 +40,6 @@ spec:
             valueFrom:
               fieldRef:
                 fieldPath: metadata.name
+          {{- range $key, $value := .Values.env }}
+          - {{ $value | toYaml | indent 12 | trim }}
+          {{ end }}  
