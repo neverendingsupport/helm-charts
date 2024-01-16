@@ -9,6 +9,8 @@ host: ""
 version: ""
 urlPrefix: ""
 
+release: "deployed"
+
 # env:
 #   - name: SOME_SVC_SECRET
 #     valueFrom:

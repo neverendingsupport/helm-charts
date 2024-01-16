@@ -13,12 +13,12 @@ spec:
   selector:
     matchLabels:
       app: {{ include "nes-node-web.fullname" . }}
-      release: nes-prod
+      release: {{ .Values.release }}
   template:
     metadata:
       labels:
         app: {{ include "nes-node-web.fullname" . }}
-        release: nes-prod
+        release: {{ .Values.release }}
     spec:
       {{- if .Values.imagePullSecret }}
       imagePullSecrets:
