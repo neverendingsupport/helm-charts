@@ -1,4 +1,4 @@
-replicaCount: 1
+replicaCount: 2
 
 image:
   pullPolicy: Always
@@ -10,6 +10,22 @@ version: ""
 urlPrefix: ""
 
 release: "deployed"
+
+liveness:
+  path: "/"
+  enabled: true 
+  initialDelay: 7
+  period: 5
+  timeout: 1
+  thresholds: 
+    success: 1
+    failure: 10
+
+deployment:
+  strategy:
+    rollingUpdate:
+      maxSurge: 50%
+      maxUnavailable: 1
 
 # env:
 #   - name: SOME_SVC_SECRET

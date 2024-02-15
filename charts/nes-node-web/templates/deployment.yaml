@@ -7,9 +7,7 @@ spec:
   progressDeadlineSeconds: 600
   replicas: {{ default 1 .Values.replicaCount }}
   strategy:
-    rollingUpdate:
-      maxSurge: 1
-      maxUnavailable: 0
+{{ toYaml .Values.deployment.strategy | indent 4 }}
   selector:
     matchLabels:
       app: {{ include "nes-node-web.fullname" . }}
@@ -32,6 +30,28 @@ spec:
             limits:
               memory: '300Mi'
               cpu: 100m
+          {{- if .Values.liveness.enabled }}
+          livenessProbe:
+            httpGet:
+              path: {{ required "A valid .Values.liveness.path!" .Values.liveness.path }}
+              port: {{ required "A valid .Values.port entry is required!" .Values.port }}
+              scheme: HTTP
+            failureThreshold: {{ required "A valid .Values.liveness.thresholds.failure!" .Values.liveness.thresholds.failure }}
+            initialDelaySeconds: {{ required "A valid .Values.liveness.initialDelay!" .Values.liveness.initialDelay }} 
+            periodSeconds: {{ required "A valid .Values.liveness.period!" .Values.liveness.period }}
+            successThreshold: {{ required "A valid .Values.liveness.thresholds.success!" .Values.liveness.thresholds.success }}
+            timeoutSeconds: {{ required "A valid .Values.liveness.timeout!" .Values.liveness.timeout }}
+          readinessProbe:
+            httpGet:
+              path: {{ required "A valid .Values.liveness.path!" .Values.liveness.path }}
+              port: {{ required "A valid .Values.port entry is required!" .Values.port }}
+              scheme: HTTP
+            failureThreshold: {{ required "A valid .Values.liveness.thresholds.failure!" .Values.liveness.thresholds.failure }}
+            initialDelaySeconds: {{ required "A valid .Values.liveness.initialDelay!" .Values.liveness.initialDelay }} 
+            periodSeconds: {{ required "A valid .Values.liveness.period!" .Values.liveness.period }}
+            successThreshold: {{ required "A valid .Values.liveness.thresholds.success!" .Values.liveness.thresholds.success }}
+            timeoutSeconds: {{ required "A valid .Values.liveness.timeout!" .Values.liveness.timeout }}
+          {{- end }}
           ports:
             - containerPort: {{ required "A valid .Values.port entry is required!" .Values.port }}
               name: http
@@ -43,3 +63,4 @@ spec:
           {{- range $key, $value := .Values.env }}
           - {{ $value | toYaml | indent 12 | trim }}
           {{ end }}  
+          

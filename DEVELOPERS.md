@@ -1,0 +1,27 @@
+# Developing on this repo
+
+
+How I was testing last:
+```
+helm upgrade --install --dry-run \
+    -n nes-dev \
+    -f /Users/welch/Code/herodevs/nes/packages/api1/k8s/dev.yaml \
+    api1 \
+    /Users/welch/Code/herodevs/helm-charts/charts/nes-node-web \
+    --version 0.1.5 \
+    --set version=0.0.8 \
+    --set host=api.dev.nes.herodevs.com \
+    --set imagePullSecret=ghcr-login-secret \
+    --set release=nes-dev
+```
+
+Debugging a container image locally (with compose running0):
+```
+ DOCKER_BUILDKIT=1 docker run -it --rm --privileged \
+  --network nes_default \
+  -v $(pwd)/.env.docker:/home/node/app/.env \
+  -v $(pwd):/dockerhost \
+  -p '127.0.0.1:3000:3000' \
+  "ghcr.io/neverendingsupport/api1:0.0.8" \
+  /bin/bash
+```
