@@ -25,3 +25,49 @@ Debugging a container image locally (with compose running0):
   "ghcr.io/neverendingsupport/api1:0.0.8" \
   /bin/bash
 ```
+
+Dry-run / Hot-deploying to dev with test changes:
+```
+helm upgrade --install \
+    -n nes-dev \
+    -f /Users/welch/Code/herodevs/nes/packages/api1/k8s/dev.yaml \
+    api1 \
+    /Users/welch/Code/herodevs/helm-charts/charts/nes-node-web \
+    --version 0.1.5 \
+    --set replicaCount=5 \
+    --set version=0.0.8 \
+    --set host=api.dev.nes.herodevs.com \
+    --set imagePullSecret=ghcr-login-secret \
+    --set release=nes-dev
+```
+
+
+Dev Deployment invocation:
+```
+helm repo update nes
+helm upgrade --install \
+    -n nes-dev \
+    -f /Users/welch/Code/herodevs/nes/packages/api1/k8s/dev.yaml \
+    api1 \
+    nes/nes-node-web \
+    --version 0.1.5 \
+    --set version=0.0.8 \
+    --set host=api.dev.nes.herodevs.com \
+    --set imagePullSecret=ghcr-login-secret \
+    --set release=nes-dev
+```
+
+Prod Deployment invocation
+```
+helm repo update nes
+helm upgrade --install \
+    -n nes-prod \
+    -f /Users/welch/Code/herodevs/nes/packages/api1/k8s/prod.yaml \
+    api1 \
+    nes/nes-node-web \
+    --version 0.1.5 \
+    --set version=0.0.8 \
+    --set host=api.nes.herodevs.com \
+    --set imagePullSecret=ghcr-login-secret \
+    --set release=nes-prod
+```
