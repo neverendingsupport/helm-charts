@@ -9,6 +9,9 @@ host: ""
 version: ""
 urlPrefix: ""
 
+ingress:
+  className: nginx
+
 release: "deployed"
 
 liveness:
