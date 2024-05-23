@@ -26,6 +26,12 @@ spec:
         - name: {{ include "nes-node-web.fullname" . }}
           image: "{{ .Values.image.repository }}:{{ required "A valid App Version must be provided to .Values.version" .Values.version }}"
           imagePullPolicy: Always
+          {{- if .Values.volumes }}
+          volumeMounts:
+          {{- range $key, $value := .Values.volumes.mounts }}
+          - {{ $value | toYaml | indent 12 | trim }}
+          {{- end }}  
+          {{- end }}  
           resources:
             limits:
               memory: '300Mi'
@@ -62,5 +68,13 @@ spec:
                 fieldPath: metadata.name
           {{- range $key, $value := .Values.env }}
           - {{ $value | toYaml | indent 12 | trim }}
-          {{ end }}  
-          
+          {{ end }} 
+
+      volumes:
+        {{- with .Values.volumes }}
+        {{- range .definitions }}
+          - name: {{ .name }}
+            secret:
+              secretName: {{ .secret.secretName }}
+        {{- end }}
+        {{- end }}

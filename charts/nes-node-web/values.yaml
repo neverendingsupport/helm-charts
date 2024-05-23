@@ -36,3 +36,14 @@ deployment:
 #       secretKeyRef:
 #         name: some-secret
 #         key: svc-env-value
+
+# volumes:
+#   mounts:
+#     - name: example-volume
+#       mountPath: /home/node/app/example.json
+#       subPath: secret-subprop
+#       readOnly: true
+#   definitions: 
+#     - name: example-volume
+#       secret: 
+#         secretName: secret-name
