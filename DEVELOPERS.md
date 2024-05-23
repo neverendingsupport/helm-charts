@@ -15,6 +15,25 @@ helm upgrade --install --dry-run \
     --set release=nes-dev
 ```
 
+
+Diffing what's out there from the test:
+``` 
+helm get all api1 -n nes-dev > /tmp/nes_deployed.yaml
+helm upgrade --install --dry-run \
+    -n nes-dev \
+    -f /Users/welch/Code/herodevs/nes/packages/api1/k8s/dev.yaml \
+    api1 \
+    /Users/welch/Code/herodevs/helm-charts/charts/nes-node-web \
+    --version 0.1.7 \
+    --set version=0.0.8 \
+    --set host=api.dev.nes.herodevs.com \
+    --set imagePullSecret=ghcr-login-secret \
+    --set release=nes-dev > /tmp/nes_proposed.yaml
+
+diff /tmp/nes_deployed.yaml /tmp/nes_proposed.yaml
+```
+
+
 Debugging a container image locally (with compose running0):
 ```
  DOCKER_BUILDKIT=1 docker run -it --rm --privileged \
