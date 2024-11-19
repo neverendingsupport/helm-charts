@@ -8,8 +8,6 @@ port: ""
 host: ""
 version: ""
 urlPrefix: ""
-serviceSubdomain: ""
-clusterZone: ""
 
 ingress:
   className: nginx
