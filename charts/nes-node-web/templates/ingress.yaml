@@ -8,7 +8,7 @@ metadata:
 spec:
   ingressClassName: {{ .Values.ingress.className }}
   rules:
-  - host: {{ .Values.host }}
+  - host: "{{ .Values.serviceSubdomain }}.{{ .Values.clusterZone }}"
     http:
       paths:
       - path: {{ .Values.urlPrefix }}/(.*)
