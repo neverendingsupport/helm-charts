@@ -17,5 +17,4 @@ spec:
           service:
             name: {{ include "nes-node-web.fullname" . }}
             port: 
-              number: 80
-              # number: {{ required "A valid .Values.port entry is required!" .Values.port }}
+              number: {{ required "A valid .Values.port entry is required!" .Values.port }}

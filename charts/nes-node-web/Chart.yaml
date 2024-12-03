@@ -3,4 +3,4 @@ name: nes-node-web
 description: A Helm chart for NES Node apps on Kubernetes
 
 type: application
-version: 0.1.9
+version: 0.1.10
