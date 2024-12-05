@@ -11,6 +11,7 @@ urlPrefix: ""
 
 ingress:
   className: nginx
+  rules: []
 
 release: "deployed"
 

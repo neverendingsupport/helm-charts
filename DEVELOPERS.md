@@ -1,6 +1,23 @@
 # Developing on this repo
 
 
+# Andre
+```
+helm template --dry-run --debug \
+    -n nes-dev \
+    -f /Users/narfdre/Code/herodevs/monorepo/packages/registry/k8s/v2-dev.yaml \
+    registry \
+    /Users/narfdre/Code/herodevs/helm-charts/charts/nes-node-web \
+    --version 0.1.10 \
+    --set version=9.9.9 \
+    --set secrets.lane=dev \
+    --set clusterZone=demo.nes.herodevs.io \
+    --set imagePullSecret=ghcr-login-secret \
+    --set release=nes-dev
+```
+
+
+### Dave's old trash
 How I was testing last:
 ```
 helm upgrade --install --dry-run \
