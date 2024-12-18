@@ -31,6 +31,10 @@ deployment:
       maxSurge: 50%
       maxUnavailable: 1
 
+resources:
+  limits:
+  requests:
+
 # env:
 #   - name: SOME_SVC_SECRET
 #     valueFrom:

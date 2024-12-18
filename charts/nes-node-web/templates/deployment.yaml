@@ -34,8 +34,11 @@ spec:
           {{- end }}  
           resources:
             limits:
-              memory: '300Mi'
-              cpu: 100m
+              memory: {{ default '350Mi' .Values.resources.limits.memory }}
+              cpu: {{ default '110m' .Values.resources.limits.cpu }}
+            requests:
+              memory: {{ default '300Mi' .Values.resources.requests.memory }}
+              cpu: {{ default '100m' .Values.resources.requests.cpu }}
           {{- if .Values.liveness.enabled }}
           livenessProbe:
             httpGet:
