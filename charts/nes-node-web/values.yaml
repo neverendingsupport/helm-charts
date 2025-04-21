@@ -35,7 +35,11 @@ deployment:
 
 resources:
   limits:
+    # memory: 1.5Gi
+    # cpu: 1000m
   requests:
+    # memory: 1Gi
+    # cpu: 750m
 
 # env:
 #   - name: SOME_SVC_SECRET
