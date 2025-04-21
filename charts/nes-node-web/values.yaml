@@ -1,5 +1,7 @@
 replicaCount: 2
 
+region: us-west-2
+
 image:
   pullPolicy: Always
   tag: ""
