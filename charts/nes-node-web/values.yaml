@@ -13,6 +13,8 @@ urlPrefix: ""
 
 ingress:
   className: nginx
+  tls:
+    hosts: []
   rules: []
 
 release: "deployed"

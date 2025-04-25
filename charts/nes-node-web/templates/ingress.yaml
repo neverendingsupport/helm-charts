@@ -15,6 +15,9 @@ spec:
   tls:
   - secretName: {{ include "nes-node-web.fullname" . }}-tls
     hosts:
+      {{- range $key, $value := .Values.ingress.tls.hosts }}
+      - {{$value}}
+      {{- end }}  
       - "{{ .Values.serviceSubdomain }}.{{ .Values.clusterZone }}"
   rules:
   - host: "{{ .Values.serviceSubdomain }}.{{ .Values.clusterZone }}"
