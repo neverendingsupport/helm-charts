@@ -1,0 +1,55 @@
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: &appname eol-report-card
+  namespace: argocd
+spec:
+  project: eolds
+  sources:
+    - repoURL: https://github.com/neverendingsupport/eol-report-card.git
+      path: infra/helm-chart/
+      targetRevision: main
+      helm:
+        valueFiles:
+          - $app_repo/infra/dev.values.yaml
+        valuesObject:
+          ingress:
+            enabled: true
+            className: nginx
+            annotations:
+              alb.ingress.kubernetes.io/ip-address-type: dualstack
+              cert-manager.io/cluster-issuer: letsencrypt-prod
+              nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+              forecastle.stakater.com/expose: "true"
+              #forecastle.stakater.com/icon: "put a URL to an icon here someday"
+            hosts:
+              - host: eol-report-card.stage.apps.herodevs.io
+                paths:
+                  - path: /
+                    pathType: Prefix
+            tls:
+              - secretName: erc-tls
+                hosts:
+                  - eol-report-card.stage.apps.herodevs.io
+    - repoURL: https://github.com/neverendingsupport/eol-report-card.git
+      targetRevision: main
+      ref: app_repo
+
+  destination:
+    server: "https://kubernetes.default.svc"
+    namespace: *appname
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+      allowEmpty: false
+    syncOptions:
+      - Validate=true
+      - CreateNamespace=true
+      - PrunePropagationPolicy=foreground
+      - PruneLast=true
+      - RespectIgnoreDifferences=true
+    managedNamespaceMetadata:
+      labels:
+        use-ghcr-pull-secret: "true"

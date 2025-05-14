@@ -1,0 +1,187 @@
+# Default values for universal-chart.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+# This sets the container image more information can be found here: https://kubernetes.io/docs/concepts/containers/images/
+image:
+  # -- (string) repository path to image without tag name.
+  # Example: ghcr.io/neverendingsupport/universal-chart
+  repository: null
+  # -- (string) tag / sha of image to pull
+  tag: null
+  # -- k8s image pull policy - Always, Never, or IfNotPresent
+  pullPolicy: Always
+
+# This is for the secrets for pulling an image from a private repository more information can be found here: https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/
+imagePullSecrets: []
+# This is to override the chart name.
+nameOverride: ""
+fullnameOverride: ""
+
+# Describes an AWS secretmanager secret which will define env vars
+awsEnvSecrets:
+  # configure the secretmanager source
+  externalSecret:
+    # -- secret path
+    secretPath: ""
+    secretStoreRef:
+      # -- This will either be SecretStore or ClusterSecretStore
+      kind: SecretStore
+      # -- name of the secret store; aws-secret-manager is usually right
+      name: aws-secrets-manager
+  # -- name of secret to store AWS secretmanager values within
+  env_secret_name: erc-env
+
+# This section builds out the service account more information can be found here: https://kubernetes.io/docs/concepts/security/service-accounts/
+serviceAccount:
+  # Specifies whether a service account should be created
+  create: true
+  # Automatically mount a ServiceAccount's API credentials?
+  automount: true
+  # Annotations to add to the service account
+  annotations: {}
+  # The name of the service account to use.
+  # If not set and create is true, a name is generated using the fullname template
+  name: ""
+
+# -- Add additional annotations to the pod.
+# Annotations are generally for "people" uses and interoperability.
+# For more information check out: https://kubernetes.io/docs/concepts/overview/working-with-objects/annotations/
+podAnnotations: {}
+# -- Add additional labels to the pods.
+# Labels are generally for k8s internal use (pod selectors, etc)
+# For more information check out: https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/
+podLabels: {}
+
+podSecurityContext: {}
+  # fsGroup: 2000
+
+securityContext: {}
+  # capabilities:
+  #   drop:
+  #   - ALL
+  # readOnlyRootFilesystem: true
+  # runAsNonRoot: true
+  # runAsUser: 1000
+
+# -- A "service" is basically a named port which follows a pod or pods; you
+# should always use a service when networking in k8s.
+# More information can be found here: https://kubernetes.io/docs/concepts/services-networking/service/
+service:
+  # -- Define the service type
+  # more information can be found here: https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types
+  type: ClusterIP
+  # -- Defines the port the service listens upon. This is the *external* port
+  # exposed by the container, not necessarily the internal port inside the
+  # container.  It also doesn't have to be 80 or 443; an ingress (if used) will
+  # listen on a differnet port and communicate with the container on this
+  # service/port combination.
+  # more information can be found here: https://kubernetes.io/docs/concepts/services-networking/service/#field-spec-ports
+  port: 3000
+
+# -- This block is for setting up the ingress.
+# More information can be found here: https://kubernetes.io/docs/concepts/services-networking/ingress/
+ingress:
+  # -- whether or not to use an ingress
+  enabled: false
+  # -- which ingress class to use (usually nginx, but could be alb)
+  className: ""
+  # -- a map of annotations to define on the ingress resource
+  annotations: {}
+    # kubernetes.io/ingress.class: nginx
+    # kubernetes.io/tls-acme: "true"
+
+  # -- list of host blocks to listen on; host blocks define more than just a hostname
+  # hosts.host -- a hostname to listen upon. If TLS is enabled, the host will
+  # be selected via SNI.
+  # hosts.paths -- List of path rules.  Normally you want the root for a
+  # hostname to go to the root of your app, and the example commented above
+  # works well for that.
+  hosts: []
+  # - host: chart-example.local
+  #   paths:
+  #     - path: /
+  #       pathType: ImplementationSpecific
+  # -- list of TLS certs to use.  The objects in the list have a secret name
+  # where the cert will be stored and a list of hosts to include in that cert.
+  # Normally this will only be a one item list, but it's technically acceptable
+  # to create multiple certs. If ingress.tls.secretName isn't specified, the
+  # secret will just be named "tls".
+  tls: []
+  #  - secretName: chart-example-tls
+  #    hosts:
+  #      - chart-example.local
+
+# -- resource requests and limits.
+# typically you can accept the values commented below, but ideally you'd run
+# this in dev with some synthetic load and then either check on the monitoring
+# values from Grafana or look at the Vertical Pod Autoscaler's recomendations
+# via Goldilocks.
+resources: {}
+  # limits:
+  #   cpu: 100m
+  #   memory: 128Mi
+  # requests:
+  #   cpu: 100m
+  #   memory: 128Mi
+
+# This is to setup the liveness and readiness probes more information can be found here: https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/
+livenessProbe:
+  httpGet:
+    path: /
+    port: http
+readinessProbe:
+  httpGet:
+    path: /
+    port: http
+
+# -- set a fixed number of replicas in the deployment
+# This value is ignored if autoscaling is enabled
+replicaCount: 1
+
+# -- section for configuring autoscaling.
+# More information can be found here: https://kubernetes.io/docs/concepts/workloads/autoscaling/
+autoscaling:
+  # -- enable autoscaling
+  enabled: false
+  # -- miminum number of replicas to run
+  minReplicas: 1
+  # -- maximum number of replicas to run
+  maxReplicas: 10
+  # -- If CPU utilization of replicas exceeds this percentage of requested CPU, start a new replica
+  targetCPUUtilizationPercentage: 80
+  # -- If Memory utilization of replicas exceeds this percentage of requested Memory, start a new replica
+  targetMemoryUtilizationPercentage: null
+
+# -- Additional volumes to create
+volumes: []
+# - name: foo
+#   secret:
+#     secretName: mysecret
+#     optional: false
+
+# -- Additional volumes to mount
+volumeMounts: []
+# - name: foo
+#   mountPath: "/etc/foo"
+#   readOnly: true
+
+# -- Select specific nodes to run upon
+# Normally this should be an empty map
+nodeSelector: {}
+
+# -- List of taints these pods should tolerate.
+# Normally this should be an empty list
+tolerations: []
+
+# -- Select roughly specific nodes to run upon.
+# This is similar to node selectors, but allows a bit more fuzziness and flexibility.
+# More info at https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity
+affinity: {}
+
+########################################
+# -- Redis subchart configuration values.
+# Default values are at https://artifacthub.io/packages/helm/bitnami/redis
+redis:
+  # -- whether or not to enable the Bitnami Redis helm chart
+  enabled: false

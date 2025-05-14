@@ -1,0 +1,33 @@
+{{ template "chart.header" . }}
+{{ template "chart.description" . }}
+
+{{ template "chart.versionBadge" . }}{{ template "chart.typeBadge" . }}{{ template "chart.appVersionBadge" . }}
+
+## Additional Information
+
+This is supposedly a universal helm chart for "simple" apps.  It has a couple
+of helpful extra features:
+* built-in support for loading env vars from an AWS Secret Manager secret
+* Bitnami redis chart
+
+TODO: Explain how those work better
+
+## Using The Chart
+
+Normally, you're going to want to distribute this chart via ArgoCD as an
+Application. Here's an example definition for "eol report card".
+
+```yaml
+{{ .Files.Get "argo_app.yaml" }}
+```
+
+Of note: the ingress configuration always goes in the Argo Application, not in
+your values YAML. An explanation of how Argo Applications work is documented
+elsewhere (TODO: add link here)
+
+
+{{ template "chart.requirementsSection" . }}
+
+{{ template "chart.valuesSection" . }}
+
+{{ template "helm-docs.versionFooter" . }}

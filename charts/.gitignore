@@ -1,0 +1,3 @@
+# don't check in helm subchart deps
+**/charts/*.tgz
+Chart.lock
