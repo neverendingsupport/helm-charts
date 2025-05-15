@@ -35,14 +35,24 @@ spec:
       containers:
         - name: {{ .Chart.Name }}
           env:
+            # placeholder var so we can always make an env list
             - name: REDIS_ENABLED
               value: {{ .Values.redis.enabled }}
-            {{ if .Values.redis.enabled }}
+            {{- if .Values.redis.enabled }}
+            - name: REDIS_USERNAME
+              value: default # oddly hard-coded in chart
             - name: REDIS_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: {{ .Release.Name }}-redis
-                  key: redis-password
+                  name: {{ template "redis.secretName" .Subcharts.redis }}
+                  key: {{ template "redis.secretPasswordKey" .Subcharts.redis }}
+            - name: REDIS_PORT
+              #value: {{ .Values.redis.master.service.ports.redis }}
+              value: {{ .Values.redis.master.containerPorts.redis | quote }}
+            - name: REDIS_HOST
+              value: {{ printf "%s-master" (include "common.names.fullname" .Subcharts.redis) }}
+            - name: REDIS_TLS
+              value: {{ .Values.redis.tls.enabled | quote }}
             {{- end }}
             {{- with .Values.extraEnvVars }}
               {{- range $k, $v := . }}

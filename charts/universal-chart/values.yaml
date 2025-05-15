@@ -185,3 +185,7 @@ affinity: {}
 redis:
   # -- whether or not to enable the Bitnami Redis helm chart
   enabled: false
+  # -- beware: overriding auth in your values file might be a mistake
+  auth:
+    enabled: true
+    usePasswordFiles: false
