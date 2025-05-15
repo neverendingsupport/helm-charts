@@ -34,6 +34,13 @@ spec:
       {{- end }}
       containers:
         - name: {{ .Chart.Name }}
+          {{- with .Values.extraEnvVars }}
+          env:
+            {{- range $k, $v := . }}
+            - name: {{ $k }}
+              value: {{ $v }}
+            {{- end }}
+          {{- end }}
           {{- with .Values.awsEnvSecrets.env_secret_name }}
           envFrom:
             - secretRef:
