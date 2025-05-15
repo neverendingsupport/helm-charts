@@ -20,7 +20,7 @@ spec:
         {{- range .hosts }}
         - {{ . | quote }}
         {{- end }}
-      secretName: {{ .secretName | default( "tls" ) }}
+      secretName: {{ .secretName | default "tls" }}
     {{- end }}
   {{- end }}
   rules:
