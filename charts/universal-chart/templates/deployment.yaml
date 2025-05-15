@@ -34,13 +34,15 @@ spec:
       {{- end }}
       containers:
         - name: {{ .Chart.Name }}
-          {{- with .Values.extraEnvVars }}
           env:
-            {{- range $k, $v := . }}
+            - name: REDIS_ENABLED
+              value: {{ .Values.redis.enabled }}
+            {{- with .Values.extraEnvVars }}
+              {{- range $k, $v := . }}
             - name: {{ $k }}
-              value: {{ $v }}
+              value: {{ $v | quote }}
+              {{- end }}
             {{- end }}
-          {{- end }}
           {{- with .Values.awsEnvSecrets.env_secret_name }}
           envFrom:
             - secretRef:
