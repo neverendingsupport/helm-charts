@@ -37,7 +37,7 @@ spec:
           env:
             # placeholder var so we can always make an env list
             - name: REDIS_ENABLED
-              value: {{ .Values.redis.enabled }}
+              value: {{ .Values.redis.enabled | quote }}
             {{- if .Values.redis.enabled }}
             - name: REDIS_USERNAME
               value: default # oddly hard-coded in chart
