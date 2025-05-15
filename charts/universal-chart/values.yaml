@@ -30,7 +30,7 @@ awsEnvSecrets:
       # -- name of the secret store; aws-secret-manager is usually right
       name: aws-secrets-manager
   # -- name of secret to store AWS secretmanager values within
-  env_secret_name: erc-env
+  env_secret_name: aws-env
 
 # This section builds out the service account more information can be found here: https://kubernetes.io/docs/concepts/security/service-accounts/
 serviceAccount:
