@@ -37,6 +37,13 @@ spec:
           env:
             - name: REDIS_ENABLED
               value: {{ .Values.redis.enabled }}
+            {{ if .Values.redis.enabled }}
+            - name: REDIS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Release.Name }}-redis
+                  key: redis-password
+            {{- end }}
             {{- with .Values.extraEnvVars }}
               {{- range $k, $v := . }}
             - name: {{ $k }}
