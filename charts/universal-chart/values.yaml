@@ -195,8 +195,8 @@ redis:
     replicaCount: 3
   # Sentinal manages HA/failover
   sentinel:
-    enabled: true
-  sentinel:
+    # -- sentinel mode requires client connection changes
+    enabled: false
     # -- number of sentinel nodes which need to agree
     # This should be replicas/2+1 (3 replicas = 2, 5 replicas = 3, etc)
     quorum: 2
