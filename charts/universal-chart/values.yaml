@@ -125,11 +125,13 @@ resources: {}
   #   cpu: 100m
   #   memory: 128Mi
 
-# This is to setup the liveness and readiness probes more information can be found here: https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/
+# -- (map) Configure a liveness probe, please
+# more information can be found here: https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/
 livenessProbe:
   # httpGet:
   #   path: /
   #   port: http
+# -- (map) Configure a readiness probe, please
 readinessProbe:
   # httpGet:
   #   path: /
@@ -178,6 +180,19 @@ tolerations: []
 # This is similar to node selectors, but allows a bit more fuzziness and flexibility.
 # More info at https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity
 affinity: {}
+
+# -- (map) A dictionary of extra attributes to add to the container spec in the
+# deployment. Elements will be directly added to the deployment's
+# `spec.template.spec.containers` object. Note that adding an element already
+# in the deployment template like `env` or `image` will cause undesirable
+# behavior.
+extraContainerProps: null
+# command: ["pnpm"]
+# args: ["run", "--filter", "@xeol/workflows", "start.prod"]
+
+# -- (list) A list of extra yaml manifests to include.
+# Each element will be rendered exactly as passed in
+extraManifests: null
 
 ########################################
 # -- Redis subchart configuration values.
@@ -248,5 +263,3 @@ redis:
             summary: Redis(R) instance {{ "{{ $labels.instance }}" }} has evicted keys
             description: |
               Redis(R) instance {{ "{{ $labels.instance }}" }} has evicted {{ "{{ $value }}" }} keys in the last 5 minutes.
-
-extraContainerProps:
