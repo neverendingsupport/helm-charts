@@ -249,3 +249,4 @@ redis:
             description: |
               Redis(R) instance {{ "{{ $labels.instance }}" }} has evicted {{ "{{ $value }}" }} keys in the last 5 minutes.
 
+extraContainerProps:
