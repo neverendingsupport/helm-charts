@@ -60,10 +60,10 @@ spec:
               value: {{ $v | quote }}
               {{- end }}
             {{- end }}
-          {{- with .Values.awsEnvSecrets.env_secret_name }}
+          {{- if .Values.awsEnvSecrets.externalSecret.secretPath }}
           envFrom:
             - secretRef:
-                name: {{ . }}
+                name: {{ .Values.awsEnvSecrets.env_secret_name }}
           {{- end }}
           {{- with .Values.securityContext }}
           securityContext:
