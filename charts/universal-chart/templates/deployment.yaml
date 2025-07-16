@@ -34,7 +34,7 @@ spec:
       {{- end }}
       containers:
         - name: {{ .Chart.Name }}
-          env:
+          env: &containerenv
             # placeholder var so we can always make an env list
             - name: REDIS_ENABLED
               value: {{ .Values.redis.enabled | quote }}
@@ -95,6 +95,34 @@ spec:
           {{- toYaml . | nindent 10 }}
           {{- end }}
 
+      {{- with .Values.initContainers }}
+      {{- if .image }}
+      initContainers:
+        - name: init-{{ .Chart.Name }}
+          image: {{ .image }}
+          {{- with .command }}
+          command: {{ . }}
+          {{- end }}
+          {{- with $.Values.volumeMounts }}
+          volumeMounts:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          env: *containerenv
+          {{- if $.Values.awsEnvSecrets.externalSecret.secretPath }}
+          envFrom:
+            - secretRef:
+                name: {{ $.Values.awsEnvSecrets.env_secret_name }}
+          {{- end }}
+          {{- with $.Values.securityContext }}
+          securityContext:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .extraContainerProps }}
+          {{- toYaml . | nindent 10 }}
+          {{- end }}
+      {{- end }}
+      {{- end }}
+
       {{- with .Values.volumes }}
       volumes:
         {{- toYaml . | nindent 8 }}
@@ -105,6 +133,10 @@ spec:
       {{- end }}
       {{- with .Values.affinity }}
       affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.topologySpreadConstraints }}
+      topologySpreadConstraints:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       {{- with .Values.tolerations }}
