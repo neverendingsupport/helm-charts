@@ -18,6 +18,23 @@ imagePullSecrets: []
 nameOverride: ""
 fullnameOverride: ""
 
+# -- define an init container which runs before the "real" container starts
+# The init container runs with the same environment, volumes, and security
+# context as the main container.
+initContainers:
+  # -- (string) the image to run on init
+  # if this is left as null or a false-ish value, the initContainers section of
+  # the deploment will be skipped
+  image: null
+  # -- (list) the command to run in the init container
+  # This overrides the command in the container.  Leave it empty to just run
+  # the container's default command.
+  command: []
+  # -- (map) a map of additional properties for the init container.  This can
+  # technically be any values from the spec, though reusing image, command,
+  # securityContext, volumes, env, or envFrom might cause unexpected behavior.
+  extraContainerProps: {}
+
 # Describes an AWS secretmanager secret which will define env vars
 awsEnvSecrets:
   # configure the secretmanager source
@@ -34,9 +51,9 @@ awsEnvSecrets:
 
 # This section builds out the service account more information can be found here: https://kubernetes.io/docs/concepts/security/service-accounts/
 serviceAccount:
-  # Specifies whether a service account should be created
+  # Specifies whether a service account should be created (things may go poorly if you set this to false)
   create: true
-  # Automatically mount a ServiceAccount's API credentials?
+  # Automatically mount a ServiceAccount's API credentials
   automount: true
   # Annotations to add to the service account
   annotations: {}
@@ -180,6 +197,15 @@ tolerations: []
 # This is similar to node selectors, but allows a bit more fuzziness and flexibility.
 # More info at https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity
 affinity: {}
+
+# -- When deploying with multiple replicas, spread pods around using these
+# rules. The default is to spread pods evenly among the Availability Zones
+# defined in the cluster. With a Karpenter-managed EKS cluster (like HeroDevs
+# uses), there will usually be 3 AZs in a region where a cluster is deployed.
+topologySpreadConstraints:
+  - maxSkew: 1
+    topologyKey: topology.kubernetes.io/zone
+    whenUnsatisfiable: ScheduleAnyway
 
 # -- (map) A dictionary of extra attributes to add to the container spec in the
 # deployment. Elements will be directly added to the deployment's
