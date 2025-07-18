@@ -102,12 +102,13 @@ elsewhere (TODO: add link here)
 | autoscaling.targetMemoryUtilizationPercentage | string | `nil` | If Memory utilization of replicas exceeds this percentage of requested Memory, start a new replica |
 | awsEnvSecrets.env_secret_name | string | `"aws-env"` | name of secret to store AWS secretmanager values within |
 | awsEnvSecrets.externalSecret.secretPath | string | `""` | secret path |
-| awsEnvSecrets.externalSecret.secretStoreRef.kind | string | `"SecretStore"` | This will either be SecretStore or ClusterSecretStore |
+| awsEnvSecrets.externalSecret.secretStoreRef.kind | string | `"SecretStore"` | Is the store in this namespace or cluster-wide? |
 | awsEnvSecrets.externalSecret.secretStoreRef.name | string | `"aws-secrets-manager"` | name of the secret store; aws-secret-manager is usually right |
-| extraContainerProps | map | `nil` | A dictionary of extra attributes to add to the container spec in the deployment. Elements will be directly added to the deployment's `spec.template.spec.containers` object. Note that adding an element already in the deployment template like `env` or `image` will cause undesirable behavior. |
-| extraManifests | list | `nil` | A list of extra yaml manifests to include. Each element will be rendered exactly as passed in |
+| extraContainerProps | object | `{}` | A dictionary of extra attributes to add to the container spec in the deployment. Elements will be directly added to the deployment's `spec.template.spec.containers` object. Note that adding an element already in the deployment template like `env` or `image` will cause undesirable behavior. |
+| extraEnvVars | object | `{}` | additional environment variables and their values |
+| extraManifests | list | `[]` | A list of extra yaml manifests to include. Each element will be rendered exactly as passed in |
 | fullnameOverride | string | `""` |  |
-| image.pullPolicy | string | `"Always"` | k8s image pull policy - Always, Never, or IfNotPresent |
+| image.pullPolicy | string | `"Always"` | k8s image pull policy |
 | image.repository | string | `nil` | repository path to image without tag name. Example: ghcr.io/neverendingsupport/universal-chart |
 | image.tag | string | `nil` | tag / sha of image to pull |
 | imagePullSecrets | list | `[]` |  |
@@ -117,17 +118,17 @@ elsewhere (TODO: add link here)
 | ingress.enabled | bool | `false` | whether or not to use an ingress |
 | ingress.hosts | list | `[]` | list of host blocks to listen on; host blocks define more than just a hostname hosts.host -- a hostname to listen upon. If TLS is enabled, the host will be selected via SNI. hosts.paths -- List of path rules.  Normally you want the root for a hostname to go to the root of your app, and the example commented above works well for that. |
 | ingress.tls | list | `[]` | list of TLS certs to use.  The objects in the list have a secret name where the cert will be stored and a list of hosts to include in that cert. Normally this will only be a one item list, but it's technically acceptable to create multiple certs. If ingress.tls.secretName isn't specified, the secret will just be named "tls". |
-| initContainers | object | `{"command":[],"extraContainerProps":{},"image":null}` | define an init container which runs before the "real" container starts The init container runs with the same environment, volumes, and security context as the main container. |
-| initContainers.command | list | `[]` | the command to run in the init container This overrides the command in the container.  Leave it empty to just run the container's default command. |
-| initContainers.extraContainerProps | map | `{}` | a map of additional properties for the init container.  This can technically be any values from the spec, though reusing image, command, securityContext, volumes, env, or envFrom might cause unexpected behavior. |
-| initContainers.image | string | `nil` | the image to run on init if this is left as null or a false-ish value, the initContainers section of the deploment will be skipped |
-| livenessProbe | map | `nil` | Configure a liveness probe, please more information can be found here: https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/ |
+| initContainers | list | `[{"command":[],"extraContainerProps":{},"image":null}]` | define init container(s) which will run before the "real" container starts. The init container runs with the same environment, volumes, and security context as the main container. |
+| initContainers[0].command | list | `[]` | the command to run in the init container This overrides the command in the container.  Leave it empty to just run the container's default command. |
+| initContainers[0].extraContainerProps | object | `{}` | a map of additional properties for the init container.  This can technically be any values from the spec, though reusing image, command, securityContext, volumes, env, or envFrom might cause unexpected behavior. |
+| initContainers[0].image | string | `nil` | the image to run on init if this is left as null or a false-ish value, the initContainers section of the deploment will be skipped |
+| livenessProbe | string | `nil` | Configure a liveness probe, please more information can be found here: https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/ |
 | nameOverride | string | `""` |  |
 | nodeSelector | object | `{}` | Select specific nodes to run upon Normally this should be an empty map |
 | podAnnotations | object | `{}` | Add additional annotations to the pod. Annotations are generally for "people" uses and interoperability. For more information check out: https://kubernetes.io/docs/concepts/overview/working-with-objects/annotations/ |
 | podLabels | object | `{}` | Add additional labels to the pods. Labels are generally for k8s internal use (pod selectors, etc) For more information check out: https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/ |
 | podSecurityContext | object | `{}` |  |
-| readinessProbe | map | `nil` | Configure a readiness probe, please |
+| readinessProbe | string | `nil` | Configure a readiness probe, please |
 | redis | object | `{"auth":{"enabled":true,"usePasswordFiles":false},"autoscaling":{"enabled":true,"maxReplicas":5,"minReplicas":1,"targetCPU":80,"targetMemory":80},"enabled":false,"master":{"resourcesPreset":"micro"},"metrics":{"enabled":true,"prometheusRule":{"enabled":true,"rules":[{"alert":"RedisDown","annotations":{"description":"Redis(R) instance {{ \"{{ $labels.instance }}\" }} is down","summary":"Redis(R) instance {{ \"{{ $labels.instance }}\" }} down"},"expr":"redis_up{service=\"{{ template \"common.names.fullname\" . }}-metrics\"} == 0","for":"2m","labels":{"severity":"error"}},{"alert":"RedisMemoryHigh","annotations":{"description":"Redis(R) instance {{ \"{{ $labels.instance }}\" }} is using {{ \"{{ $value }}\" }}% of its available memory.\n","summary":"Redis(R) instance {{ \"{{ $labels.instance }}\" }} is using too much memory"},"expr":"redis_memory_used_bytes{service=\"{{ template \"common.names.fullname\" . }}-metrics\"} * 100 / redis_memory_max_bytes{service=\"{{ template \"common.names.fullname\" . }}-metrics\"} > 90\n","for":"2m","labels":{"severity":"error"}},{"alert":"RedisKeyEviction","annotations":{"description":"Redis(R) instance {{ \"{{ $labels.instance }}\" }} has evicted {{ \"{{ $value }}\" }} keys in the last 5 minutes.\n","summary":"Redis(R) instance {{ \"{{ $labels.instance }}\" }} has evicted keys"},"expr":"increase(redis_evicted_keys_total{service=\"{{ template \"common.names.fullname\" . }}-metrics\"}[5m]) > 0\n","for":"1s","labels":{"severity":"error"}}]},"serviceMonitor":{"enabled":true}},"replica":{"resourcesPreset":"micro"},"tls":{"enabled":false}}` | Redis subchart configuration values. Default values are at https://artifacthub.io/packages/helm/bitnami/redis |
 | redis.auth | object | `{"enabled":true,"usePasswordFiles":false}` | beware: overriding auth in your values file might be a mistake |
 | redis.autoscaling | object | `{"enabled":true,"maxReplicas":5,"minReplicas":1,"targetCPU":80,"targetMemory":80}` | autoscaling is basically always the right answer :D |

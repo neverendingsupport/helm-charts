@@ -96,12 +96,16 @@ spec:
           {{- end }}
 
       {{- with .Values.initContainers }}
-      {{- if .image }}
+      {{- if get (first .) "image" }}
       initContainers:
-        - name: init-{{ .Chart.Name }}
+        {{- range . }}
+        - name: init-{{ $.Chart.Name }}
           image: {{ .image }}
           {{- with .command }}
-          command: {{ . }}
+          command:
+            {{- range . }}
+            - {{ . }}
+            {{- end }}
           {{- end }}
           {{- with $.Values.volumeMounts }}
           volumeMounts:
@@ -120,6 +124,7 @@ spec:
           {{- with .extraContainerProps }}
           {{- toYaml . | nindent 10 }}
           {{- end }}
+        {{- end }}
       {{- end }}
       {{- end }}
 

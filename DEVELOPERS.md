@@ -1,5 +1,11 @@
 # Developing on this repo
 
+# Danny
+
+Docs are generated with helm-docs.  Just run `helm-docs` at the root of the directory and it'll work.
+
+Schemas are generated with helm-schema.  Run `helm-schema -k required` to regenerate the schema, as the default behavior is to assume everything is required.  Perhaps this should be revisited, though.
+
 
 # Andre
 ```
