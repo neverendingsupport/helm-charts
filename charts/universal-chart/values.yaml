@@ -4,12 +4,24 @@
 
 # This sets the container image more information can be found here: https://kubernetes.io/docs/concepts/containers/images/
 image:
+  # @schema
+  # required: true
+  # @schema
   # -- (string) repository path to image without tag name.
   # Example: ghcr.io/neverendingsupport/universal-chart
   repository: null
+  # @schema
+  # required: true
+  # @schema
   # -- (string) tag / sha of image to pull
   tag: null
-  # -- k8s image pull policy - Always, Never, or IfNotPresent
+  # @schema
+  # enum:
+  # - Always
+  # - Never
+  # - IfNotPresent
+  # @schema
+  # -- k8s image pull policy
   pullPolicy: Always
 
 # This is for the secrets for pulling an image from a private repository more information can be found here: https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/
@@ -18,22 +30,39 @@ imagePullSecrets: []
 nameOverride: ""
 fullnameOverride: ""
 
-# -- define an init container which runs before the "real" container starts
-# The init container runs with the same environment, volumes, and security
-# context as the main container.
+# @schema
+# required: false
+# @schema
+# -- define init container(s) which will run before the "real" container
+# starts. The init container runs with the same environment, volumes, and
+# security context as the main container.
 initContainers:
-  # -- (string) the image to run on init
-  # if this is left as null or a false-ish value, the initContainers section of
-  # the deploment will be skipped
-  image: null
-  # -- (list) the command to run in the init container
-  # This overrides the command in the container.  Leave it empty to just run
-  # the container's default command.
-  command: []
-  # -- (map) a map of additional properties for the init container.  This can
-  # technically be any values from the spec, though reusing image, command,
-  # securityContext, volumes, env, or envFrom might cause unexpected behavior.
-  extraContainerProps: {}
+  -  # @schema
+    # anyof:
+    #   type: string
+    #   type: null
+    # @schema
+    # -- (string) the image to run on init
+    # if this is left as null or a false-ish value, the initContainers section of
+    # the deploment will be skipped
+    image: null
+    # -- the command to run in the init container
+    # This overrides the command in the container.  Leave it empty to just run
+    # the container's default command.
+    command: []
+    # @schema
+    # additionalProperties: true
+    # type: object
+    # required: false
+    # not:
+    #   enum:
+    #     - image
+    #     - command
+    # @schema
+    # -- a map of additional properties for the init container.  This can
+    # technically be any values from the spec, though reusing image, command,
+    # securityContext, volumes, env, or envFrom might cause unexpected behavior.
+    extraContainerProps: {}
 
 # Describes an AWS secretmanager secret which will define env vars
 awsEnvSecrets:
@@ -42,12 +71,29 @@ awsEnvSecrets:
     # -- secret path
     secretPath: ""
     secretStoreRef:
-      # -- This will either be SecretStore or ClusterSecretStore
+      # @schema
+      # enum:
+      # - SecretStore
+      # - ClusterSecretStore
+      # @schema
+      # -- Is the store in this namespace or cluster-wide?
       kind: SecretStore
       # -- name of the secret store; aws-secret-manager is usually right
       name: aws-secrets-manager
   # -- name of secret to store AWS secretmanager values within
   env_secret_name: aws-env
+
+# @schema
+# type: object
+# required: false
+# patternProperties:
+#   ".*":
+#     anyof:
+#       type: string
+#       type: integer  # TODO: remove this
+# @schema
+# -- additional environment variables and their values
+extraEnvVars: {}
 
 # This section builds out the service account more information can be found here: https://kubernetes.io/docs/concepts/security/service-accounts/
 serviceAccount:
@@ -129,6 +175,29 @@ ingress:
   #    hosts:
   #      - chart-example.local
 
+# @schema
+# properties:
+#   limits:
+#     title: limits
+#     description: maximum values for given resource
+#     required: false
+#     type: object
+#     properties:
+#       cpu:
+#         type: string
+#       memory:
+#         type: string
+#   requests:
+#     title: requests
+#     description: requested values for given resource; can burst beyond
+#     required: false
+#     type: object
+#     properties:
+#       cpu:
+#         type: string
+#       memory:
+#         type: string
+# @schema
 # -- resource requests and limits.
 # typically you can accept the values commented below, but ideally you'd run
 # this in dev with some synthetic load and then either check on the monitoring
@@ -142,13 +211,24 @@ resources: {}
   #   cpu: 100m
   #   memory: 128Mi
 
-# -- (map) Configure a liveness probe, please
+# @schema
+# anyof:
+#   type: null
+#   type: map
+# @schema
+# -- Configure a liveness probe, please
 # more information can be found here: https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/
 livenessProbe:
   # httpGet:
   #   path: /
   #   port: http
-# -- (map) Configure a readiness probe, please
+
+# @schema
+# anyof:
+#   type: null
+#   type: map
+# @schema
+# -- Configure a readiness probe, please
 readinessProbe:
   # httpGet:
   #   path: /
@@ -207,20 +287,28 @@ topologySpreadConstraints:
     topologyKey: topology.kubernetes.io/zone
     whenUnsatisfiable: ScheduleAnyway
 
-# -- (map) A dictionary of extra attributes to add to the container spec in the
+# @schema
+# additionalProperties: true
+# type: object
+# required: false
+# @schema
+# -- A dictionary of extra attributes to add to the container spec in the
 # deployment. Elements will be directly added to the deployment's
 # `spec.template.spec.containers` object. Note that adding an element already
 # in the deployment template like `env` or `image` will cause undesirable
 # behavior.
-extraContainerProps: null
+extraContainerProps: {}
 # command: ["pnpm"]
 # args: ["run", "--filter", "@xeol/workflows", "start.prod"]
 
 # -- (list) A list of extra yaml manifests to include.
 # Each element will be rendered exactly as passed in
-extraManifests: null
+extraManifests: []
 
 ########################################
+# @schema
+# additionalProperties: true
+# @schema
 # -- Redis subchart configuration values.
 # Default values are at https://artifacthub.io/packages/helm/bitnami/redis
 redis:
