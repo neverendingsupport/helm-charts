@@ -87,7 +87,7 @@ elsewhere (TODO: add link here)
 
 | Repository | Name | Version |
 |------------|------|---------|
-| https://charts.bitnami.com/bitnami | redis | 21.0.2 |
+| https://charts.bitnami.com/bitnami | redis | 21.2.13 |
 
 ## Values
 
