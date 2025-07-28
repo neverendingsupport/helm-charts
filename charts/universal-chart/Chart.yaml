@@ -17,10 +17,3 @@ type: application
 # but doesn't matter when ArgoCD installing from a git branch.
 # Versions are expected to follow Semantic Versioning (https://semver.org/)
 version: "0.1.0"
-
-# subcharts, aka "the main reason people haven't abandoned helm"
-dependencies:
-  - name: redis
-    version: "21.2.13"
-    repository: https://charts.bitnami.com/bitnami
-    condition: redis.enabled,global.redis.enabled
