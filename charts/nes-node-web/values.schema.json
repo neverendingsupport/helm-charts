@@ -1,0 +1,272 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "additionalProperties": false,
+  "properties": {
+    "deployment": {
+      "additionalProperties": false,
+      "properties": {
+        "strategy": {
+          "additionalProperties": false,
+          "properties": {
+            "rollingUpdate": {
+              "additionalProperties": false,
+              "properties": {
+                "maxSurge": {
+                  "default": "50%",
+                  "required": [],
+                  "title": "maxSurge",
+                  "type": "string"
+                },
+                "maxUnavailable": {
+                  "default": 1,
+                  "required": [],
+                  "title": "maxUnavailable",
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "maxSurge",
+                "maxUnavailable"
+              ],
+              "title": "rollingUpdate",
+              "type": "object"
+            }
+          },
+          "required": [
+            "rollingUpdate"
+          ],
+          "title": "strategy",
+          "type": "object"
+        }
+      },
+      "required": [
+        "strategy"
+      ],
+      "title": "deployment",
+      "type": "object"
+    },
+    "global": {
+      "description": "Global values are values that can be accessed from any chart or subchart by exactly the same name.",
+      "required": [],
+      "title": "global",
+      "type": "object"
+    },
+    "host": {
+      "default": "",
+      "required": [],
+      "title": "host",
+      "type": "string"
+    },
+    "image": {
+      "additionalProperties": false,
+      "properties": {
+        "pullPolicy": {
+          "default": "Always",
+          "required": [],
+          "title": "pullPolicy",
+          "type": "string"
+        },
+        "tag": {
+          "default": "",
+          "required": [],
+          "title": "tag",
+          "type": "string"
+        }
+      },
+      "required": [
+        "pullPolicy",
+        "tag"
+      ],
+      "title": "image",
+      "type": "object"
+    },
+    "ingress": {
+      "additionalProperties": false,
+      "properties": {
+        "className": {
+          "default": "nginx",
+          "required": [],
+          "title": "className",
+          "type": "string"
+        },
+        "rules": {
+          "items": {
+            "required": []
+          },
+          "required": [],
+          "title": "rules",
+          "type": "array"
+        },
+        "tls": {
+          "additionalProperties": false,
+          "properties": {
+            "hosts": {
+              "items": {
+                "required": []
+              },
+              "required": [],
+              "title": "hosts",
+              "type": "array"
+            }
+          },
+          "required": [
+            "hosts"
+          ],
+          "title": "tls",
+          "type": "object"
+        }
+      },
+      "required": [
+        "className",
+        "tls",
+        "rules"
+      ],
+      "title": "ingress",
+      "type": "object"
+    },
+    "liveness": {
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {
+          "default": true,
+          "required": [],
+          "title": "enabled",
+          "type": "boolean"
+        },
+        "initialDelay": {
+          "default": 7,
+          "required": [],
+          "title": "initialDelay",
+          "type": "integer"
+        },
+        "path": {
+          "default": "/",
+          "required": [],
+          "title": "path",
+          "type": "string"
+        },
+        "period": {
+          "default": 5,
+          "required": [],
+          "title": "period",
+          "type": "integer"
+        },
+        "thresholds": {
+          "additionalProperties": false,
+          "properties": {
+            "failure": {
+              "default": 10,
+              "required": [],
+              "title": "failure",
+              "type": "integer"
+            },
+            "success": {
+              "default": 1,
+              "required": [],
+              "title": "success",
+              "type": "integer"
+            }
+          },
+          "required": [
+            "success",
+            "failure"
+          ],
+          "title": "thresholds",
+          "type": "object"
+        },
+        "timeout": {
+          "default": 1,
+          "required": [],
+          "title": "timeout",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "path",
+        "enabled",
+        "initialDelay",
+        "period",
+        "timeout",
+        "thresholds"
+      ],
+      "title": "liveness",
+      "type": "object"
+    },
+    "port": {
+      "default": "",
+      "required": [],
+      "title": "port",
+      "type": "string"
+    },
+    "region": {
+      "default": "us-west-2",
+      "required": [],
+      "title": "region",
+      "type": "string"
+    },
+    "release": {
+      "default": "deployed",
+      "required": [],
+      "title": "release",
+      "type": "string"
+    },
+    "replicaCount": {
+      "default": 2,
+      "description": "yaml-language-server: $schema=values.schema.json",
+      "required": [],
+      "title": "replicaCount",
+      "type": "integer"
+    },
+    "resources": {
+      "additionalProperties": false,
+      "properties": {
+        "limits": {
+          "default": "",
+          "required": [],
+          "title": "limits",
+          "type": "null"
+        },
+        "requests": {
+          "default": "",
+          "description": "memory: 1.5Gi\ncpu: 1000m",
+          "required": [],
+          "title": "requests",
+          "type": "null"
+        }
+      },
+      "required": [
+        "limits",
+        "requests"
+      ],
+      "title": "resources",
+      "type": "object"
+    },
+    "urlPrefix": {
+      "default": "",
+      "required": [],
+      "title": "urlPrefix",
+      "type": "string"
+    },
+    "version": {
+      "default": "",
+      "required": [],
+      "title": "version",
+      "type": "string"
+    }
+  },
+  "required": [
+    "replicaCount",
+    "region",
+    "image",
+    "port",
+    "host",
+    "version",
+    "urlPrefix",
+    "ingress",
+    "release",
+    "liveness",
+    "deployment",
+    "resources"
+  ],
+  "type": "object"
+}

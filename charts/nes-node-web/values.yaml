@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=values.schema.json
 replicaCount: 2
 
 region: us-west-2
