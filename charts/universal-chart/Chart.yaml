@@ -1,0 +1,26 @@
+apiVersion: v2
+name: universal-chart
+description: NES Universal Helm Chart
+
+# A chart can be either an 'application' or a 'library' chart.
+#
+# Application charts are a collection of templates that can be packaged into
+# versioned archives to be deployed.
+#
+# Library charts provide useful utilities or functions for the chart developer.
+# They're included as a dependency of application charts to inject those
+# utilities and functions into the rendering pipeline. Library charts do not
+# define any templates and therefore cannot be deployed.
+type: application
+
+# The chart version is what one `helm install`s; it matters in a helm registry
+# but doesn't matter when ArgoCD installing from a git branch.
+# Versions are expected to follow Semantic Versioning (https://semver.org/)
+version: "0.1.0"
+
+# subcharts, aka "the main reason people haven't abandoned helm"
+dependencies:
+  - name: redis
+    version: "21.2.13"
+    repository: https://charts.bitnami.com/bitnami
+    condition: redis.enabled,global.redis.enabled
