@@ -104,7 +104,9 @@ elsewhere (TODO: add link here)
 | awsEnvSecrets.externalSecret.secretPath | string | `""` | secret path |
 | awsEnvSecrets.externalSecret.secretStoreRef.kind | string | `"SecretStore"` | Is the store in this namespace or cluster-wide? |
 | awsEnvSecrets.externalSecret.secretStoreRef.name | string | `"aws-secrets-manager"` | name of the secret store; aws-secret-manager is usually right |
+| extraContainerPorts | list | `[]` | extra ports to be exposed directly from pods (no service) |
 | extraContainerProps | object | `{}` | A dictionary of extra attributes to add to the container spec in the deployment. Elements will be directly added to the deployment's `spec.template.spec.containers` object. Note that adding an element already in the deployment template like `env` or `image` will cause undesirable behavior. |
+| extraEnvSecrets | list | `[]` | extra secrets to load into environment |
 | extraEnvVars | object | `{}` | additional environment variables and their values |
 | extraManifests | list | `[]` | A list of extra yaml manifests to include. Each element will be rendered exactly as passed in |
 | fullnameOverride | string | `""` |  |

@@ -103,6 +103,23 @@ extraEnvVars: {}
 # -- extra secrets to load into environment
 extraEnvSecrets: []
 
+# @schema
+# required: false
+# items:
+#   type: object
+#   properties:
+#     name:
+#       type: string
+#     containerPort:
+#       type: integer
+#     protocol:
+#       type: string  # TODO: enum
+#       required: false
+#       default: TCP
+# @schema
+# -- extra ports to be exposed directly from pods (no service)
+extraContainerPorts: []
+
 # This section builds out the service account more information can be found here: https://kubernetes.io/docs/concepts/security/service-accounts/
 serviceAccount:
   # Specifies whether a service account should be created (things may go poorly if you set this to false)
