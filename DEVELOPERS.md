@@ -34,7 +34,7 @@ helm upgrade --install --dry-run \
 
 
 Diffing what's out there from the test:
-``` 
+```
 helm get all api1 -n nes-dev > /tmp/nes_deployed.yaml
 helm upgrade --install --dry-run \
     -n nes-dev \
