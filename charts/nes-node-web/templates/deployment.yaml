@@ -30,8 +30,8 @@ spec:
           volumeMounts:
           {{- range $key, $value := .Values.volumes.mounts }}
           - {{ $value | toYaml | indent 12 | trim }}
-          {{- end }}  
-          {{- end }}  
+          {{- end }}
+          {{- end }}
           resources:
             limits:
               memory: {{ default "350Mi" .Values.resources.limits.memory }}
@@ -46,7 +46,7 @@ spec:
               port: {{ required "A valid .Values.port entry is required!" .Values.port }}
               scheme: HTTP
             failureThreshold: {{ required "A valid .Values.liveness.thresholds.failure!" .Values.liveness.thresholds.failure }}
-            initialDelaySeconds: {{ required "A valid .Values.liveness.initialDelay!" .Values.liveness.initialDelay }} 
+            initialDelaySeconds: {{ required "A valid .Values.liveness.initialDelay!" .Values.liveness.initialDelay }}
             periodSeconds: {{ required "A valid .Values.liveness.period!" .Values.liveness.period }}
             successThreshold: {{ required "A valid .Values.liveness.thresholds.success!" .Values.liveness.thresholds.success }}
             timeoutSeconds: {{ required "A valid .Values.liveness.timeout!" .Values.liveness.timeout }}
@@ -56,7 +56,7 @@ spec:
               port: {{ required "A valid .Values.port entry is required!" .Values.port }}
               scheme: HTTP
             failureThreshold: {{ required "A valid .Values.liveness.thresholds.failure!" .Values.liveness.thresholds.failure }}
-            initialDelaySeconds: {{ required "A valid .Values.liveness.initialDelay!" .Values.liveness.initialDelay }} 
+            initialDelaySeconds: {{ required "A valid .Values.liveness.initialDelay!" .Values.liveness.initialDelay }}
             periodSeconds: {{ required "A valid .Values.liveness.period!" .Values.liveness.period }}
             successThreshold: {{ required "A valid .Values.liveness.thresholds.success!" .Values.liveness.thresholds.success }}
             timeoutSeconds: {{ required "A valid .Values.liveness.timeout!" .Values.liveness.timeout }}
@@ -71,7 +71,7 @@ spec:
                 fieldPath: metadata.name
           {{- range $key, $value := .Values.env }}
           - {{ $value | toYaml | indent 12 | trim }}
-          {{ end }} 
+          {{ end }}
 
       volumes:
         {{- with .Values.volumes }}

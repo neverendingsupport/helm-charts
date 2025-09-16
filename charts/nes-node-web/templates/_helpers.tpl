@@ -13,8 +13,8 @@ If release name contains chart name it will be used as a full name.
 {{- define "nes-node-web.fullname" -}}
   {{ default .Values.name .Release.Name }}
 {{- end }}
-{{/* 
-{{- define "nes-node-web.fullname" -}}  
+{{/*
+{{- define "nes-node-web.fullname" -}}
   {{- if .Values.name }}
   {{- .Values.name | trunc 63 | trimSuffix "-" }}
   {{- else }}

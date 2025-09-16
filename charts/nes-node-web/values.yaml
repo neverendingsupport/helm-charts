@@ -5,7 +5,7 @@ region: us-west-2
 image:
   pullPolicy: Always
   tag: ""
-  
+
 port: ""
 host: ""
 version: ""
@@ -21,11 +21,11 @@ release: "deployed"
 
 liveness:
   path: "/"
-  enabled: true 
+  enabled: true
   initialDelay: 7
   period: 5
   timeout: 1
-  thresholds: 
+  thresholds:
     success: 1
     failure: 10
 
@@ -56,7 +56,7 @@ resources:
 #       mountPath: /home/node/app/example.json
 #       subPath: secret-subprop
 #       readOnly: true
-#   definitions: 
+#   definitions:
 #     - name: example-volume
-#       secret: 
+#       secret:
 #         secretName: secret-name

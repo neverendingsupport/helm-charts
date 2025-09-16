@@ -17,7 +17,7 @@ spec:
     hosts:
       {{- range $key, $value := .Values.ingress.tls.hosts }}
       - {{$value}}
-      {{- end }}  
+      {{- end }}
       - "{{ .Values.serviceSubdomain }}.{{ .Values.clusterZone }}"
   rules:
   - host: "{{ .Values.serviceSubdomain }}.{{ .Values.clusterZone }}"
@@ -28,10 +28,10 @@ spec:
         backend:
           service:
             name: {{ include "nes-node-web.fullname" . }}
-            port: 
+            port:
               number: {{ required "A valid .Values.port entry is required!" .Values.port }}
   {{- if .Values.ingress.rules }}
   {{- range $key, $value := .Values.ingress.rules }}
   - {{ $value | toYaml | indent 4 | trim }}
-  {{- end }}  
-  {{- end }}  
+  {{- end }}
+  {{- end }}
