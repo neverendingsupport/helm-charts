@@ -70,6 +70,10 @@ spec:
             - secretRef:
                 name: {{ . }}
             {{- end }}
+            {{- range .Values.extraEnvConfigmaps }}
+            - configMapRef:
+                name: {{ . }}
+            {{- end }}
           {{- end }}
           {{- with .Values.securityContext }}
           securityContext:
