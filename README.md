@@ -15,4 +15,6 @@ pre-commit install --install-hooks
 
 ## Repo Statistics
 
+[![pre-commit.ci status](https://results.pre-commit.ci/badge/github/neverendingsupport/helm-charts/main.svg)](https://results.pre-commit.ci/latest/github/neverendingsupport/helm-charts/main)
+
 ![Alt](https://repobeats.axiom.co/api/embed/f60660a0b8c2522706adf9df3724ef6f945cd59c.svg "Repobeats analytics image")
