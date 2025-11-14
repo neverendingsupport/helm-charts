@@ -350,6 +350,12 @@ extraManifests: []
 redis:
   # -- whether or not to enable the Bitnami Redis helm chart
   enabled: false
+  # -- use the bitnamilegacy registry
+  image:
+    repository: bitnamilegacy/redis
+    # -- latest release in bitnamilegacy
+    # https://hub.docker.com/r/bitnamilegacy/redis/tags
+    tag: 8.2.1-debian-12-r0
   # -- beware: overriding auth in your values file might be a mistake
   auth:
     enabled: true
@@ -375,6 +381,10 @@ redis:
 
   # -- Prometheus Metrics enabled for redis by default
   metrics:
+    # -- use the bitnamilegacy registry
+    image:
+      repository: bitnamilegacy/redis-exporter
+      tag: 1.76.0-debian-12-r0
     enabled: true
     serviceMonitor:
       enabled: true
