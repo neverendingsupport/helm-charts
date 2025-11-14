@@ -1,0 +1,17 @@
+image:
+  repository: ghcr.io/example/app
+  tag: "1.2.3"
+ingress:
+  enabled: true
+  className: nginx
+  annotations:
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+  hosts:
+    - host: app.example.com
+      paths:
+        - path: /
+          pathType: Prefix
+  tls:
+    - secretName: app-example-com
+      hosts:
+        - app.example.com

@@ -1,0 +1,86 @@
+---
+# Source: universal-chart/templates/serviceaccount.yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: universal-chart
+  labels:
+    helm.sh/chart: universal-chart-0.1.0
+    app.kubernetes.io/name: universal-chart
+    app.kubernetes.io/instance: universal-chart
+    app.kubernetes.io/managed-by: Helm
+automountServiceAccountToken: true
+---
+# Source: universal-chart/templates/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: universal-chart
+  labels:
+    helm.sh/chart: universal-chart-0.1.0
+    app.kubernetes.io/name: universal-chart
+    app.kubernetes.io/instance: universal-chart
+    app.kubernetes.io/managed-by: Helm
+spec:
+  type: ClusterIP
+  ports:
+    - port: 3000
+      targetPort: http
+      protocol: TCP
+      name: http
+  selector:
+    app.kubernetes.io/name: universal-chart
+    app.kubernetes.io/instance: universal-chart
+---
+# Source: universal-chart/templates/deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: universal-chart
+  labels:
+    helm.sh/chart: universal-chart-0.1.0
+    app.kubernetes.io/name: universal-chart
+    app.kubernetes.io/instance: universal-chart
+    app.kubernetes.io/managed-by: Helm
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: universal-chart
+      app.kubernetes.io/instance: universal-chart
+  template:
+    metadata:
+      labels:
+        helm.sh/chart: universal-chart-0.1.0
+        app.kubernetes.io/name: universal-chart
+        app.kubernetes.io/instance: universal-chart
+        app.kubernetes.io/managed-by: Helm
+    spec:
+      serviceAccountName: universal-chart
+      containers:
+        - name: universal-chart
+          env: &containerenv
+            # placeholder var so we can always make an env list
+            - name: REDIS_ENABLED
+              value: "false"
+          image: "ghcr.io/example/app:1.2.3"
+          imagePullPolicy: Always
+          ports:
+            - name: http
+              containerPort: 3000
+              protocol: TCP
+      initContainers:
+        - name: init-universal-chart
+          image: amazon/aws-cli:latest
+          command:
+            - s3
+            - sync
+            - --delete
+            - --no-progress
+            - s3://{{ .s3_bucket }}/{{ .number }}
+            - /app
+          env: *containerenv
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: topology.kubernetes.io/zone
+          whenUnsatisfiable: ScheduleAnyway

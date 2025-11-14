@@ -1,0 +1,62 @@
+ci:
+  skip:
+    - helmlint  # no helm in precommit.ci
+
+repos:
+  ########################################
+  # helm
+  ########################################
+  # helm lint
+  - repo: https://github.com/gruntwork-io/pre-commit
+    rev: v0.1.30
+    hooks:
+      - id: helmlint
+
+  - repo: local
+    hooks:
+      - id: check-fixture-goldens
+        name: Check chart fixture golden files
+        language: system
+        pass_filenames: false
+        entry: scripts/check_fixture_goldens.py
+
+      - id: check-linter-symlinks
+        name: Check chart linter_values.yaml symlinks
+        language: system
+        pass_filenames: false
+        entry: scripts/check_linter_symlinks.py
+
+  ########################################
+  # python
+  ########################################
+  # Format imports first
+  - repo: https://github.com/pycqa/isort
+    rev: 5.13.2
+    hooks:
+      - id: isort
+        args: ["--profile", "black", "--line-length", "80"]
+
+  # Then format code
+  - repo: https://github.com/psf/black
+    rev: 23.7.0
+    hooks:
+      - id: black
+        language_version: python3
+
+  # Lint
+  - repo: https://github.com/pycqa/flake8
+    rev: 7.3.0
+    hooks:
+      - id: flake8
+        additional_dependencies:
+          - flake8-pyproject==1.2.3
+          - flake8-docstrings==1.7.0
+          - flake8-bugbear==25.10.21
+
+  # Type-check
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.10.0
+    hooks:
+      - id: mypy
+        additional_dependencies:
+          - types-PyYAML==6.0.12.20250915
