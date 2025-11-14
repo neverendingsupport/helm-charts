@@ -21,3 +21,6 @@
 .idea/
 *.tmproj
 .vscode/
+# CI
+linter_values.yaml
+tests/

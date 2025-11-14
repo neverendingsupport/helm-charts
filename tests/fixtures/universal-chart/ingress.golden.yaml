@@ -1,0 +1,125 @@
+---
+# Source: universal-chart/templates/deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: universal-chart
+  labels:
+    helm.sh/chart: universal-chart-0.1.0
+    app.kubernetes.io/name: universal-chart
+    app.kubernetes.io/instance: universal-chart
+    app.kubernetes.io/managed-by: Helm
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: universal-chart
+      app.kubernetes.io/instance: universal-chart
+  template:
+    metadata:
+      labels:
+        helm.sh/chart: universal-chart-0.1.0
+        app.kubernetes.io/name: universal-chart
+        app.kubernetes.io/instance: universal-chart
+        app.kubernetes.io/managed-by: Helm
+    spec:
+      serviceAccountName: universal-chart
+      containers:
+        - name: universal-chart
+          env: &containerenv
+            # placeholder var so we can always make an env list
+            - name: REDIS_ENABLED
+              value: "false"
+          image: "ghcr.io/example/app:1.2.3"
+          imagePullPolicy: Always
+          ports:
+            - name: http
+              containerPort: 3000
+              protocol: TCP
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: topology.kubernetes.io/zone
+          whenUnsatisfiable: ScheduleAnyway
+---
+# Source: universal-chart/templates/ingress.yaml
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: universal-chart
+  labels:
+    helm.sh/chart: universal-chart-0.1.0
+    app.kubernetes.io/name: universal-chart
+    app.kubernetes.io/instance: universal-chart
+    app.kubernetes.io/managed-by: Helm
+  annotations:
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+spec:
+  ingressClassName: nginx
+  tls:
+    - hosts:
+        - app.example.com
+      secretName: app-example-com
+  rules:
+    - host: app.example.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: universal-chart
+                port:
+                  number: 3000
+---
+# Source: universal-chart/templates/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: universal-chart
+  labels:
+    helm.sh/chart: universal-chart-0.1.0
+    app.kubernetes.io/name: universal-chart
+    app.kubernetes.io/instance: universal-chart
+    app.kubernetes.io/managed-by: Helm
+spec:
+  type: ClusterIP
+  ports:
+    - port: 3000
+      targetPort: http
+      protocol: TCP
+      name: http
+  selector:
+    app.kubernetes.io/name: universal-chart
+    app.kubernetes.io/instance: universal-chart
+---
+# Source: universal-chart/templates/serviceaccount.yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: universal-chart
+  labels:
+    helm.sh/chart: universal-chart-0.1.0
+    app.kubernetes.io/name: universal-chart
+    app.kubernetes.io/instance: universal-chart
+    app.kubernetes.io/managed-by: Helm
+automountServiceAccountToken: true
+---
+# Source: universal-chart/templates/tests/test-connection.yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: "universal-chart-test-connection"
+  labels:
+    helm.sh/chart: universal-chart-0.1.0
+    app.kubernetes.io/name: universal-chart
+    app.kubernetes.io/instance: universal-chart
+    app.kubernetes.io/managed-by: Helm
+  annotations:
+    "helm.sh/hook": test
+spec:
+  containers:
+    - name: wget
+      image: busybox
+      command: ['wget']
+      args: ['universal-chart:3000']
+  restartPolicy: Never

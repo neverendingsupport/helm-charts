@@ -1,0 +1,3 @@
+image:
+  repository: ghcr.io/example/app
+  tag: "1.2.3"

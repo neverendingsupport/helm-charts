@@ -1,0 +1,49 @@
+[tool.black]
+line-length = 80
+target-version = ["py310"]
+exclude = '''
+(
+  /(
+      \.git
+    | \.mypy_cache
+    | \.pytest_cache
+    | \.venv
+    | build
+    | dist
+  )/
+)
+'''
+
+[tool.flake8]
+max-line-length = 80
+extend-ignore = [
+    "D202",
+    "D203",  # recommended with Black
+    "D212",  # recommended with Black
+    "E203",  # black-compatible slicing
+]
+exclude = [
+    ".git",
+    "__pycache__",
+    ".venv",
+    "build",
+    "dist",
+]
+
+[tool.isort]
+profile = "black"
+line_length = 80
+combine_as_imports = true
+skip = [
+    ".venv",
+    "build",
+    "dist",
+]
+
+[tool.pytest.ini_options]
+log_cli = true
+log_cli_level = "INFO"
+log_cli_format = "%(asctime)s [%(levelname)s] %(name)s: %(message)s"
+log_cli_date_format = "%Y-%m-%d %H:%M:%S"
+log_format = "%(asctime)s [%(levelname)s] %(name)s: %(message)s"
+log_date_format = "%Y-%m-%d %H:%M:%S"
