@@ -91,8 +91,24 @@ awsEnvSecrets:
 #     anyof:
 #       type: string
 #       type: integer  # TODO: remove this
+#       type: object
 # @schema
-# -- additional environment variables and their values
+# -- additional environment variables and their values.
+# Supports both simple string values and complex objects with valueFrom.
+# Examples:
+#   # Simple string values
+#   PORT: "3000"
+#   DEBUG: "true"
+#   # Complex values with valueFrom
+#   POD_IP:
+#     valueFrom:
+#       fieldRef:
+#         fieldPath: status.podIP
+#   AWS_ACCESS_KEY_ID:
+#     valueFrom:
+#       secretKeyRef:
+#         name: my-secret
+#         key: aws-access-key
 extraEnvVars: {}
 
 # @schema

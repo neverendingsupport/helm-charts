@@ -57,7 +57,11 @@ spec:
             {{- with .Values.extraEnvVars }}
               {{- range $k, $v := . }}
             - name: {{ $k }}
+              {{- if kindIs "map" $v }}
+              {{- toYaml $v | nindent 14 }}
+              {{- else }}
               value: {{ $v | quote }}
+              {{- end }}
               {{- end }}
             {{- end }}
           {{- if or .Values.awsEnvSecrets.externalSecret.secretPath .Values.extraEnvSecrets }}
