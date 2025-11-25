@@ -44,6 +44,51 @@ class ChartContext:
         return self.release_name or self.chart_name
 
 
+def _merge_nested(target: dict[str, Any], dotted_key: str, value: Any) -> None:
+    """Insert a dotted key into the target mapping as nested dictionaries."""
+
+    parts = dotted_key.split(".")
+    current: dict[str, Any] = target
+
+    for segment in parts[:-1]:
+        existing = current.get(segment)
+        if isinstance(existing, dict):
+            current = existing
+        else:
+            nested: dict[str, Any] = {}
+            current[segment] = nested
+            current = nested
+
+    last = parts[-1]
+    existing = current.get(last)
+    if isinstance(existing, dict) and isinstance(value, Mapping):
+        merged = existing.copy()
+        merged.update(value)
+        current[last] = merged
+    else:
+        current[last] = value
+
+
+def _prepare_values(values: Mapping[str, Any]) -> dict[str, Any]:
+    """Expand dotted keys into nested mappings before writing to disk."""
+
+    prepared: dict[str, Any] = {}
+    for key, value in values.items():
+        if "." in key:
+            _merge_nested(prepared, key, value)
+        elif (
+            key in prepared
+            and isinstance(prepared[key], dict)
+            and isinstance(value, Mapping)
+        ):
+            merged = prepared[key].copy()
+            merged.update(value)
+            prepared[key] = merged
+        else:
+            prepared[key] = value
+    return prepared
+
+
 def render_chart(
     helm_runner: "HelmRunner",
     chart: ChartContext,
@@ -58,10 +103,11 @@ def render_chart(
         files = list(values_files or (chart.default_values_file,))
 
         if values:
+            prepared_values = _prepare_values(dict(values))
             with tempfile.NamedTemporaryFile(
                 "w", suffix=".yaml", delete=False
             ) as handle:
-                yaml.safe_dump(dict(values), handle)
+                yaml.safe_dump(prepared_values, handle)
                 temp_values_file = Path(handle.name)
             files.append(temp_values_file)
 
