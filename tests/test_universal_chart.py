@@ -106,3 +106,68 @@ def test_resources_include_limits_and_requests(helm_runner) -> None:
         "requests": {"cpu": "250m", "memory": "512Mi"},
         "limits": {"memory": "1024Mi"},
     }
+
+
+def test_extra_env_vars_accept_string_values(helm_runner) -> None:
+    """Ensure extraEnvVars renders simple string values."""
+
+    rendered = render_chart(
+        helm_runner,
+        CHART,
+        values={"extraEnvVars": {"SOME_VALUE": "hello world"}},
+    )
+    manifests = load_manifests(rendered)
+    container = get_primary_container(manifests)
+    env = {entry["name"]: entry for entry in container["env"]}
+
+    assert env["SOME_VALUE"] == {"name": "SOME_VALUE", "value": "hello world"}
+
+
+def test_extra_env_vars_accept_field_ref_objects(helm_runner) -> None:
+    """Ensure extraEnvVars renders valueFrom fieldRef entries."""
+
+    rendered = render_chart(
+        helm_runner,
+        CHART,
+        values={
+            "extraEnvVars": {
+                "POD_NAME": {
+                    "valueFrom": {"fieldRef": {"fieldPath": "metadata.name"}},
+                }
+            }
+        },
+    )
+    manifests = load_manifests(rendered)
+    container = get_primary_container(manifests)
+    env = {entry["name"]: entry for entry in container["env"]}
+
+    assert env["POD_NAME"] == {
+        "name": "POD_NAME",
+        "valueFrom": {"fieldRef": {"fieldPath": "metadata.name"}},
+    }
+
+
+def test_extra_env_vars_accept_secret_key_refs(helm_runner) -> None:
+    """Ensure extraEnvVars renders valueFrom secretKeyRef entries."""
+
+    rendered = render_chart(
+        helm_runner,
+        CHART,
+        values={
+            "extraEnvVars": {
+                "SECRET_THING": {
+                    "valueFrom": {
+                        "secretKeyRef": {"name": "my-secret", "key": "password"}
+                    }
+                }
+            }
+        },
+    )
+    manifests = load_manifests(rendered)
+    container = get_primary_container(manifests)
+    env = {entry["name"]: entry for entry in container["env"]}
+
+    assert env["SECRET_THING"] == {
+        "name": "SECRET_THING",
+        "valueFrom": {"secretKeyRef": {"name": "my-secret", "key": "password"}},
+    }

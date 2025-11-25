@@ -48,7 +48,7 @@ def render_chart(
     chart: ChartContext,
     *,
     values_files: Iterable[Path] | None = None,
-    values: Mapping[str, str] | None = None,
+    values: Mapping[str, Any] | None = None,
 ) -> str:
     """Render the requested chart and return the YAML output."""
 
