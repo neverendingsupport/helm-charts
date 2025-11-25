@@ -1,6 +1,7 @@
 """Shared helpers for chart-based pytest suites."""
 from __future__ import annotations
 
+import tempfile
 from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Iterable, Mapping
@@ -52,14 +53,27 @@ def render_chart(
 ) -> str:
     """Render the requested chart and return the YAML output."""
 
-    files = list(values_files or (chart.default_values_file,))
-    str_files = [str(path) for path in files]
-    return helm_runner.template(
-        name=chart.release,
-        chart=str(chart.chart_dir),
-        values_files=str_files,
-        values=values,
-    )
+    temp_values_file: Path | None = None
+    try:
+        files = list(values_files or (chart.default_values_file,))
+
+        if values:
+            with tempfile.NamedTemporaryFile(
+                "w", suffix=".yaml", delete=False
+            ) as handle:
+                yaml.safe_dump(dict(values), handle)
+                temp_values_file = Path(handle.name)
+            files.append(temp_values_file)
+
+        str_files = [str(path) for path in files]
+        return helm_runner.template(
+            name=chart.release,
+            chart=str(chart.chart_dir),
+            values_files=str_files,
+        )
+    finally:
+        if temp_values_file:
+            temp_values_file.unlink(missing_ok=True)
 
 
 def assert_matches_golden(rendered: str, golden_file: Path) -> None:
