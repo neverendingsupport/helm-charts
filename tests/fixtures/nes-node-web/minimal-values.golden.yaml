@@ -8,7 +8,6 @@ metadata:
 spec:
   selector:
     app: nes-node-web
-
   ports:
     - protocol: TCP
       port: 80

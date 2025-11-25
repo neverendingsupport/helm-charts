@@ -6,7 +6,9 @@ metadata:
 spec:
   selector:
     app: {{ include "nes-node-web.fullname" . }}
-    {{- include "nes-node-web.selectorLabels" . | nindent 4 }}
+    {{- with (include "nes-node-web.selectorLabels" .) }}
+      {{- . | nindent 4 }}
+    {{- end }}
   ports:
     - protocol: TCP
       port: 80
