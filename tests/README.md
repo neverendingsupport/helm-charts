@@ -2,6 +2,22 @@
 
 This directory contains the pytest suite and fixtures for Helm chart testing.
 
+## Setting up the environment
+
+Development dependencies are declared in `pyproject.toml` under the `dev`
+extra. The quickest way to get a working environment (including `pytest`,
+`pytest-helm-charts`, `flake8`, `PyYAML`, and `pre-commit`) is:
+
+```bash
+python -m venv .venv
+. .venv/bin/activate
+python -m pip install --upgrade pip
+python -m pip install -e .[dev]
+```
+
+Alternatively, `make venv` will create the same virtual environment using the
+repository's default Python.
+
 ## Adding a golden file test
 
 1. Pick the chart fixture directory under `tests/fixtures/` (for example,

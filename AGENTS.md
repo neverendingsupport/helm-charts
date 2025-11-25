@@ -116,3 +116,5 @@ Fix the underlying issue rather than disabling hooks.
 - Keep fixture value files and golden files in sync.
 - Never replace `linter_values.yaml` symlinks with actual files.
 - Maintain minimal values in `minimal-values.yaml`.
+- Declare development dependencies in `pyproject.toml` under the `dev` optional
+  dependency set and update related docs when the tooling changes.

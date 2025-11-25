@@ -5,10 +5,10 @@ VENV ?= .venv
 PYTEST_ARGS ?=
 GOLDEN_SCRIPT ?= scripts/regenerate_golden_files.py
 
-$(VENV)/bin/python: requirements-dev.txt
+$(VENV)/bin/python: pyproject.toml
 	$(PYTHON) -m venv $(VENV)
 	$(VENV)/bin/python -m pip install --upgrade pip
-	$(VENV)/bin/python -m pip install -r requirements-dev.txt
+	$(VENV)/bin/python -m pip install -e .[dev]
 
 ## venv: Create the local virtual environment with all dev dependencies.
 venv: $(VENV)/bin/python
