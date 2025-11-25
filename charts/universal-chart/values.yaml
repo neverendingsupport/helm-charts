@@ -86,29 +86,56 @@ awsEnvSecrets:
 # @schema
 # type: object
 # required: false
-# patternProperties:
-#   ".*":
-#     anyof:
-#       type: string
-#       type: integer  # TODO: remove this
-#       type: object
+# additionalProperties:
+#   anyof:
+#     - type: string
+#     - type: object
+#       properties:
+#         valueFrom:
+#           type: object
+#           anyof:
+#             - properties:
+#                 fieldRef:
+#                   type: object
+#                   properties:
+#                     fieldPath:
+#                       type: string
+#                   required:
+#                     - fieldPath
+#               required:
+#                 - fieldRef
+#             - properties:
+#                 secretKeyRef:
+#                   type: object
+#                   properties:
+#                     name:
+#                       type: string
+#                     key:
+#                       type: string
+#                   required:
+#                     - name
+#                     - key
+#               required:
+#                 - secretKeyRef
+#           required: true
+#       required:
+#         - valueFrom
+# examples:
+#   - |-
+#     PORT: "3000"
+#     DEBUG: "true"
+#     POD_IP:
+#       valueFrom:
+#         fieldRef:
+#           fieldPath: status.podIP
+#     AWS_ACCESS_KEY_ID:
+#       valueFrom:
+#         secretKeyRef:
+#           name: my-secret
+#           key: aws-access-key
 # @schema
 # -- additional environment variables and their values.
 # Supports both simple string values and complex objects with valueFrom.
-# Examples:
-#   # Simple string values
-#   PORT: "3000"
-#   DEBUG: "true"
-#   # Complex values with valueFrom
-#   POD_IP:
-#     valueFrom:
-#       fieldRef:
-#         fieldPath: status.podIP
-#   AWS_ACCESS_KEY_ID:
-#     valueFrom:
-#       secretKeyRef:
-#         name: my-secret
-#         key: aws-access-key
 extraEnvVars: {}
 
 # @schema
