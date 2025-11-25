@@ -64,7 +64,7 @@ spec:
               {{- end }}
               {{- end }}
             {{- end }}
-          {{- if or .Values.awsEnvSecrets.externalSecret.secretPath .Values.extraEnvSecrets }}
+          {{- if or .Values.awsEnvSecrets.externalSecret.secretPath .Values.extraEnvSecrets .Values.extraEnvConfigmaps }}
           envFrom:
             {{- if .Values.awsEnvSecrets.externalSecret.secretPath }}
             - secretRef:
@@ -117,10 +117,10 @@ spec:
       {{- with .Values.initContainers }}
       {{- if get (first .) "image" }}
       initContainers:
-        {{- range . }}
-        - name: init-{{ $.Chart.Name }}
-          image: {{ .image }}
-          {{- with .command }}
+        {{- range $i, $init := . }}
+        - name: init-{{ $.Chart.Name }}-{{ $i }}
+          image: {{ $init.image }}
+          {{- with $init.command }}
           command:
             {{- range . }}
             - {{ . }}
@@ -131,16 +131,26 @@ spec:
             {{- toYaml . | nindent 12 }}
           {{- end }}
           env: *containerenv
-          {{- if $.Values.awsEnvSecrets.externalSecret.secretPath }}
+          {{- if or $.Values.awsEnvSecrets.externalSecret.secretPath $.Values.extraEnvSecrets $.Values.extraEnvConfigmaps }}
           envFrom:
+            {{- if $.Values.awsEnvSecrets.externalSecret.secretPath }}
             - secretRef:
                 name: {{ $.Values.awsEnvSecrets.env_secret_name }}
+            {{- end }}
+            {{- range $.Values.extraEnvSecrets }}
+            - secretRef:
+                name: {{ . }}
+            {{- end }}
+            {{- range $.Values.extraEnvConfigmaps }}
+            - configMapRef:
+                name: {{ . }}
+            {{- end }}
           {{- end }}
           {{- with $.Values.securityContext }}
           securityContext:
             {{- toYaml . | nindent 12 }}
           {{- end }}
-          {{- with .extraContainerProps }}
+          {{- with $init.extraContainerProps }}
           {{- toYaml . | nindent 10 }}
           {{- end }}
         {{- end }}
