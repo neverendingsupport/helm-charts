@@ -6,9 +6,6 @@ on:
 permissions:
   contents: read
 
-env:
-  asdf_cache_prefix: ${{ runner.os }}-${{ runner.arch }}-asdf-tools-
-
 jobs:
   pytest:
     runs-on: ubuntu-latest
@@ -22,6 +19,8 @@ jobs:
       - name: Restore ASDF tools from cache
         id: asdf-tools-cache
         uses: actions/cache@6f8efc29b200d32929f49075959781ed54ec270c # ratchet:actions/cache@v3
+        env:
+          asdf_cache_prefix: ${{ runner.os }}-${{ runner.arch }}-asdf-tools-
         with:
           key: ${{ env.asdf_cache_prefix }}${{ hashFiles('.tool-versions') }}
           restore-keys: ${{ env.asdf_cache_prefix }}
@@ -61,6 +60,8 @@ jobs:
       - name: Restore ASDF tools from cache
         id: asdf-tools-cache
         uses: actions/cache@6f8efc29b200d32929f49075959781ed54ec270c # ratchet:actions/cache@v3
+        env:
+          asdf_cache_prefix: ${{ runner.os }}-${{ runner.arch }}-asdf-tools-
         with:
           key: ${{ env.asdf_cache_prefix }}${{ hashFiles('.tool-versions') }}
           restore-keys: ${{ env.asdf_cache_prefix }}

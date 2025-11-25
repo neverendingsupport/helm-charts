@@ -4,6 +4,21 @@ ci:
 
 repos:
   ########################################
+  # github
+  ########################################
+  - repo: https://github.com/rhysd/actionlint
+    rev: v1.7.8
+    hooks:
+      - id: actionlint
+# - repo: local
+#   hooks:
+#     - id: workflow-spacing
+#       name: Enforce blank lines in GitHub workflows
+#       entry: python .github/scripts/check_workflow_spacing.py
+#       language: system
+#       files: ^\.github/workflows/.*\.ya?ml$
+
+  ########################################
   # helm
   ########################################
   # helm lint
@@ -60,3 +75,19 @@ repos:
       - id: mypy
         additional_dependencies:
           - types-PyYAML==6.0.12.20250915
+
+# ########################################
+# # misc
+# ########################################
+# - repo: https://github.com/pre-commit/pre-commit-hooks
+#   rev: v6.0.0
+#   hooks:
+#     - id: check-yaml
+#       exclude: ^charts/.*/templates/
+#     - id: end-of-file-fixer
+#     - id: trailing-whitespace
+# - repo: https://github.com/google/yamlfmt
+#   rev: v0.20.0
+#   hooks:
+#     - id: yamlfmt
+#       exclude: ^charts/.*/templates/
