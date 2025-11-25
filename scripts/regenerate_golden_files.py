@@ -62,8 +62,14 @@ def regenerate_all() -> None:
             joined = " ".join(command)
             error = result.stderr.strip() or "unknown error"
             raise RuntimeError(f"{joined} failed: {error}")
-        golden_file.write_text(result.stdout)
         rel_path = golden_file.relative_to(REPO_ROOT)
+        if golden_file.exists():
+            existing_contents = golden_file.read_text()
+            if existing_contents == result.stdout:
+                print(f"Skipped {rel_path}: unchanged")
+                continue
+
+        golden_file.write_text(result.stdout)
         print(f"Updated {rel_path}")
 
 
