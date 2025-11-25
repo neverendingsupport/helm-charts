@@ -76,16 +76,20 @@ repos:
         additional_dependencies:
           - types-PyYAML==6.0.12.20250915
 
-# ########################################
-# # misc
-# ########################################
-# - repo: https://github.com/pre-commit/pre-commit-hooks
-#   rev: v6.0.0
-#   hooks:
-#     - id: check-yaml
-#       exclude: ^charts/.*/templates/
-#     - id: end-of-file-fixer
-#     - id: trailing-whitespace
+  ########################################
+  # misc
+  ########################################
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: check-yaml
+        exclude: |-
+          (?x)  # enable ignoring whitespace / multiline
+          (^charts/.*/templates/)
+          |
+          (^tests/fixtures/.*/.*\.golden\.yaml$)
+      - id: end-of-file-fixer
+      - id: trailing-whitespace
 # - repo: https://github.com/google/yamlfmt
 #   rev: v0.20.0
 #   hooks:
