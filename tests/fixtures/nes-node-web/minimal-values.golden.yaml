@@ -8,7 +8,7 @@ metadata:
 spec:
   selector:
     app: nes-node-web
-    
+
   ports:
     - protocol: TCP
       port: 80
@@ -40,7 +40,7 @@ spec:
       containers:
         - name: nes-node-web
           image: ":1.2.3"
-          imagePullPolicy: Always  
+          imagePullPolicy: Always
           resources:
             limits:
               memory: 350Mi
@@ -54,7 +54,7 @@ spec:
               port: 3000
               scheme: HTTP
             failureThreshold: 10
-            initialDelaySeconds: 7 
+            initialDelaySeconds: 7
             periodSeconds: 5
             successThreshold: 1
             timeoutSeconds: 1
@@ -64,7 +64,7 @@ spec:
               port: 3000
               scheme: HTTP
             failureThreshold: 10
-            initialDelaySeconds: 7 
+            initialDelaySeconds: 7
             periodSeconds: 5
             successThreshold: 1
             timeoutSeconds: 1
@@ -75,7 +75,7 @@ spec:
           - name: POD_NAME
             valueFrom:
               fieldRef:
-                fieldPath: metadata.name 
+                fieldPath: metadata.name
 
       volumes:
 ---
@@ -96,7 +96,7 @@ spec:
   # ingressClassName: nginx
   tls:
   - secretName: nes-node-web-tls
-    hosts:  
+    hosts:
       - "."
   rules:
   - host: "."
@@ -107,7 +107,7 @@ spec:
         backend:
           service:
             name: nes-node-web
-            port: 
+            port:
               number: 3000
 ---
 # Source: nes-node-web/templates/secrets.yaml
