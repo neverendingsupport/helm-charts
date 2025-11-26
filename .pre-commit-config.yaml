@@ -90,6 +90,8 @@ repos:
           (^tests/fixtures/.*/.*\.golden\.yaml$)
       - id: end-of-file-fixer
       - id: trailing-whitespace
+# This test does some really annoying reformatting by default
+# Don't enable until there's a config added which doesn't suck
 # - repo: https://github.com/google/yamlfmt
 #   rev: v0.20.0
 #   hooks:
