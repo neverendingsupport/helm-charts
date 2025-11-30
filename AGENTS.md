@@ -129,3 +129,5 @@ Fix the underlying issue rather than disabling hooks.
   present and may perform network calls to chart repositories; investigate and
   report any environment-related failures encountered while installing Helm or
   running the suite (for example, proxy blocks when fetching Helm binaries).
+- Before running tests, install the Python dev dependencies defined in
+  `pyproject.toml` (for example: `python -m pip install -e ".[dev]"`).
