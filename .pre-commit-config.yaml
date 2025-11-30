@@ -41,6 +41,22 @@ repos:
         pass_filenames: false
         entry: scripts/check_linter_symlinks.py
 
+  - repo: https://github.com/norwoodj/helm-docs
+    rev:  "v1.14.2"
+    hooks:
+      - id: helm-docs-built
+        args:
+          # Make the tool search for charts only under the `charts` directory
+          - --chart-search-root=charts
+          # use a template relative to the charts dir above
+          - --template-files=./README.md.gotmpl
+          # use a template in the chart dir (last one wins, so this overrides)
+          - --template-files=README.md.gotmpl
+          # skip the version footer which doesn't have a newline
+          #- --skip-version-footer
+          # enable this to fail when values aren't documented
+          # - -x
+
   ########################################
   # python
   ########################################
