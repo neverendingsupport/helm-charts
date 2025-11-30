@@ -6,7 +6,7 @@ import logging
 import shutil
 import subprocess
 from pathlib import Path
-from typing import Dict, Set
+from typing import Dict, Iterable, Set
 from urllib.parse import urlparse
 
 import pytest
@@ -37,6 +37,54 @@ def pytest_addoption(parser: pytest.Parser) -> None:
             "(no repo add/update or dependency build)."
         ),
     )
+
+
+def _iter_charts_with_manifests() -> Iterable[Path]:
+    """Yield chart directories that contain a Chart.yaml file."""
+
+    repo_root = Path(__file__).resolve().parents[1]
+    charts_root = repo_root / "charts"
+    if not charts_root.is_dir():
+        return []
+
+    return (
+        chart_dir
+        for chart_dir in charts_root.iterdir()
+        if (chart_dir / "Chart.yaml").is_file()
+    )
+
+
+def _prefetch_dependencies(config: pytest.Config) -> None:
+    """Build chart dependencies once before xdist workers launch."""
+
+    if getattr(config, "workerinput", None) is not None:
+        # Worker processes fetch dependencies lazily via helm_runner.
+        return
+
+    if config.getoption("--skip-helm-network"):
+        logger.info(
+            "Skipping Helm dependency prefetch due to --skip-helm-network option."
+        )
+        return
+
+    if HELM_BINARY is None:
+        logger.info("Helm not found; skipping dependency prefetch.")
+        return
+
+    runner = DependencyBuildingHelmRunner(
+        helm_binary_path=HELM_BINARY,
+        network_allowed=True,
+    )
+
+    for chart_dir in _iter_charts_with_manifests():
+        logger.info("Pre-fetching Helm dependencies for %s", chart_dir)
+        runner._ensure_dependencies_built(str(chart_dir))
+
+
+def pytest_configure(config: pytest.Config) -> None:
+    """Run repo/dependency setup before tests dispatch to workers."""
+
+    _prefetch_dependencies(config)
 
 
 class DependencyBuildingHelmRunner(HelmRunner):
