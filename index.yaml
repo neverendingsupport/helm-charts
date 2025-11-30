@@ -2,6 +2,15 @@ apiVersion: v1
 entries:
   nes-node-web:
   - apiVersion: v2
+    created: "2025-11-30T18:40:01.553400933Z"
+    description: A Helm chart for NES Node apps on Kubernetes
+    digest: a20dc863f7f6ca83d87e8de3a47fb6c9aaf00f160c3cc8d4141f63ef80e0ff76
+    name: nes-node-web
+    type: application
+    urls:
+    - https://github.com/neverendingsupport/helm-charts/releases/download/nes-node-web-0.2.10/nes-node-web-0.2.10.tgz
+    version: 0.2.10
+  - apiVersion: v2
     created: "2025-04-25T18:12:30.640694181Z"
     description: A Helm chart for NES Node apps on Kubernetes
     digest: 3e7af23073acc05524c5b7cc46ffc16d39f6e8887f7ad4e67922a125d15ad1d9
@@ -199,4 +208,19 @@ entries:
     urls:
     - https://github.com/neverendingsupport/helm-charts/releases/download/nes-node-web-0.1.1/nes-node-web-0.1.1.tgz
     version: 0.1.1
-generated: "2025-04-25T18:12:30.640883224Z"
+  universal-chart:
+  - apiVersion: v2
+    created: "2025-11-30T18:40:01.807117928Z"
+    dependencies:
+    - condition: redis.enabled,global.redis.enabled
+      name: redis
+      repository: https://charts.bitnami.com/bitnami
+      version: 21.2.13
+    description: NES Universal Helm Chart
+    digest: e69e160d5d7ed1c2d7c6c955ab646a4e4f352891b0b9df57ecf0d3a7736084b9
+    name: universal-chart
+    type: application
+    urls:
+    - https://github.com/neverendingsupport/helm-charts/releases/download/universal-chart-1.0.0/universal-chart-1.0.0.tgz
+    version: 1.0.0
+generated: "2025-11-30T18:40:01.807550748Z"
