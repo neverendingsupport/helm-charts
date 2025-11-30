@@ -83,6 +83,8 @@ repos:
     rev: v6.0.0
     hooks:
       - id: check-yaml
+        args:
+          - "--allow-multiple-documents"
         exclude: |-
           (?x)  # enable ignoring whitespace / multiline
           (^charts/.*/templates/)
@@ -90,6 +92,13 @@ repos:
           (^tests/fixtures/.*/.*\.golden\.yaml$)
       - id: end-of-file-fixer
       - id: trailing-whitespace
+      - id: check-added-large-files
+      - id: check-merge-conflict
+      - id: check-symlinks
+      - id: destroyed-symlinks
+      - id: mixed-line-ending
+        args:
+          - "--fix=lf"
 # This test does some really annoying reformatting by default
 # Don't enable until there's a config added which doesn't suck
 # - repo: https://github.com/google/yamlfmt
