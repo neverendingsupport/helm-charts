@@ -129,3 +129,18 @@ Fix the underlying issue rather than disabling hooks.
   present and may perform network calls to chart repositories; investigate and
   report any environment-related failures encountered while installing Helm or
   running the suite (for example, proxy blocks when fetching Helm binaries).
+- Before running tests, install the Python dev dependencies defined in
+  `pyproject.toml` (for example: `python -m pip install -e ".[dev]"`). The
+  `ssl` module is part of the Python standard library rather than a pip
+  dependency; if `pip` reports that `ssl` is unavailable, install your
+  platform's OpenSSL development libraries (e.g., `apt-get install -y
+  libssl-dev` on Debian/Ubuntu) **before** installing or rebuilding Python.
+  If you are using the system Python, reinstall it from your OS packages
+  (e.g., `apt-get install --reinstall -y python3 python3-venv
+  python3-openssl`) so that the shipped interpreter has SSL support compiled
+  in, then retry the dependency install.
+- The pre-commit command needs sqlite3. Like libssl, ensure that libsqlite3-dev
+  (e.g. apt install libsqlite3-dev) is installed on the host machine before
+  installing python3 via asdf.
+- Keep feature branches rebased on the current `main` branch before adding new
+  commits.
