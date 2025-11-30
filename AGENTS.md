@@ -114,7 +114,18 @@ Fix the underlying issue rather than disabling hooks.
 
 - Always regenerate golden files when templates or values change.
 - Keep fixture value files and golden files in sync.
+- Ensure golden values output files reflect the current chart version; if chart
+  versions are bumped without updating the corresponding goldens, the golden
+  file tests will fail.
 - Never replace `linter_values.yaml` symlinks with actual files.
 - Maintain minimal values in `minimal-values.yaml`.
 - Declare development dependencies in `pyproject.toml` under the `dev` optional
   dependency set and update related docs when the tooling changes.
+- If a chart's contents change, increment its version in the chart's `Chart.yaml`.
+- PR reviews should flag any chart content change that does not bump the chart version.
+- Install Helm so it is available on PATH and run the full test suite (e.g.
+  `make test`) after making changes. Use the version pinned in `.tool-versions`
+  (currently `helm 3.19.2`) so results are consistent. Tests rely on Helm being
+  present and may perform network calls to chart repositories; investigate and
+  report any environment-related failures encountered while installing Helm or
+  running the suite (for example, proxy blocks when fetching Helm binaries).
