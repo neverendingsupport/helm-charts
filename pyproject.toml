@@ -68,4 +68,5 @@ log_cli_format = "%(asctime)s [%(levelname)s] %(name)s: %(message)s"
 log_cli_date_format = "%Y-%m-%d %H:%M:%S"
 log_format = "%(asctime)s [%(levelname)s] %(name)s: %(message)s"
 log_date_format = "%Y-%m-%d %H:%M:%S"
-addopts = "-n auto"
+# Parallel xdist runs are opt-in because Helm repo setup is not worker-safe by default;
+# use `pytest -n auto` locally when network-dependent tests are disabled.
