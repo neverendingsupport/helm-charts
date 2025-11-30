@@ -123,3 +123,7 @@ Fix the underlying issue rather than disabling hooks.
   dependency set and update related docs when the tooling changes.
 - If a chart's contents change, increment its version in the chart's `Chart.yaml`.
 - PR reviews should flag any chart content change that does not bump the chart version.
+- Install Helm (v3) so it is available on PATH and run the full test suite (e.g.
+  `make test`) after making changes. Tests rely on Helm being present and may
+  perform network calls to chart repositories; investigate and report any
+  environment-related failures encountered while running them.
