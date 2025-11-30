@@ -7,7 +7,7 @@ repos:
   # github
   ########################################
   - repo: https://github.com/rhysd/actionlint
-    rev: v1.7.8
+    rev: v1.7.9
     hooks:
       - id: actionlint
 # - repo: local
@@ -46,14 +46,14 @@ repos:
   ########################################
   # Format imports first
   - repo: https://github.com/pycqa/isort
-    rev: 5.13.2
+    rev: 7.0.0
     hooks:
       - id: isort
         args: ["--profile", "black", "--line-length", "80"]
 
   # Then format code
   - repo: https://github.com/psf/black
-    rev: 23.7.0
+    rev: 25.11.0
     hooks:
       - id: black
         language_version: python3
@@ -63,6 +63,7 @@ repos:
     rev: 7.3.0
     hooks:
       - id: flake8
+        language: python
         additional_dependencies:
           - flake8-pyproject==1.2.3
           - flake8-docstrings==1.7.0
@@ -70,9 +71,10 @@ repos:
 
   # Type-check
   - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.10.0
+    rev: v1.19.0
     hooks:
       - id: mypy
+        language: python
         additional_dependencies:
           - types-PyYAML==6.0.12.20250915
 

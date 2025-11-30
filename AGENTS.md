@@ -110,6 +110,12 @@ Agents should expect failures like:
 
 Fix the underlying issue rather than disabling hooks.
 
+When updating or adding pre-commit hooks with additional dependencies, the
+language needs to be explicitly specified.  For example, when adding additional
+dependencies to the python "black" hook, add "language: python".  This is to
+enable renovate to automatically update those versions, as described in the
+docs at https://docs.renovatebot.com/modules/manager/pre-commit/#additional-dependencies
+
 ## 6. General Guidelines for Automated Agents
 
 - Always regenerate golden files when templates or values change.
