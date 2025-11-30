@@ -110,6 +110,12 @@ Agents should expect failures like:
 
 Fix the underlying issue rather than disabling hooks.
 
+When updating or adding pre-commit hooks with additional dependencies, the
+language needs to be explicitly specified.  For example, when adding additional
+dependencies to the python "black" hook, add "language: python".  This is to
+enable renovate to automatically update those versions, as described in the
+docs at https://docs.renovatebot.com/modules/manager/pre-commit/#additional-dependencies
+
 ## 6. General Guidelines for Automated Agents
 
 - Always regenerate golden files when templates or values change.
@@ -144,3 +150,15 @@ Fix the underlying issue rather than disabling hooks.
   installing python3 via asdf.
 - Keep feature branches rebased on the current `main` branch before adding new
   commits.
+- When configuring `helm-docs` with a `--chart-search-root`, template path
+  resolution depends on how the template argument is written:
+  - Paths with a relative directory component (for example,
+    `./README.md.gotmpl` or `./docs/README.md.gotmpl`) are resolved relative to
+    the search directory.
+  - Bare filenames (for example, `README.md.gotmpl` or `docs/README.md.gotmpl`)
+    are always resolved relative to each chart directory discovered under the
+    search directory, even if a search directory is not defined.
+  Keep any chart-specific `README.md.gotmpl` files alongside the charts in the
+  search directory and make new definitions which are of global scope in the
+  chart search directory (or repository root, if the search directory is
+  undefined).

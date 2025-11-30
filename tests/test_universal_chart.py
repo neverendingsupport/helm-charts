@@ -1,4 +1,5 @@
 """Unit tests for the universal chart."""
+
 from __future__ import annotations
 
 from .chart_test_utils import (

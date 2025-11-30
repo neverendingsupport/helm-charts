@@ -1,4 +1,5 @@
 """Shared helpers for chart-based pytest suites."""
+
 from __future__ import annotations
 
 import tempfile
