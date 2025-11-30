@@ -118,3 +118,5 @@ Fix the underlying issue rather than disabling hooks.
 - Maintain minimal values in `minimal-values.yaml`.
 - Declare development dependencies in `pyproject.toml` under the `dev` optional
   dependency set and update related docs when the tooling changes.
+- If a chart's contents change, increment its version in the chart's `Chart.yaml`.
+- PR reviews should flag any chart content change that does not bump the chart version.
