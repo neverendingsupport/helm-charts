@@ -39,7 +39,7 @@ jobs:
       - name: set python up with caching
         uses: actions/setup-python@v6
         with:
-          # no python-version means use the one in $PATH
+          python-version-file: '.tool-versions'
           cache: 'pip'
 
       - name: Install dependencies
