@@ -131,3 +131,5 @@ Fix the underlying issue rather than disabling hooks.
   running the suite (for example, proxy blocks when fetching Helm binaries).
 - Before running tests, install the Python dev dependencies defined in
   `pyproject.toml` (for example: `python -m pip install -e ".[dev]"`).
+- Keep feature branches rebased on the current `main` branch before adding new
+  commits.
