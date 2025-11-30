@@ -1,0 +1,99 @@
+ci:
+  skip:
+    - helmlint  # no helm in precommit.ci
+
+repos:
+  ########################################
+  # github
+  ########################################
+  - repo: https://github.com/rhysd/actionlint
+    rev: v1.7.8
+    hooks:
+      - id: actionlint
+# - repo: local
+#   hooks:
+#     - id: workflow-spacing
+#       name: Enforce blank lines in GitHub workflows
+#       entry: python .github/scripts/check_workflow_spacing.py
+#       language: system
+#       files: ^\.github/workflows/.*\.ya?ml$
+
+  ########################################
+  # helm
+  ########################################
+  # helm lint
+  - repo: https://github.com/gruntwork-io/pre-commit
+    rev: v0.1.30
+    hooks:
+      - id: helmlint
+
+  - repo: local
+    hooks:
+      - id: check-fixture-goldens
+        name: Check chart fixture golden files
+        language: system
+        pass_filenames: false
+        entry: scripts/check_fixture_goldens.py
+
+      - id: check-linter-symlinks
+        name: Check chart linter_values.yaml symlinks
+        language: system
+        pass_filenames: false
+        entry: scripts/check_linter_symlinks.py
+
+  ########################################
+  # python
+  ########################################
+  # Format imports first
+  - repo: https://github.com/pycqa/isort
+    rev: 5.13.2
+    hooks:
+      - id: isort
+        args: ["--profile", "black", "--line-length", "80"]
+
+  # Then format code
+  - repo: https://github.com/psf/black
+    rev: 23.7.0
+    hooks:
+      - id: black
+        language_version: python3
+
+  # Lint
+  - repo: https://github.com/pycqa/flake8
+    rev: 7.3.0
+    hooks:
+      - id: flake8
+        additional_dependencies:
+          - flake8-pyproject==1.2.3
+          - flake8-docstrings==1.7.0
+          - flake8-bugbear==25.10.21
+
+  # Type-check
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.10.0
+    hooks:
+      - id: mypy
+        additional_dependencies:
+          - types-PyYAML==6.0.12.20250915
+
+  ########################################
+  # misc
+  ########################################
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: check-yaml
+        exclude: |-
+          (?x)  # enable ignoring whitespace / multiline
+          (^charts/.*/templates/)
+          |
+          (^tests/fixtures/.*/.*\.golden\.yaml$)
+      - id: end-of-file-fixer
+      - id: trailing-whitespace
+# This test does some really annoying reformatting by default
+# Don't enable until there's a config added which doesn't suck
+# - repo: https://github.com/google/yamlfmt
+#   rev: v0.20.0
+#   hooks:
+#     - id: yamlfmt
+#       exclude: ^charts/.*/templates/

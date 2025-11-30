@@ -1,0 +1,179 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "universal-chart.fullname" . }}
+  labels:
+    {{- include "universal-chart.labels" . | nindent 4 }}
+spec:
+  {{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "universal-chart.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "universal-chart.labels" . | nindent 8 }}
+        {{- with .Values.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "universal-chart.serviceAccountName" . }}
+      {{- with .Values.podSecurityContext }}
+      securityContext:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: {{ .Chart.Name }}
+          env: &containerenv
+            # placeholder var so we can always make an env list
+            - name: REDIS_ENABLED
+              value: {{ .Values.redis.enabled | quote }}
+            {{- if .Values.redis.enabled }}
+            - name: REDIS_USERNAME
+              value: default # oddly hard-coded in chart
+            - name: REDIS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ template "redis.secretName" .Subcharts.redis }}
+                  key: {{ template "redis.secretPasswordKey" .Subcharts.redis }}
+            - name: REDIS_PORT
+              #value: {{ .Values.redis.master.service.ports.redis }}
+              value: {{ .Values.redis.master.containerPorts.redis | quote }}
+            - name: REDIS_HOST
+              value: {{ printf "%s-master" (include "common.names.fullname" .Subcharts.redis) }}
+            - name: REDIS_TLS
+              value: {{ .Values.redis.tls.enabled | quote }}
+            {{- end }}
+            {{- with .Values.extraEnvVars }}
+              {{- range $k, $v := . }}
+            - name: {{ $k }}
+              {{- if kindIs "map" $v }}
+              {{- toYaml $v | nindent 14 }}
+              {{- else }}
+              value: {{ $v | quote }}
+              {{- end }}
+              {{- end }}
+            {{- end }}
+          {{- if or .Values.awsEnvSecrets.externalSecret.secretPath .Values.extraEnvSecrets .Values.extraEnvConfigmaps }}
+          envFrom:
+            {{- if .Values.awsEnvSecrets.externalSecret.secretPath }}
+            - secretRef:
+                name: {{ .Values.awsEnvSecrets.env_secret_name }}
+            {{- end }}
+            {{- range .Values.extraEnvSecrets }}
+            - secretRef:
+                name: {{ . }}
+            {{- end }}
+            {{- range .Values.extraEnvConfigmaps }}
+            - configMapRef:
+                name: {{ . }}
+            {{- end }}
+          {{- end }}
+          {{- with .Values.securityContext }}
+          securityContext:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.service.port }}
+              protocol: TCP
+            {{- range .Values.extraContainerPorts }}
+            - name: {{ .name }}
+              containerPort: {{ .containerPort }}
+              protocol: {{ .protocol | default "TCP" }}
+            {{- end }}
+          {{- with .Values.livenessProbe }}
+          livenessProbe:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.readinessProbe }}
+          readinessProbe:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.volumeMounts }}
+          volumeMounts:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.extraContainerProps }}
+          {{- toYaml . | nindent 10 }}
+          {{- end }}
+
+      {{- with .Values.initContainers }}
+      {{- if get (first .) "image" }}
+      initContainers:
+        {{- range $i, $init := . }}
+        - name: init-{{ $.Chart.Name }}-{{ $i }}
+          image: {{ $init.image }}
+          {{- with $init.command }}
+          command:
+            {{- range . }}
+            - {{ . }}
+            {{- end }}
+          {{- end }}
+          {{- with $.Values.volumeMounts }}
+          volumeMounts:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          env: *containerenv
+          {{- if or $.Values.awsEnvSecrets.externalSecret.secretPath $.Values.extraEnvSecrets $.Values.extraEnvConfigmaps }}
+          envFrom:
+            {{- if $.Values.awsEnvSecrets.externalSecret.secretPath }}
+            - secretRef:
+                name: {{ $.Values.awsEnvSecrets.env_secret_name }}
+            {{- end }}
+            {{- range $.Values.extraEnvSecrets }}
+            - secretRef:
+                name: {{ . }}
+            {{- end }}
+            {{- range $.Values.extraEnvConfigmaps }}
+            - configMapRef:
+                name: {{ . }}
+            {{- end }}
+          {{- end }}
+          {{- with $.Values.securityContext }}
+          securityContext:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with $init.extraContainerProps }}
+          {{- toYaml . | nindent 10 }}
+          {{- end }}
+        {{- end }}
+      {{- end }}
+      {{- end }}
+
+      {{- with .Values.volumes }}
+      volumes:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.topologySpreadConstraints }}
+      topologySpreadConstraints:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

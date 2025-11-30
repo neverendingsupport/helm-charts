@@ -1,0 +1,81 @@
+name: tests
+
+on:
+  pull_request: {}
+
+permissions:
+  contents: read
+
+jobs:
+  pytest:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # ratchet:actions/checkout@v4
+
+      # install ASDF tools with caching
+      - name: set up ASDF
+        uses: asdf-vm/actions/setup@1902764435ca0dd2f3388eea723a4f92a4eb8302 # v4.0.0
+      - name: Restore ASDF tools from cache
+        id: asdf-tools-cache
+        uses: actions/cache@6f8efc29b200d32929f49075959781ed54ec270c # ratchet:actions/cache@v3
+        env:
+          asdf_cache_prefix: ${{ runner.os }}-${{ runner.arch }}-asdf-tools-
+        with:
+          key: ${{ env.asdf_cache_prefix }}${{ hashFiles('.tool-versions') }}
+          restore-keys: ${{ env.asdf_cache_prefix }}
+          path: |
+            ${{ env.ASDF_DIR }}/plugins
+            ${{ env.ASDF_DIR }}/installs
+            ${{ env.ASDF_DIR }}/shims
+      - name: Install ASDF tools on cache-miss
+        if: ${{ steps.asdf-tools-cache.outputs.cache-hit != 'true' }}
+        uses: asdf-vm/actions/install@1902764435ca0dd2f3388eea723a4f92a4eb8302 # v4.0.0
+      - name: Reshim installed ASDF tools on cache-hit
+        if: ${{ steps.asdf-tools-cache.outputs.cache-hit == 'true' }}
+        shell: bash
+        run: asdf reshim
+
+      - name: set python up with caching
+        uses: actions/setup-python@v6
+        with:
+          python-version-file: '.tool-versions'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: python -m pip install -e .[dev]
+
+      - name: Run tests
+        run: make test
+
+  helm-lint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # ratchet:actions/checkout@v4
+
+      # install ASDF tools with caching
+      - name: set up ASDF
+        uses: asdf-vm/actions/setup@1902764435ca0dd2f3388eea723a4f92a4eb8302 # v4.0.0
+      - name: Restore ASDF tools from cache
+        id: asdf-tools-cache
+        uses: actions/cache@6f8efc29b200d32929f49075959781ed54ec270c # ratchet:actions/cache@v3
+        env:
+          asdf_cache_prefix: ${{ runner.os }}-${{ runner.arch }}-asdf-tools-
+        with:
+          key: ${{ env.asdf_cache_prefix }}${{ hashFiles('.tool-versions') }}
+          restore-keys: ${{ env.asdf_cache_prefix }}
+          path: |
+            ${{ env.ASDF_DIR }}/plugins
+            ${{ env.ASDF_DIR }}/installs
+            ${{ env.ASDF_DIR }}/shims
+      - name: Install ASDF tools on cache-miss
+        if: ${{ steps.asdf-tools-cache.outputs.cache-hit != 'true' }}
+        uses: asdf-vm/actions/install@1902764435ca0dd2f3388eea723a4f92a4eb8302 # v4.0.0
+      - name: Reshim installed ASDF tools on cache-hit
+        if: ${{ steps.asdf-tools-cache.outputs.cache-hit == 'true' }}
+        shell: bash
+        run: asdf reshim
+
+      - name: Helm lint
+        run: pre-commit run helmlint --all-files

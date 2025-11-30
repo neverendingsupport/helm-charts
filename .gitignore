@@ -1,0 +1,96 @@
+# ----------------------------------------
+# Python
+# ----------------------------------------
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+
+# Distribution / packaging
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+*.egg-info/
+.installed.cfg
+*.egg
+sdist/
+pip-wheel-metadata/
+
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+.pytest_cache/
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+
+# Virtual environments
+venv/
+ENV/
+env/
+.venv/
+
+# Local settings
+local_settings.py
+
+# ----------------------------------------
+# Editors / IDEs
+# ----------------------------------------
+
+# VS Code
+.vscode/
+*.code-workspace
+
+# JetBrains (PyCharm, etc.)
+.idea/
+
+# Vim
+# Swap and backup files
+*.swp
+*.swo
+*.tmp
+*.bak
+*~
+# Vim session files
+Session.vim
+# Tag files
+tags
+
+# ----------------------------------------
+# Type checkers
+# ----------------------------------------
+.mypy_cache/
+.pyre/
+.pytype/
+
+# ----------------------------------------
+# OS files
+# ----------------------------------------
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Linux
+.trash/
