@@ -63,7 +63,7 @@ def _prefetch_dependencies(config: pytest.Config) -> None:
 
     if config.getoption("--skip-helm-network"):
         logger.info(
-            "Skipping Helm dependency prefetch due to --skip-helm-network option."
+            "Skipping Helm dep prefetch due to --skip-helm-network option."
         )
         return
 
