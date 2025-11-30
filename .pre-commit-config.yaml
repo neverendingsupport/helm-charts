@@ -49,11 +49,10 @@ repos:
           # Make the tool search for charts only under the `charts` directory
           - --chart-search-root=charts
           # use a template relative to the charts dir above
+          # this one should probably just have definitions
           - --template-files=./README.md.gotmpl
-          # use a template in the chart dir (last one wins, so this overrides)
+          # use a template in the individual chart dir (no path prefix)
           - --template-files=README.md.gotmpl
-          # skip the version footer which doesn't have a newline
-          #- --skip-version-footer
           # enable this to fail when values aren't documented
           # - -x
 
