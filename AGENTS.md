@@ -130,10 +130,14 @@ Fix the underlying issue rather than disabling hooks.
   report any environment-related failures encountered while installing Helm or
   running the suite (for example, proxy blocks when fetching Helm binaries).
 - Before running tests, install the Python dev dependencies defined in
-  `pyproject.toml` (for example: `python -m pip install -e ".[dev]"`). If
-  `pip` reports that the `ssl` module is unavailable, install your platform's
-  OpenSSL development libraries (e.g., `apt-get install -y libssl-dev` on
-  Debian/Ubuntu) and rebuild or reinstall Python so the standard library
-  includes SSL support, then retry the dependency install.
+  `pyproject.toml` (for example: `python -m pip install -e ".[dev]"`). The
+  `ssl` module is part of the Python standard library rather than a pip
+  dependency; if `pip` reports that `ssl` is unavailable, install your
+  platform's OpenSSL development libraries (e.g., `apt-get install -y
+  libssl-dev` on Debian/Ubuntu) **before** installing or rebuilding Python.
+  If you are using the system Python, reinstall it from your OS packages
+  (e.g., `apt-get install --reinstall -y python3 python3-venv
+  python3-openssl`) so that the shipped interpreter has SSL support compiled
+  in, then retry the dependency install.
 - Keep feature branches rebased on the current `main` branch before adding new
   commits.
