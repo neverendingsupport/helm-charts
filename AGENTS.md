@@ -139,5 +139,8 @@ Fix the underlying issue rather than disabling hooks.
   (e.g., `apt-get install --reinstall -y python3 python3-venv
   python3-openssl`) so that the shipped interpreter has SSL support compiled
   in, then retry the dependency install.
+- The pre-commit command needs sqlite3. Like libssl, ensure that libsqlite3-dev
+  (e.g. apt install libsqlite3-dev) is installed on the host machine before
+  installing python3 via asdf.
 - Keep feature branches rebased on the current `main` branch before adding new
   commits.

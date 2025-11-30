@@ -68,6 +68,8 @@ log_cli_format = "%(asctime)s [%(levelname)s] %(name)s: %(message)s"
 log_cli_date_format = "%Y-%m-%d %H:%M:%S"
 log_format = "%(asctime)s [%(levelname)s] %(name)s: %(message)s"
 log_date_format = "%Y-%m-%d %H:%M:%S"
-addopts = "-n auto"
-# Parallel runs are enabled by default; Helm dependencies are built in a
-# master-only pre-step to avoid races when xdist workers start.
+#addopts = "-n auto"
+# Parallel runs technically work; Helm dependencies are built in a master-only
+# pre-step to avoid races when xdist workers start. However, running the tests
+# in parallel usually is slower. If you want to try that out, just uncomment.
+# Auto will match the number of CPUs, or you can specify a fixed number.
