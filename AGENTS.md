@@ -150,3 +150,7 @@ docs at https://docs.renovatebot.com/modules/manager/pre-commit/#additional-depe
   installing python3 via asdf.
 - Keep feature branches rebased on the current `main` branch before adding new
   commits.
+- When configuring `helm-docs` with a `--chart-search-root`, template paths are
+  resolved relative to that search directory, not the repository root. Keep any
+  `README.md.gotmpl` files alongside the charts in the search directory and
+  point pre-commit hooks at those locations (e.g., `charts/README.md.gotmpl`).
