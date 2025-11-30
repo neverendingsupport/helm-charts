@@ -114,6 +114,9 @@ Fix the underlying issue rather than disabling hooks.
 
 - Always regenerate golden files when templates or values change.
 - Keep fixture value files and golden files in sync.
+- Ensure golden values output files reflect the current chart version; if chart
+  versions are bumped without updating the corresponding goldens, the golden
+  file tests will fail.
 - Never replace `linter_values.yaml` symlinks with actual files.
 - Maintain minimal values in `minimal-values.yaml`.
 - Declare development dependencies in `pyproject.toml` under the `dev` optional
