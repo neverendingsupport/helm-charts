@@ -1,4 +1,5 @@
 """Fallback Helm helpers used when pytest-helm-charts is unavailable."""
+
 from __future__ import annotations
 
 import shutil

@@ -1,4 +1,5 @@
 """Shared pytest fixtures for chart testing."""
+
 from __future__ import annotations
 
 import json
