@@ -4,7 +4,7 @@
   "extends": [
     "config:recommended",
     // Enable updates to pre-commit hooks, which are off by default.
-    ":enablePreCommit"
+    // ":enablePreCommit" // not actually needed, since precommit.ci updates
   ],
   // Allow Renovate to merge PRs automatically when policy and checks allow it.
   "automerge": true,
