@@ -1,4 +1,4 @@
 helm-docs 1.14.2
-helm 3.19.2
+helm 4.0.1
 python 3.14.1
 pre-commit 4.5.0
