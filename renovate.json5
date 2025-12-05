@@ -1,0 +1,19 @@
+{
+  // Schema reference retained for validation and editor support.
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:recommended",
+    // Enable updates to pre-commit hooks, which are off by default.
+    // ":enablePreCommit" // not actually needed, since precommit.ci updates
+  ],
+  // Allow Renovate to merge PRs automatically when policy and checks allow it.
+  "automerge": true,
+  "automergeType": "pr",
+  "packageRules": [
+    {
+      // Ensure GitHub Actions are pinned to digest SHAs for supply-chain integrity.
+      "matchManagers": ["github-actions"],
+      "pinDigests": true
+    }
+  ]
+}
