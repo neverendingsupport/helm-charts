@@ -37,7 +37,7 @@ jobs:
         run: asdf reshim
 
       - name: set python up with caching
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@83679a892e2d95755f2dac6acb0bfd1e9ac5d548 # v6
         with:
           python-version-file: '.tool-versions'
           cache: 'pip'
