@@ -21,6 +21,6 @@ version: "1.0.0"
 # subcharts, aka "the main reason people haven't abandoned helm"
 dependencies:
   - name: redis
-    version: "24.0.0"
+    version: "21.2.14"
     repository: https://charts.bitnami.com/bitnami
     condition: redis.enabled,global.redis.enabled
