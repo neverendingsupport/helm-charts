@@ -295,8 +295,42 @@ resources: {}
 #   type: null
 #   type: map
 # @schema
-# -- Configure a liveness probe, please
-# more information can be found here: https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/
+# -- Configure a startup probe to check if the application has started successfully.
+# The startup probe is used to give the application more time to start up before the
+# liveness probe takes over. This is especially useful for applications that take a
+# long time to initialize. Once the startup probe succeeds once, Kubernetes will
+# stop using it and switch to the liveness probe for ongoing health checks.
+# More information can be found here: https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/
+# Example configuration:
+#   startupProbe:
+#     httpGet:
+#       path: /diagnostics/health
+#       port: http
+#     periodSeconds: 5
+#     failureThreshold: 60
+startupProbe:
+  # httpGet:
+  #   path: /
+  #   port: http
+
+# @schema
+# anyof:
+#   type: null
+#   type: map
+# @schema
+# -- Configure a liveness probe to detect hung or dead containers.
+# The liveness probe determines if a container is still running and healthy. If the
+# liveness probe fails, Kubernetes will restart the container. This is useful for
+# detecting situations where the application is running but unable to make progress
+# (e.g., deadlocked). The liveness probe runs throughout the container's lifetime.
+# More information can be found here: https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/
+# Example configuration:
+#   livenessProbe:
+#     httpGet:
+#       path: /internal/health
+#       port: http
+#     initialDelaySeconds: 30
+#     periodSeconds: 10
 livenessProbe:
   # httpGet:
   #   path: /
@@ -307,7 +341,22 @@ livenessProbe:
 #   type: null
 #   type: map
 # @schema
-# -- Configure a readiness probe, please
+# -- Configure a readiness probe to gate traffic until the application is ready to serve.
+# The readiness probe determines if a container is ready to accept traffic. If the
+# readiness probe fails, Kubernetes will remove the pod from service endpoints,
+# preventing traffic from being routed to it. Unlike the liveness probe, a failed
+# readiness probe does not restart the container - it simply stops sending traffic
+# to the pod until it becomes ready again. This is useful for applications that need
+# time to initialize or load data before they can handle requests.
+# More information can be found here: https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/
+# Example configuration:
+#   readinessProbe:
+#     httpGet:
+#       path: /internal/ready
+#       port: http
+#     initialDelaySeconds: 0
+#     periodSeconds: 10
+#     failureThreshold: 3
 readinessProbe:
   # httpGet:
   #   path: /
