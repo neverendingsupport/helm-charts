@@ -264,4 +264,3 @@ def test_readiness_probe_renders_correctly(helm_runner) -> None:
         "periodSeconds": 10,
         "failureThreshold": 3,
     }
-
