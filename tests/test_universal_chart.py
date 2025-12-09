@@ -172,3 +172,95 @@ def test_extra_env_vars_accept_secret_key_refs(helm_runner) -> None:
         "name": "SECRET_THING",
         "valueFrom": {"secretKeyRef": {"name": "my-secret", "key": "password"}},
     }
+
+
+def test_startup_probe_renders_correctly(helm_runner) -> None:
+    """Ensure startup probe is rendered correctly when configured."""
+
+    rendered = render_chart(
+        helm_runner,
+        CHART,
+        values={
+            "startupProbe": {
+                "httpGet": {
+                    "path": "/diagnostics/health",
+                    "port": "http",
+                },
+                "periodSeconds": 5,
+                "failureThreshold": 60,
+            }
+        },
+    )
+    manifests = load_manifests(rendered)
+    container = get_primary_container(manifests)
+
+    assert container["startupProbe"] == {
+        "httpGet": {
+            "path": "/diagnostics/health",
+            "port": "http",
+        },
+        "periodSeconds": 5,
+        "failureThreshold": 60,
+    }
+
+
+def test_liveness_probe_renders_correctly(helm_runner) -> None:
+    """Ensure liveness probe is rendered correctly when configured."""
+
+    rendered = render_chart(
+        helm_runner,
+        CHART,
+        values={
+            "livenessProbe": {
+                "httpGet": {
+                    "path": "/internal/health",
+                    "port": "http",
+                },
+                "initialDelaySeconds": 30,
+                "periodSeconds": 10,
+            }
+        },
+    )
+    manifests = load_manifests(rendered)
+    container = get_primary_container(manifests)
+
+    assert container["livenessProbe"] == {
+        "httpGet": {
+            "path": "/internal/health",
+            "port": "http",
+        },
+        "initialDelaySeconds": 30,
+        "periodSeconds": 10,
+    }
+
+
+def test_readiness_probe_renders_correctly(helm_runner) -> None:
+    """Ensure readiness probe is rendered correctly when configured."""
+
+    rendered = render_chart(
+        helm_runner,
+        CHART,
+        values={
+            "readinessProbe": {
+                "httpGet": {
+                    "path": "/internal/ready",
+                    "port": "http",
+                },
+                "initialDelaySeconds": 0,
+                "periodSeconds": 10,
+                "failureThreshold": 3,
+            }
+        },
+    )
+    manifests = load_manifests(rendered)
+    container = get_primary_container(manifests)
+
+    assert container["readinessProbe"] == {
+        "httpGet": {
+            "path": "/internal/ready",
+            "port": "http",
+        },
+        "initialDelaySeconds": 0,
+        "periodSeconds": 10,
+        "failureThreshold": 3,
+    }
