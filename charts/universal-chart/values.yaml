@@ -30,6 +30,18 @@ imagePullSecrets: []
 nameOverride: ""
 fullnameOverride: ""
 
+deployment:
+  # @schema
+  # type: object
+  # additionalProperties: true
+  # @schema
+  # -- extra annotations to add to the deployment resource's metadata.
+  # These annotations are key-value pairs attached directly to the Deployment
+  # resource. They can be used by external tooling, operators, or for tracking
+  # deployment metadata and events. For more info, see:
+  # https://kubernetes.io/docs/concepts/overview/working-with-objects/annotations/
+  annotations: {}
+
 # @schema
 # required: false
 # @schema

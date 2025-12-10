@@ -5,7 +5,7 @@ kind: Deployment
 metadata:
   name: universal-chart
   labels:
-    helm.sh/chart: universal-chart-1.0.0
+    helm.sh/chart: universal-chart-1.0.1
     app.kubernetes.io/name: universal-chart
     app.kubernetes.io/instance: universal-chart
     app.kubernetes.io/managed-by: Helm
@@ -18,7 +18,7 @@ spec:
   template:
     metadata:
       labels:
-        helm.sh/chart: universal-chart-1.0.0
+        helm.sh/chart: universal-chart-1.0.1
         app.kubernetes.io/name: universal-chart
         app.kubernetes.io/instance: universal-chart
         app.kubernetes.io/managed-by: Helm
@@ -47,7 +47,7 @@ kind: Ingress
 metadata:
   name: universal-chart
   labels:
-    helm.sh/chart: universal-chart-1.0.0
+    helm.sh/chart: universal-chart-1.0.1
     app.kubernetes.io/name: universal-chart
     app.kubernetes.io/instance: universal-chart
     app.kubernetes.io/managed-by: Helm
@@ -77,7 +77,7 @@ kind: Service
 metadata:
   name: universal-chart
   labels:
-    helm.sh/chart: universal-chart-1.0.0
+    helm.sh/chart: universal-chart-1.0.1
     app.kubernetes.io/name: universal-chart
     app.kubernetes.io/instance: universal-chart
     app.kubernetes.io/managed-by: Helm
@@ -98,7 +98,7 @@ kind: ServiceAccount
 metadata:
   name: universal-chart
   labels:
-    helm.sh/chart: universal-chart-1.0.0
+    helm.sh/chart: universal-chart-1.0.1
     app.kubernetes.io/name: universal-chart
     app.kubernetes.io/instance: universal-chart
     app.kubernetes.io/managed-by: Helm
@@ -110,7 +110,7 @@ kind: Pod
 metadata:
   name: "universal-chart-test-connection"
   labels:
-    helm.sh/chart: universal-chart-1.0.0
+    helm.sh/chart: universal-chart-1.0.1
     app.kubernetes.io/name: universal-chart
     app.kubernetes.io/instance: universal-chart
     app.kubernetes.io/managed-by: Helm

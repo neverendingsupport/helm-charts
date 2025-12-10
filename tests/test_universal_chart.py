@@ -172,3 +172,23 @@ def test_extra_env_vars_accept_secret_key_refs(helm_runner) -> None:
         "name": "SECRET_THING",
         "valueFrom": {"secretKeyRef": {"name": "my-secret", "key": "password"}},
     }
+
+
+def test_deployment_annotations_renders_correctly(helm_runner) -> None:
+    """Ensure deployment annotations are rendered."""
+
+    rendered = render_chart(
+        helm_runner,
+        CHART,
+        values={
+            "deployment": {
+                "annotations": {"reloader.stakater.com/auto": "true"}
+            }
+        },
+    )
+    manifests = load_manifests(rendered)
+    deployment = get_manifest(manifests, "Deployment")
+    metadata = deployment["metadata"]
+
+    assert "annotations" in metadata
+    assert metadata["annotations"].get("reloader.stakater.com/auto") == "true"
