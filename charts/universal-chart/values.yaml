@@ -369,6 +369,13 @@ tolerations: []
 # More info at https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity
 affinity: {}
 
+# -- (boolean) Add a topology spread rule across Karpenter availability zones.
+spread_azs: false
+
+# -- (boolean) Add a topology spread rule across Karpenter capacity types
+# (spot vs on-demand).
+spread_spot: false
+
 # -- When deploying with multiple replicas, spread pods around using these
 # rules. The default is to spread pods evenly among the Availability Zones
 # defined in the cluster. With a Karpenter-managed EKS cluster (like HeroDevs

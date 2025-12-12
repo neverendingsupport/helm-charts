@@ -43,7 +43,7 @@ metadata:
     app.kubernetes.io/instance: universal-chart
     app.kubernetes.io/managed-by: Helm
 spec:
-  replicas: 1
+  replicas: 3
   selector:
     matchLabels:
       app.kubernetes.io/name: universal-chart
@@ -69,18 +69,13 @@ spec:
             - name: http
               containerPort: 3000
               protocol: TCP
-      initContainers:
-        - name: init-universal-chart-0
-          image: amazon/aws-cli:latest
-          command:
-            - s3
-            - sync
-            - --delete
-            - --no-progress
-            - s3://{{ .s3_bucket }}/{{ .number }}
-            - /app
-          env: *containerenv
       topologySpreadConstraints:
         - maxSkew: 1
           topologyKey: topology.kubernetes.io/zone
+          whenUnsatisfiable: ScheduleAnyway
+        - maxSkew: 1
+          topologyKey: karpenter.sh/zone
+          whenUnsatisfiable: ScheduleAnyway
+        - maxSkew: 1
+          topologyKey: karpenter.sh/capacity-type
           whenUnsatisfiable: ScheduleAnyway
