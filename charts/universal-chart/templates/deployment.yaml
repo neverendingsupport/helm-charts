@@ -173,7 +173,17 @@ spec:
       affinity:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      {{- with .Values.topologySpreadConstraints }}
+      {{- $topologySpreadConstraints := list }}
+      {{- range .Values.topologySpreadConstraints }}
+      {{- $topologySpreadConstraints = append $topologySpreadConstraints . }}
+      {{- end }}
+      {{- if .Values.spread_azs }}
+      {{- $topologySpreadConstraints = append $topologySpreadConstraints (dict "maxSkew" 1 "topologyKey" "karpenter.sh/zone" "whenUnsatisfiable" "ScheduleAnyway") }}
+      {{- end }}
+      {{- if .Values.spread_spot }}
+      {{- $topologySpreadConstraints = append $topologySpreadConstraints (dict "maxSkew" 1 "topologyKey" "karpenter.sh/capacity-type" "whenUnsatisfiable" "ScheduleAnyway") }}
+      {{- end }}
+      {{- with $topologySpreadConstraints }}
       topologySpreadConstraints:
         {{- toYaml . | nindent 8 }}
       {{- end }}

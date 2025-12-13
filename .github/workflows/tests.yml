@@ -7,18 +7,41 @@ permissions:
   contents: read
 
 jobs:
+  chart-version-bump:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+        with:
+          fetch-depth: 0
+
+      - name: Fetch base branch
+        run: git fetch --no-tags --prune --depth=1 origin ${{ github.event.pull_request.base.sha }}
+
+      - name: set python up with caching
+        uses: actions/setup-python@83679a892e2d95755f2dac6acb0bfd1e9ac5d548 # v6.1.0
+        with:
+          python-version-file: '.tool-versions'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: python -m pip install .[ci]
+
+      - name: Verify chart versions bumped
+        run: python scripts/check_chart_version_bump.py ${{ github.event.pull_request.base.sha }}
+
   pytest:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
 
       # install ASDF tools with caching
       - name: set up ASDF
         uses: asdf-vm/actions/setup@b7bcd026f18772e44fe1026d729e1611cc435d47 # v4.0.1
       - name: Restore ASDF tools from cache
         id: asdf-tools-cache
-        uses: actions/cache@a7833574556fa59680c1b7cb190c1735db73ebf0 # v5
+        uses: actions/cache@9255dc7a253b0ccc959486e2bca901246202afeb # v5.0.1
         env:
           asdf_cache_prefix: ${{ runner.os }}-${{ runner.arch }}-asdf-tools-
         with:
@@ -37,7 +60,7 @@ jobs:
         run: asdf reshim
 
       - name: set python up with caching
-        uses: actions/setup-python@83679a892e2d95755f2dac6acb0bfd1e9ac5d548 # v6
+        uses: actions/setup-python@83679a892e2d95755f2dac6acb0bfd1e9ac5d548 # v6.1.0
         with:
           python-version-file: '.tool-versions'
           cache: 'pip'
@@ -52,14 +75,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
 
       # install ASDF tools with caching
       - name: set up ASDF
         uses: asdf-vm/actions/setup@b7bcd026f18772e44fe1026d729e1611cc435d47 # v4.0.1
       - name: Restore ASDF tools from cache
         id: asdf-tools-cache
-        uses: actions/cache@a7833574556fa59680c1b7cb190c1735db73ebf0 # v5
+        uses: actions/cache@9255dc7a253b0ccc959486e2bca901246202afeb # v5.0.1
         env:
           asdf_cache_prefix: ${{ runner.os }}-${{ runner.arch }}-asdf-tools-
         with:

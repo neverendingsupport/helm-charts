@@ -127,6 +127,13 @@ docs at https://docs.renovatebot.com/modules/manager/pre-commit/#additional-depe
 - Maintain minimal values in `minimal-values.yaml`.
 - Declare development dependencies in `pyproject.toml` under the `dev` optional
   dependency set and update related docs when the tooling changes.
+- When GitHub Actions need Python packages, add them to a dependency group in
+  `pyproject.toml` (for example, a `ci` group) and install that group in the
+  workflow instead of installing ad-hoc packages. This keeps Renovate updates
+  consistent.
+- When pinning GitHub Actions with Renovate, use comment annotations that
+  include the full semver release (for example, `# v6.1.0` instead of `# v6`)
+  alongside the pinned SHA.
 - If a chart's contents change, increment its version in the chart's `Chart.yaml`.
 - PR reviews should flag any chart content change that does not bump the chart version.
 - Install Helm so it is available on PATH and run the full test suite (e.g.

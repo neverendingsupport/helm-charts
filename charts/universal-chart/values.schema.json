@@ -41,6 +41,12 @@
           }
         }
       }
+    },
+    "spread_azs": {
+      "type": "boolean"
+    },
+    "spread_spot": {
+      "type": "boolean"
     }
   },
   "title": "Values",
