@@ -80,6 +80,18 @@ spec:
             - s3://{{ .s3_bucket }}/{{ .number }}
             - /app
           env: *containerenv
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchExpressions:
+                    - key: app.kubernetes.io/name
+                      operator: In
+                      values:
+                        - universal-chart
+                topologyKey: kubernetes.io/hostname
       topologySpreadConstraints:
         - maxSkew: 1
           topologyKey: topology.kubernetes.io/zone

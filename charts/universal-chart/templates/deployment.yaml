@@ -165,13 +165,35 @@ spec:
       nodeSelector:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      {{- with .Values.affinity }}
+      {{- if .Values.affinity }}
+      {{- if kindIs "bool" .Values.affinity }}
       affinity:
-        {{- toYaml . | nindent 8 }}
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchExpressions:
+                    - key: app.kubernetes.io/name
+                      operator: In
+                      values:
+                        - {{ include "universal-chart.name" . }}
+                topologyKey: kubernetes.io/hostname
+      {{- else }}
+      affinity:
+        {{- toYaml .Values.affinity | nindent 8 }}
       {{- end }}
-      {{- with .Values.topologySpreadConstraints }}
+      {{- end }}
+      {{- if .Values.topologySpreadConstraints }}
+      {{- if kindIs "bool" .Values.topologySpreadConstraints }}
       topologySpreadConstraints:
-        {{- toYaml . | nindent 8 }}
+        - maxSkew: 1
+          topologyKey: topology.kubernetes.io/zone
+          whenUnsatisfiable: ScheduleAnyway
+      {{- else }}
+      topologySpreadConstraints:
+        {{- toYaml .Values.topologySpreadConstraints | nindent 8 }}
+      {{- end }}
       {{- end }}
       {{- with .Values.tolerations }}
       tolerations:

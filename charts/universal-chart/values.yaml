@@ -352,19 +352,63 @@ nodeSelector: {}
 # Normally this should be an empty list
 tolerations: []
 
+# @schema
+# anyof:
+#   - type: boolean
+#   - type: object
+#     properties:
+#       nodeAffinity:
+#         type: object
+#         description: Node affinity scheduling rules
+#       podAffinity:
+#         type: object
+#         description: Pod affinity scheduling rules
+#       podAntiAffinity:
+#         type: object
+#         description: Pod anti-affinity scheduling rules
+# @schema
 # -- Select roughly specific nodes to run upon.
-# This is similar to node selectors, but allows a bit more fuzziness and flexibility.
+# When set to true, defaults to podAntiAffinity that prefers spreading pods across
+# different nodes (hostname topology) to improve availability. This ensures pods
+# with the same app.kubernetes.io/name label are distributed across nodes.
+# Optionally, you can set this to a custom affinity object for advanced scheduling rules.
 # More info at https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity
-affinity: {}
+affinity: true
 
-# -- When deploying with multiple replicas, spread pods around using these
-# rules. The default is to spread pods evenly among the Availability Zones
-# defined in the cluster. With a Karpenter-managed EKS cluster (like HeroDevs
-# uses), there will usually be 3 AZs in a region where a cluster is deployed.
-topologySpreadConstraints:
-  - maxSkew: 1
-    topologyKey: topology.kubernetes.io/zone
-    whenUnsatisfiable: ScheduleAnyway
+# @schema
+# anyof:
+#   - type: boolean
+#   - type: array
+#     items:
+#       type: object
+#       properties:
+#         maxSkew:
+#           type: integer
+#           description: Maximum difference in number of pods between topology domains
+#         topologyKey:
+#           type: string
+#           description: Key of node labels to identify topology domain
+#         whenUnsatisfiable:
+#           type: string
+#           enum:
+#             - DoNotSchedule
+#             - ScheduleAnyway
+#           description: How to deal with a pod if it doesn't satisfy the spread constraint
+#         labelSelector:
+#           type: object
+#           description: Label selector to find matching pods
+#       required:
+#         - maxSkew
+#         - topologyKey
+#         - whenUnsatisfiable
+# @schema
+# -- When deploying with multiple replicas, spread pods around using topology
+# spread constraints. When set to true, defaults to spreading pods evenly among
+# Availability Zones using topology.kubernetes.io/zone. This ensures that pods 
+# are spread evenly across the Availability Zones in the region, thus highly available.
+# Optionally, you can set this to a list of topology spread constraints to customize the spread.
+# More info at: https://kubernetes.io/docs/concepts/scheduling-eviction/topology-spread-constraints/
+topologySpreadConstraints: true
 
 # @schema
 # additionalProperties: true

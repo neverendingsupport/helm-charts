@@ -172,3 +172,142 @@ def test_extra_env_vars_accept_secret_key_refs(helm_runner) -> None:
         "name": "SECRET_THING",
         "valueFrom": {"secretKeyRef": {"name": "my-secret", "key": "password"}},
     }
+
+
+def test_topology_spread_constraints_bool_true(helm_runner) -> None:
+    """Test that topologySpreadConstraints: true renders the default configuration."""
+
+    rendered = render_chart(
+        helm_runner,
+        CHART,
+        values={
+            "topologySpreadConstraints": True,
+        },
+    )
+    manifests = load_manifests(rendered)
+    deployment = get_manifest(manifests, "Deployment")
+    template = deployment["spec"]["template"]["spec"]
+    constraints = template.get("topologySpreadConstraints")
+
+    assert constraints[0]["maxSkew"] == 1
+    assert constraints[0]["topologyKey"] == "topology.kubernetes.io/zone"
+    assert constraints[0]["whenUnsatisfiable"] == "ScheduleAnyway"
+
+
+def test_topology_spread_constraints_array(helm_runner) -> None:
+    """Test that topologySpreadConstraints as array is rendered correctly."""
+
+    custom_constraints = [
+        {
+            "maxSkew": 2,
+            "topologyKey": "node.kubernetes.io/instance-type",
+            "whenUnsatisfiable": "DoNotSchedule",
+            "labelSelector": {"matchLabels": {"app": "foo"}},
+        }
+    ]
+
+    rendered = render_chart(
+        helm_runner,
+        CHART,
+        values={
+            "topologySpreadConstraints": custom_constraints,
+        },
+    )
+    manifests = load_manifests(rendered)
+    deployment = get_manifest(manifests, "Deployment")
+    template = deployment["spec"]["template"]["spec"]
+    constraints = template.get("topologySpreadConstraints")
+
+    assert constraints == custom_constraints
+
+
+def test_affinity_bool_true(helm_runner) -> None:
+    """Test that affinity: true renders the default configuration."""
+
+    rendered = render_chart(
+        helm_runner,
+        CHART,
+        values={
+            "affinity": True,
+        },
+    )
+    manifests = load_manifests(rendered)
+    deployment = get_manifest(manifests, "Deployment")
+    template = deployment["spec"]["template"]["spec"]
+    affinity = template.get("affinity")
+
+    expected_affinity = {
+        "podAntiAffinity": {
+            "preferredDuringSchedulingIgnoredDuringExecution": [
+                {
+                    "weight": 100,
+                    "podAffinityTerm": {
+                        "labelSelector": {
+                            "matchExpressions": [
+                                {
+                                    "key": "app.kubernetes.io/name",
+                                    "operator": "In",
+                                    "values": [CHART.chart_name],
+                                },
+                            ],
+                        },
+                        "topologyKey": "kubernetes.io/hostname",
+                    },
+                },
+            ],
+        },
+    }
+    assert affinity == expected_affinity
+
+
+def test_affinity_object(helm_runner) -> None:
+    """Test that affinity as object is rendered as provided."""
+
+    custom_affinity = {
+        "podAntiAffinity": {
+            "requiredDuringSchedulingIgnoredDuringExecution": [
+                {
+                    "labelSelector": {
+                        "matchLabels": {
+                            "app": "foo",
+                        },
+                    },
+                    "topologyKey": "kubernetes.io/hostname",
+                },
+            ],
+        },
+        "podAntiAffinity": {
+            "preferredDuringSchedulingIgnoredDuringExecution": [
+                {
+                    "weight": 50,
+                    "podAffinityTerm": {
+                        "labelSelector": {
+                            "matchExpressions": [
+                            {
+                                "key": "app",
+                                "operator": "In",
+                                "values": ["foo"],
+                            },
+                            ],
+                        },
+                        "topologyKey": "kubernetes.io/hostname",
+                    },
+                },
+            ],
+        },
+    }
+
+    rendered = render_chart(
+        helm_runner,
+        CHART,
+        values={
+            "affinity": custom_affinity,
+        },
+    )
+    manifests = load_manifests(rendered)
+    deployment = get_manifest(manifests, "Deployment")
+    template = deployment["spec"]["template"]["spec"]
+    affinity = template.get("affinity")
+
+    assert affinity == custom_affinity
+
