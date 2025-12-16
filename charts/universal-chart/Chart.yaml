@@ -16,7 +16,7 @@ type: application
 # The chart version is what one `helm install`s; it matters in a helm registry
 # but doesn't matter when ArgoCD installing from a git branch.
 # Versions are expected to follow Semantic Versioning (https://semver.org/)
-version: "1.1.0"
+version: "1.2.0"
 
 # subcharts, aka "the main reason people haven't abandoned helm"
 dependencies:

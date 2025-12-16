@@ -230,6 +230,30 @@ service:
   # more information can be found here: https://kubernetes.io/docs/concepts/services-networking/service/#field-spec-ports
   port: 3000
 
+# @schema
+# type: object
+# properties:
+#   enabled:
+#     type: boolean
+#   path:
+#     anyof:
+#       - type: string
+#       - type: "null"
+#   interval:
+#     anyof:
+#       - type: integer
+#         minimum: 1
+#       - type: "null"
+# @schema
+# -- Configure a ServiceMonitor for scraping metrics from the service.
+serviceMonitor:
+  # -- Whether to create a ServiceMonitor resource.
+  enabled: false
+  # -- HTTP path to scrape for metrics.
+  path: /metrics
+  # -- Optional scrape interval (in seconds). When null, the operator default is used.
+  interval: null
+
 # -- This block is for setting up the ingress.
 # More information can be found here: https://kubernetes.io/docs/concepts/services-networking/ingress/
 ingress:
