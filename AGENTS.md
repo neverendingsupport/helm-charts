@@ -135,6 +135,7 @@ docs at https://docs.renovatebot.com/modules/manager/pre-commit/#additional-depe
   include the full semver release (for example, `# v6.1.0` instead of `# v6`)
   alongside the pinned SHA.
 - If a chart's contents change, increment its version in the chart's `Chart.yaml`.
+- Adding new keys to a chart's `values.yaml` (unless explicitly called out as a bugfix) is treated as a feature change and should bump the **minor** version rather than the patch level.
 - PR reviews should flag any chart content change that does not bump the chart version.
 - Install Helm so it is available on PATH and run the full test suite (e.g.
   `make test`) after making changes. Use the version pinned in `.tool-versions`
@@ -157,6 +158,9 @@ docs at https://docs.renovatebot.com/modules/manager/pre-commit/#additional-depe
   installing python3 via asdf.
 - Keep feature branches rebased on the current `main` branch before adding new
   commits.
+- Repository snapshots in this environment do not include Git remotes by
+  default. If you need the latest `main` from GitHub, add the upstream remote
+  (for example, `git remote add origin <url>`) and fetch before rebasing.
 - When configuring `helm-docs` with a `--chart-search-root`, template path
   resolution depends on how the template argument is written:
   - Paths with a relative directory component (for example,
