@@ -210,6 +210,20 @@ entries:
     version: 0.1.1
   universal-chart:
   - apiVersion: v2
+    created: "2025-12-18T19:10:10.662760646Z"
+    dependencies:
+    - condition: redis.enabled,global.redis.enabled
+      name: redis
+      repository: https://charts.bitnami.com/bitnami
+      version: 21.2.14
+    description: NES Universal Helm Chart
+    digest: ae07d1d4a68c0991d6fe31a0637514415a6a29e2245012256ee2803206a84cc1
+    name: universal-chart
+    type: application
+    urls:
+    - https://github.com/neverendingsupport/helm-charts/releases/download/universal-chart-1.2.0/universal-chart-1.2.0.tgz
+    version: 1.2.0
+  - apiVersion: v2
     created: "2025-12-15T23:26:46.885276421Z"
     dependencies:
     - condition: redis.enabled,global.redis.enabled
@@ -251,4 +265,4 @@ entries:
     urls:
     - https://github.com/neverendingsupport/helm-charts/releases/download/universal-chart-1.0.0/universal-chart-1.0.0.tgz
     version: 1.0.0
-generated: "2025-12-15T23:26:46.885318009Z"
+generated: "2025-12-18T19:10:10.662837439Z"
