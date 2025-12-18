@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import pytest
+
 from .chart_test_utils import (
     ChartContext,
     get_manifest,
@@ -9,6 +11,7 @@ from .chart_test_utils import (
     load_manifests,
     render_chart,
 )
+from .conftest import HelmTemplateError
 
 CHART = ChartContext("universal-chart")
 
@@ -192,3 +195,85 @@ def test_deployment_annotations_renders_correctly(helm_runner) -> None:
 
     assert "annotations" in metadata
     assert metadata["annotations"].get("reloader.stakater.com/auto") == "true"
+
+
+def test_service_monitor_renders_when_enabled(helm_runner) -> None:
+    """Ensure a ServiceMonitor is created when enabled."""
+
+    rendered = render_chart(
+        helm_runner,
+        CHART,
+        values={"serviceMonitor": {"enabled": True}},
+    )
+    manifests = load_manifests(rendered)
+    service = get_manifest(manifests, "Service")
+    service_monitor = get_manifest(manifests, "ServiceMonitor")
+
+    selector_labels = service_monitor["spec"]["selector"]["matchLabels"]
+    assert selector_labels == service["spec"]["selector"]
+
+    endpoint = service_monitor["spec"]["endpoints"][0]
+    assert endpoint["port"] == "http"
+    assert endpoint["path"] == "/metrics"
+    assert "interval" not in endpoint
+
+
+def test_service_monitor_is_not_rendered_when_disabled(helm_runner) -> None:
+    """Ensure the ServiceMonitor is omitted when disabled."""
+
+    rendered = render_chart(
+        helm_runner,
+        CHART,
+        values={"serviceMonitor": {"enabled": False}},
+    )
+    manifests = load_manifests(rendered)
+
+    assert all(
+        manifest.get("kind") != "ServiceMonitor" for manifest in manifests
+    )
+
+
+def test_service_monitor_supports_custom_path_and_interval(helm_runner) -> None:
+    """Ensure path and interval overrides render in the ServiceMonitor."""
+
+    rendered = render_chart(
+        helm_runner,
+        CHART,
+        values={
+            "serviceMonitor": {
+                "enabled": True,
+                "path": "/app/metrics",
+                "interval": 30,
+            }
+        },
+    )
+    manifests = load_manifests(rendered)
+    endpoint = get_manifest(manifests, "ServiceMonitor")["spec"]["endpoints"][0]
+
+    assert endpoint["path"] == "/app/metrics"
+    assert endpoint["interval"] == "30s"
+
+
+def test_service_monitor_path_may_be_null(helm_runner) -> None:
+    """Ensure the path field is omitted when explicitly set to null."""
+
+    rendered = render_chart(
+        helm_runner,
+        CHART,
+        values={"serviceMonitor": {"enabled": True, "path": None}},
+    )
+    manifests = load_manifests(rendered)
+    endpoint = get_manifest(manifests, "ServiceMonitor")["spec"]["endpoints"][0]
+
+    assert "path" not in endpoint
+
+
+def test_service_monitor_interval_rejects_negative_values(helm_runner) -> None:
+    """Ensure the schema rejects negative interval values."""
+
+    with pytest.raises(HelmTemplateError):
+        render_chart(
+            helm_runner,
+            CHART,
+            values={"serviceMonitor": {"enabled": True, "interval": -5}},
+        )

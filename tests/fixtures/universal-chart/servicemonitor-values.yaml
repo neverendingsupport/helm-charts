@@ -1,0 +1,7 @@
+image:
+  repository: ghcr.io/example/app
+  tag: "1.2.3"
+serviceMonitor:
+  enabled: true
+  path: /app/metrics
+  interval: 45

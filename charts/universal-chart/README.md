@@ -4,7 +4,7 @@
 
 NES Universal Helm Chart
 
-![Version: 1.0.1](https://img.shields.io/badge/Version-1.0.1-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square)
+![Version: 1.2.0](https://img.shields.io/badge/Version-1.2.0-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square)
 
 ## Additional Information
 
@@ -104,6 +104,7 @@ elsewhere (TODO: add link here)
 | awsEnvSecrets.externalSecret.secretPath | string | `""` | secret path |
 | awsEnvSecrets.externalSecret.secretStoreRef.kind | string | `"SecretStore"` | Is the store in this namespace or cluster-wide? |
 | awsEnvSecrets.externalSecret.secretStoreRef.name | string | `"aws-secrets-manager"` | name of the secret store; aws-secret-manager is usually right |
+| deployment.annotations | object | `{}` | extra annotations to add to the deployment resource's metadata. These annotations are key-value pairs attached directly to the Deployment resource. They can be used by external tooling, operators, or for tracking deployment metadata and events. For more info, see: https://kubernetes.io/docs/concepts/overview/working-with-objects/annotations/ |
 | extraContainerPorts | list | `[]` | extra ports to be exposed directly from pods (no service) |
 | extraContainerProps | object | `{}` | A dictionary of extra attributes to add to the container spec in the deployment. Elements will be directly added to the deployment's `spec.template.spec.containers` object. Note that adding an element already in the deployment template like `env` or `image` will cause undesirable behavior. |
 | extraEnvConfigmaps | list | `[]` | extra configmaps to load into environment |
@@ -154,6 +155,10 @@ elsewhere (TODO: add link here)
 | serviceAccount.automount | bool | `true` |  |
 | serviceAccount.create | bool | `true` |  |
 | serviceAccount.name | string | `""` |  |
+| serviceMonitor | object | `{"enabled":false,"interval":null,"path":"/metrics"}` | Configure a ServiceMonitor for scraping metrics from the service. |
+| serviceMonitor.enabled | bool | `false` | Whether to create a ServiceMonitor resource. |
+| serviceMonitor.interval | string | `nil` | Optional scrape interval (in seconds). When null, the operator default is used. |
+| serviceMonitor.path | string | `"/metrics"` | HTTP path to scrape for metrics. |
 | spread_azs | boolean | `false` | Add a topology spread rule across Karpenter availability zones. |
 | spread_spot | boolean | `false` | Add a topology spread rule across Karpenter capacity types (spot vs on-demand). |
 | tolerations | list | `[]` | List of taints these pods should tolerate. Normally this should be an empty list |
