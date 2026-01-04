@@ -347,7 +347,9 @@ def test_spread_spot_appends_topology_constraint(helm_runner) -> None:
     )
 
 
-def test_spread_topology_defaults_do_not_include_extra_spreads(helm_runner) -> None:
+def test_spread_topology_defaults_do_not_include_extra_spreads(
+    helm_runner,
+) -> None:
     """Ensure spread toggles default to only the configured constraints."""
 
     rendered = render_chart(helm_runner, CHART)
@@ -370,4 +372,3 @@ def test_spread_values_reject_invalid_booleans(helm_runner) -> None:
     for key in ("spread_azs", "spread_spot"):
         with pytest.raises(HelmTemplateError):
             render_chart(helm_runner, CHART, values={key: "hero"})
-
