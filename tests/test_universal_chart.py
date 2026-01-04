@@ -254,6 +254,20 @@ def test_service_monitor_supports_custom_path_and_interval(helm_runner) -> None:
     assert endpoint["interval"] == "30s"
 
 
+def test_service_monitor_interval_supports_minimum_value(helm_runner) -> None:
+    """Ensure the minimum interval value renders correctly."""
+
+    rendered = render_chart(
+        helm_runner,
+        CHART,
+        values={"serviceMonitor": {"enabled": True, "interval": 1}},
+    )
+    manifests = load_manifests(rendered)
+    endpoint = get_manifest(manifests, "ServiceMonitor")["spec"]["endpoints"][0]
+
+    assert endpoint["interval"] == "1s"
+
+
 def test_service_monitor_path_may_be_null(helm_runner) -> None:
     """Ensure the path field is omitted when explicitly set to null."""
 
@@ -268,6 +282,17 @@ def test_service_monitor_path_may_be_null(helm_runner) -> None:
     assert "path" not in endpoint
 
 
+def test_service_monitor_rejects_invalid_enabled_value(helm_runner) -> None:
+    """Reject non-boolean values for the service monitor toggle."""
+
+    with pytest.raises(HelmTemplateError):
+        render_chart(
+            helm_runner,
+            CHART,
+            values={"serviceMonitor": {"enabled": "hero"}},
+        )
+
+
 def test_service_monitor_interval_rejects_negative_values(helm_runner) -> None:
     """Ensure the schema rejects negative interval values."""
 
@@ -277,3 +302,72 @@ def test_service_monitor_interval_rejects_negative_values(helm_runner) -> None:
             CHART,
             values={"serviceMonitor": {"enabled": True, "interval": -5}},
         )
+
+
+def test_service_monitor_interval_rejects_zero(helm_runner) -> None:
+    """Ensure the schema rejects interval values below the minimum."""
+
+    with pytest.raises(HelmTemplateError):
+        render_chart(
+            helm_runner,
+            CHART,
+            values={"serviceMonitor": {"enabled": True, "interval": 0}},
+        )
+
+
+def test_spread_azs_appends_topology_constraint(helm_runner) -> None:
+    """Ensure enabling AZ spread adds the extra topology constraint."""
+
+    rendered = render_chart(helm_runner, CHART, values={"spread_azs": True})
+    manifests = load_manifests(rendered)
+    deployment = get_manifest(manifests, "Deployment")
+    constraints = deployment["spec"]["template"]["spec"].get(
+        "topologySpreadConstraints", []
+    )
+
+    assert any(
+        constraint.get("topologyKey") == "karpenter.sh/zone"
+        for constraint in constraints
+    )
+
+
+def test_spread_spot_appends_topology_constraint(helm_runner) -> None:
+    """Ensure enabling spot spread adds the extra topology constraint."""
+
+    rendered = render_chart(helm_runner, CHART, values={"spread_spot": True})
+    manifests = load_manifests(rendered)
+    deployment = get_manifest(manifests, "Deployment")
+    constraints = deployment["spec"]["template"]["spec"].get(
+        "topologySpreadConstraints", []
+    )
+
+    assert any(
+        constraint.get("topologyKey") == "karpenter.sh/capacity-type"
+        for constraint in constraints
+    )
+
+
+def test_spread_topology_defaults_do_not_include_extra_spreads(helm_runner) -> None:
+    """Ensure spread toggles default to only the configured constraints."""
+
+    rendered = render_chart(helm_runner, CHART)
+    manifests = load_manifests(rendered)
+    deployment = get_manifest(manifests, "Deployment")
+    constraints = deployment["spec"]["template"]["spec"].get(
+        "topologySpreadConstraints", []
+    )
+
+    assert all(
+        constraint.get("topologyKey")
+        not in {"karpenter.sh/zone", "karpenter.sh/capacity-type"}
+        for constraint in constraints
+    )
+
+
+def test_spread_values_reject_invalid_booleans(helm_runner) -> None:
+    """Invalid boolean values fail schema validation for spread options."""
+
+    for key in ("spread_azs", "spread_spot"):
+        with pytest.raises(HelmTemplateError):
+            render_chart(helm_runner, CHART, values={key: "hero"})
+
