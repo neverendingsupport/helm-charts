@@ -6,8 +6,47 @@ on:
       - main
 
 jobs:
-  release:
+  detect-changes:
     runs-on: ubuntu-latest
+    outputs:
+      charts: ${{ steps.filter.outputs.changes }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
+        with:
+          fetch-depth: 0
+
+      - name: Build chart filters
+        id: filters
+        run: |
+          filters_file="$RUNNER_TEMP/chart-filters.yml"
+          for chart in charts/*; do
+            [[ -d "$chart" ]] || continue
+            printf "%s:\n  - '%s/**'\n" "$(basename "$chart")" "$chart"
+          done >"$filters_file"
+
+          echo "file=$filters_file" >>"$GITHUB_OUTPUT"
+
+      - name: Detect chart changes
+        id: filter
+        uses: dorny/paths-filter@de90cc6fb38fc0963ad72b210f1f284cd68cea36 # v3.0.2
+        with:
+          filters-from-file: ${{ steps.filters.outputs.file }}
+
+      - name: No chart changes detected
+        if: steps.filter.outputs.changes == '[]'
+        run: echo "No chart changes detected."
+
+  release:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.charts != '[]'
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      # Avoid race conditions when updating the GitHub Pages site.
+      max-parallel: 1
+      matrix:
+        chart: ${{ fromJson(needs.detect-changes.outputs.charts) }}
     steps:
       - name: Checkout
         uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
@@ -19,7 +58,61 @@ jobs:
           git config user.name "$GITHUB_ACTOR"
           git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
 
+      - name: Determine next tag
+        id: next-tag
+        uses: anothrNick/github-tag-action@4ed44965e0db8dab2b466a16da04aec3cc312fd8 # 1.75.0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          release_branches: main
+          tag_prefix: "${{ matrix.chart }}-"
+          default_bump: patch
+
+      - name: Update chart version
+        id: version
+        run: |
+          tag_prefix="${{ matrix.chart }}-"
+          next_tag="${{ steps.next-tag.outputs.new_tag }}"
+          version="${next_tag#${tag_prefix}}"
+
+          if [[ -z "$version" || "$version" == "$next_tag" ]]; then
+            echo "Failed to determine version from tag: $next_tag" >&2
+            exit 1
+          fi
+
+          chart_file="charts/${{ matrix.chart }}/Chart.yaml"
+          backup_file="${chart_file}.bak"
+
+          sed -i.bak -E "s/^version:[[:space:]]*.*/version: \"$version\"/" "$chart_file"
+
+          if [[ ! -f "$chart_file" || ! -s "$chart_file" ]]; then
+            echo "Failed to update version in $chart_file" >&2
+            mv "$backup_file" "$chart_file"
+            exit 1
+          fi
+
+          rm -f "$backup_file"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
       - name: Run chart-releaser
         uses: helm/chart-releaser-action@cae68fefc6b5f367a0275617c9f83181ba54714f # v1.7.0
         env:
           CR_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
+        with:
+          charts_dir: charts/${{ matrix.chart }}
+
+      - name: Authenticate to GHCR
+        uses: docker/login-action@0d4c9c5ea7693da7b91df7e46af25e86bfb56c21 # v3.3.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Push chart to GHCR
+        run: |
+          package_path=".cr-release-packages/${{ matrix.chart }}-${{ steps.version.outputs.version }}.tgz"
+          if [[ ! -f "$package_path" ]]; then
+            echo "No packaged chart found for ${{ matrix.chart }}" >&2
+            exit 1
+          fi
+          helm push "$package_path" "oci://ghcr.io/${{ github.repository_owner }}/charts"
