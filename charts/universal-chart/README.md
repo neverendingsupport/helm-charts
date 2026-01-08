@@ -4,7 +4,7 @@
 
 NES Universal Helm Chart
 
-![Version: 0.0.0-a.placeholder](https://img.shields.io/badge/Version-0.0.0-a.placeholder-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square)
+![Chart Version](https://img.shields.io/github/v/release/neverendingsupport/helm-charts?filter=universal-chart-*&label=chart%20version&style=flat-square)![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square)
 
 ## Additional Information
 

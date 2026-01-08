@@ -1,4 +1,13 @@
-{{- /* override the version to just a blank line? */ }}
-{{ define "helm-docs.versionFooter" }}
+{{- /*
+  Override the version to just a blank line.
 
-{{ end }}
+  In order to make this work with the line ending yaml reformatter, there must
+  be a newline at the end of the file. None of the template entries before this
+  one can contain the `-}}` structure, because that eats whitespace following.
+  It's ok to use `{{- -}}` after this define's end, though.  As long as this
+  comment stays at the top, and the "end" on the next one remains as `{{- end
+  }}`, we're good.
+  */ }}
+{{- define "helm-docs.versionFooter" -}}{{- end }}
+{{- /* define a template for the version badge */ -}}
+{{- define "chart.versionBadge" -}}![Chart Version](https://img.shields.io/github/v/release/neverendingsupport/helm-charts?filter={{ .Name }}-*&label=chart%20version&style=flat-square){{- end -}}
