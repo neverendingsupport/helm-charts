@@ -134,7 +134,7 @@ docs at https://docs.renovatebot.com/modules/manager/pre-commit/#additional-depe
 - When pinning GitHub Actions with Renovate, use comment annotations that
   include the full semver release (for example, `# v6.1.0` instead of `# v6`)
   alongside the pinned SHA.
-- If a chart's contents change, increment its version in the chart's `Chart.yaml`.
+- If a chart's contents change, increment its version in the chart's `Chart.yaml`.  If the version is `0.0.0-a.placeholder`, however, do not bump the version.  Charts with that version are automatically versioned on release.
 - Adding new keys to a chart's `values.yaml` (unless explicitly called out as a bugfix) is treated as a feature change and should bump the **minor** version rather than the patch level.
 - PR reviews should flag any chart content change that does not bump the chart version.
 - Install Helm so it is available on PATH and run the full test suite (e.g.
