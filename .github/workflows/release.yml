@@ -8,6 +8,8 @@ on:
 jobs:
   detect-changes:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     outputs:
       charts: ${{ steps.filter.outputs.changes }}
     steps:
@@ -41,6 +43,8 @@ jobs:
     needs: detect-changes
     if: needs.detect-changes.outputs.charts != '[]'
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     strategy:
       fail-fast: false
       # Avoid race conditions when updating the GitHub Pages site.
