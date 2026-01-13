@@ -107,7 +107,7 @@ jobs:
           charts_dir: charts/${{ matrix.chart }}
 
       - name: Authenticate to GHCR
-        uses: docker/login-action@0d4c9c5ea7693da7b91df7e46af25e86bfb56c21 # v3.3.0
+        uses: docker/login-action@9780b0c442fbb1117ed29e0efdff1e18412f7567 # v3.3.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
