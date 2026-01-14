@@ -75,6 +75,10 @@
     },
     "spread_spot": {
       "type": "boolean"
+    },
+    "revisionHistoryLimit": {
+      "type": "integer",
+      "minimum": 0
     }
   },
   "title": "Values",
