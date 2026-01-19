@@ -6,6 +6,7 @@ For every chart in charts/ that has a Chart.yaml, this checks that:
 * it is a symlink, and
 * it resolves to tests/fixtures/<chart>/minimal-values.yaml.
 """
+
 from __future__ import annotations
 
 import sys
