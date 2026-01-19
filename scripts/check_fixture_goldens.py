@@ -6,6 +6,7 @@ For each chart in charts/, this verifies that:
 * for every YAML file whose name contains '-values' and does not end
   with '.golden.yaml', there is a sibling '<name>.golden.yaml'.
 """
+
 from __future__ import annotations
 
 import sys

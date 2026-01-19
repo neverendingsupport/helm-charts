@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Regenerate golden manifests for every chart fixture directory."""
+
 from __future__ import annotations
 
 import shutil

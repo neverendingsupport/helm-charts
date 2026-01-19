@@ -6,6 +6,7 @@ reference. If any files in a chart directory have changed but the chart's
 ``Chart.yaml`` version has not increased relative to the base revision, the
 script exits with a non-zero status and reports the offending charts.
 """
+
 from __future__ import annotations
 
 import argparse
