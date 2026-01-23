@@ -353,6 +353,13 @@ readinessProbe:
 # This value is ignored if autoscaling is enabled
 replicaCount: 1
 
+# @schema
+# type: integer
+# minimum: 0
+# @schema
+# -- number of old ReplicaSets to retain for rollback
+revisionHistoryLimit: 3
+
 # -- section for configuring autoscaling.
 # More information can be found here: https://kubernetes.io/docs/concepts/workloads/autoscaling/
 autoscaling:

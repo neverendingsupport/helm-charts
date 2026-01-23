@@ -146,6 +146,7 @@ elsewhere (TODO: add link here)
 | redis.replica | object | `{"resourcesPreset":"micro"}` | use presets for resource limits. See https://github.com/bitnami/charts/blob/main/bitnami/common/templates/_resources.tpl |
 | redis.tls.enabled | bool | `false` | enable or disable TLS |
 | replicaCount | int | `1` | set a fixed number of replicas in the deployment This value is ignored if autoscaling is enabled |
+| revisionHistoryLimit | int | `3` | number of old ReplicaSets to retain for rollback |
 | resources | object | `{}` | resource requests and limits. typically you can accept the values commented below, but ideally you'd run this in dev with some synthetic load and then either check on the monitoring values from Grafana or look at the Vertical Pod Autoscaler's recomendations via Goldilocks. |
 | securityContext | object | `{}` |  |
 | service | object | `{"port":3000,"type":"ClusterIP"}` | A "service" is basically a named port which follows a pod or pods; you should always use a service when networking in k8s. More information can be found here: https://kubernetes.io/docs/concepts/services-networking/service/ |
