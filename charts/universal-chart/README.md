@@ -163,6 +163,6 @@ elsewhere (TODO: add link here)
 | spread_azs | boolean | `false` | Add a topology spread rule across Karpenter availability zones. |
 | spread_spot | boolean | `false` | Add a topology spread rule across Karpenter capacity types (spot vs on-demand). |
 | tolerations | list | `[]` | List of taints these pods should tolerate. Normally this should be an empty list |
-| topologySpreadConstraints | list | `[{"maxSkew":1,"topologyKey":"topology.kubernetes.io/zone","whenUnsatisfiable":"ScheduleAnyway"}]` | When deploying with multiple replicas, spread pods around using these rules. The default is to spread pods evenly among the Availability Zones defined in the cluster. With a Karpenter-managed EKS cluster (like HeroDevs uses), there will usually be 3 AZs in a region where a cluster is deployed. |
+| topologySpreadConstraints | list | `[{"maxSkew":1,"topologyKey":"topology.kubernetes.io/zone","whenUnsatisfiable":"ScheduleAnyway"}]` | When deploying with multiple replicas, spread pods around using these rules. The default is to spread pods evenly among the Availability Zones defined in the cluster. With a Karpenter-managed EKS cluster (like HeroDevs uses), there will usually be 3 AZs in a region where a cluster is deployed. If a constraint omits `labelSelector`, the chart injects selector labels. |
 | volumeMounts | list | `[]` | Additional volumes to mount |
 | volumes | list | `[]` | Additional volumes to create |

@@ -174,15 +174,21 @@ spec:
       affinity:
         {{- toYaml . | nindent 8 }}
       {{- end }}
+      {{- $selectorLabels := include "universal-chart.selectorLabels" . | fromYaml }}
+      {{- $defaultLabelSelector := dict "matchLabels" $selectorLabels }}
       {{- $topologySpreadConstraints := list }}
       {{- range .Values.topologySpreadConstraints }}
-      {{- $topologySpreadConstraints = append $topologySpreadConstraints . }}
+      {{- $constraint := . }}
+      {{- if not (hasKey $constraint "labelSelector") }}
+      {{- $constraint = merge $constraint (dict "labelSelector" $defaultLabelSelector) }}
+      {{- end }}
+      {{- $topologySpreadConstraints = append $topologySpreadConstraints $constraint }}
       {{- end }}
       {{- if .Values.spread_azs }}
-      {{- $topologySpreadConstraints = append $topologySpreadConstraints (dict "maxSkew" 1 "topologyKey" "karpenter.sh/zone" "whenUnsatisfiable" "ScheduleAnyway") }}
+      {{- $topologySpreadConstraints = append $topologySpreadConstraints (dict "maxSkew" 1 "topologyKey" "karpenter.sh/zone" "whenUnsatisfiable" "ScheduleAnyway" "labelSelector" $defaultLabelSelector) }}
       {{- end }}
       {{- if .Values.spread_spot }}
-      {{- $topologySpreadConstraints = append $topologySpreadConstraints (dict "maxSkew" 1 "topologyKey" "karpenter.sh/capacity-type" "whenUnsatisfiable" "ScheduleAnyway") }}
+      {{- $topologySpreadConstraints = append $topologySpreadConstraints (dict "maxSkew" 1 "topologyKey" "karpenter.sh/capacity-type" "whenUnsatisfiable" "ScheduleAnyway" "labelSelector" $defaultLabelSelector) }}
       {{- end }}
       {{- with $topologySpreadConstraints }}
       topologySpreadConstraints:
