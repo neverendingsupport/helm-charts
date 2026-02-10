@@ -27,8 +27,9 @@ on:
         required: true
         type: choice
         options:
+          - "false"
           - "true"
-        default: "true"
+        default: "false"
 
 jobs:
   detect-changes:
