@@ -7,9 +7,9 @@ metadata:
 spec:
   project: eolds
   sources:
-    - repoURL: https://github.com/neverendingsupport/eol-report-card.git
-      path: infra/helm-chart/
-      targetRevision: main
+    - repoURL: https://neverendingsupport.github.io/helm-charts
+      chart: universal-chart
+      targetRevision: 1.2.0
       helm:
         valueFiles:
           - $app_repo/infra/dev.values.yaml
