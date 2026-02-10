@@ -68,10 +68,9 @@ jobs:
         uses: anothrNick/github-tag-action@4ed44965e0db8dab2b466a16da04aec3cc312fd8 # 1.75.0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          release_branches: main
-          tag_prefix: "${{ matrix.chart }}-"
-          default_bump: patch
+          RELEASE_BRANCHES: main
+          TAG_PREFIX: "${{ matrix.chart }}-"
+          DEFAULT_BUMP: patch
 
       - name: Update chart version
         id: version
