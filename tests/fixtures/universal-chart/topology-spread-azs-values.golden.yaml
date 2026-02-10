@@ -71,9 +71,17 @@ spec:
               containerPort: 3000
               protocol: TCP
       topologySpreadConstraints:
-        - maxSkew: 1
+        - labelSelector:
+            matchLabels:
+              app.kubernetes.io/instance: universal-chart
+              app.kubernetes.io/name: universal-chart
+          maxSkew: 1
           topologyKey: topology.kubernetes.io/zone
           whenUnsatisfiable: ScheduleAnyway
-        - maxSkew: 1
+        - labelSelector:
+            matchLabels:
+              app.kubernetes.io/instance: universal-chart
+              app.kubernetes.io/name: universal-chart
+          maxSkew: 1
           topologyKey: karpenter.sh/zone
           whenUnsatisfiable: ScheduleAnyway
