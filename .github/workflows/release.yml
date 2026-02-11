@@ -99,12 +99,27 @@ jobs:
           rm -f "$backup_file"
           echo "version=$version" >> "$GITHUB_OUTPUT"
 
-      - name: Run chart-releaser
+      - name: Install chart-releaser
         uses: helm/chart-releaser-action@cae68fefc6b5f367a0275617c9f83181ba54714f # v1.7.0
         env:
           CR_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
         with:
-          charts_dir: charts/${{ matrix.chart }}
+          install_only: "true"
+
+      - name: Package chart
+        run: |
+          rm -rf .cr-release-packages .cr-index
+          mkdir -p .cr-release-packages .cr-index
+          cr package "charts/${{ matrix.chart }}" --package-path .cr-release-packages
+
+      - name: Publish chart release and index
+        env:
+          CR_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
+        run: |
+          owner="${GITHUB_REPOSITORY_OWNER}"
+          repo="${GITHUB_REPOSITORY#*/}"
+          cr upload -o "$owner" -r "$repo" -c "$GITHUB_SHA" --skip-existing
+          cr index -o "$owner" -r "$repo" --push
 
       - name: Authenticate to GHCR
         uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3.7.0
