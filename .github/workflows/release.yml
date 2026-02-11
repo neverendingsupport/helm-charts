@@ -134,12 +134,63 @@ jobs:
           rm -f "$backup_file"
           echo "version=$version" >> "$GITHUB_OUTPUT"
 
-      - name: Run chart-releaser
+      - name: Install chart-releaser
         uses: helm/chart-releaser-action@cae68fefc6b5f367a0275617c9f83181ba54714f # v1.7.0
         env:
           CR_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
         with:
-          charts_dir: charts/${{ matrix.chart }}
+          install_only: "true"
+
+      - name: Set package dir
+        run: echo "PACKAGE_DIR=${{ runner.temp }}/packages" >> "$GITHUB_ENV"
+
+      - name: Package chart
+        run: |
+          mkdir -p "$PACKAGE_DIR"
+          cr package "charts/${{ matrix.chart }}" --package-path "$PACKAGE_DIR"
+
+      - name: Generate release notes
+        id: notes
+        run: |
+          notes_file="$RUNNER_TEMP/release-notes-${{ matrix.chart }}.md"
+          tag_prefix="${{ matrix.chart }}-"
+          last_tag=$(git tag -l "${tag_prefix}*" --sort=-version:refname | head -n1)
+          log_args=()
+          if [[ -n "$last_tag" ]]; then
+            log_args+=("${last_tag}..HEAD")
+          fi
+          changes=$(git log "${log_args[@]}" --pretty=format:'- %s (%h)' -- \
+            "charts/${{ matrix.chart }}")
+          {
+            echo "## Changes"
+            if [[ -n "$changes" ]]; then
+              echo "$changes"
+            else
+              echo "_No chart changes detected._"
+              if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+                echo ""
+                echo "_Manual bump: no chart changes detected._"
+              fi
+            fi
+          } > "$notes_file"
+          echo "notes_file=$notes_file" >> "$GITHUB_OUTPUT"
+
+      - name: Publish chart release and index
+        env:
+          CR_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
+        run: |
+          owner="${GITHUB_REPOSITORY_OWNER}"
+          repo="${GITHUB_REPOSITORY#*/}"
+          cr upload -o "$owner" -r "$repo" -c "$GITHUB_SHA" --skip-existing \
+            --package-path "$PACKAGE_DIR"
+          cr index -o "$owner" -r "$repo" --push --package-path "$PACKAGE_DIR"
+
+      - name: Update release notes
+        env:
+          GH_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
+        run: |
+          release_tag="${{ matrix.chart }}-${{ steps.version.outputs.version }}"
+          gh release edit "$release_tag" --notes-file "${{ steps.notes.outputs.notes_file }}"
 
       - name: Authenticate to GHCR
         uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3.7.0
@@ -150,7 +201,7 @@ jobs:
 
       - name: Push chart to GHCR
         run: |
-          package_path=".cr-release-packages/${{ matrix.chart }}-${{ steps.version.outputs.version }}.tgz"
+          package_path="$PACKAGE_DIR/${{ matrix.chart }}-${{ steps.version.outputs.version }}.tgz"
           if [[ ! -f "$package_path" ]]; then
             echo "No packaged chart found for ${{ matrix.chart }}" >&2
             exit 1
