@@ -12,9 +12,8 @@ def main() -> int:
     """Compare release workflow chart options to chart directories."""
     workflow_path = Path(".github/workflows/release.yml")
     workflow = yaml.safe_load(workflow_path.read_text(encoding="utf-8"))
-    inputs = (
-        workflow.get("on", {}).get("workflow_dispatch", {}).get("inputs", {})
-    )
+    triggers = workflow.get("on", workflow.get(True, {}))
+    inputs = triggers.get("workflow_dispatch", {}).get("inputs", {})
     chart_input = inputs.get("chart", {})
     options = chart_input.get("options", [])
     if not isinstance(options, list):
