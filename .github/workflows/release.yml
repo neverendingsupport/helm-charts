@@ -4,6 +4,32 @@ on:
   push:
     branches:
       - main
+  workflow_dispatch:
+    inputs:
+      chart:
+        description: Chart to release
+        required: true
+        type: choice
+        options:
+          - nes-node-web
+          - universal-chart
+      bump:
+        description: Version bump to apply
+        required: true
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+        default: patch
+      force:
+        description: Force a release even without detected changes
+        required: true
+        type: choice
+        options:
+          - "false"
+          - "true"
+        default: "false"
 
 jobs:
   detect-changes:
@@ -11,15 +37,23 @@ jobs:
     permissions:
       contents: read
     outputs:
-      charts: ${{ steps.filter.outputs.changes }}
+      charts: ${{ steps.manual.outputs.charts || steps.filter.outputs.changes }}
     steps:
       - name: Checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           fetch-depth: 0
 
+      - name: Use manual chart selection
+        id: manual
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          chart="${{ github.event.inputs.chart }}"
+          printf 'charts=["%s"]\n' "$chart" >> "$GITHUB_OUTPUT"
+
       - name: Build chart filters
         id: filters
+        if: github.event_name != 'workflow_dispatch'
         run: |
           filters_file="$RUNNER_TEMP/chart-filters.yml"
           for chart in charts/*; do
@@ -31,12 +65,13 @@ jobs:
 
       - name: Detect chart changes
         id: filter
+        if: github.event_name != 'workflow_dispatch'
         uses: dorny/paths-filter@de90cc6fb38fc0963ad72b210f1f284cd68cea36 # v3.0.2
         with:
           filters: ${{ steps.filters.outputs.file }}
 
       - name: No chart changes detected
-        if: steps.filter.outputs.changes == '[]'
+        if: steps.filter.outputs.changes == '[]' && github.event_name != 'workflow_dispatch'
         run: echo "No chart changes detected."
 
   release:
@@ -68,10 +103,10 @@ jobs:
         uses: anothrNick/github-tag-action@4ed44965e0db8dab2b466a16da04aec3cc312fd8 # 1.75.0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          release_branches: main
-          tag_prefix: "${{ matrix.chart }}-"
-          default_bump: patch
+          RELEASE_BRANCHES: main
+          TAG_PREFIX: "${{ matrix.chart }}-"
+          DEFAULT_BUMP: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.bump || 'patch' }}
+          FORCE_WITHOUT_CHANGES: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.force == 'true' }}
 
       - name: Update chart version
         id: version
