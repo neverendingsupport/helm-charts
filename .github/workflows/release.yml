@@ -107,19 +107,22 @@ jobs:
           install_only: "true"
 
       - name: Package chart
+        env:
+          PACKAGE_DIR: ${{ runner.temp }}/packages
         run: |
-          rm -rf .cr-release-packages .cr-index
-          mkdir -p .cr-release-packages .cr-index
-          cr package "charts/${{ matrix.chart }}" --package-path .cr-release-packages
+          mkdir -p "$PACKAGE_DIR"
+          cr package "charts/${{ matrix.chart }}" --package-path "$PACKAGE_DIR"
 
       - name: Publish chart release and index
         env:
           CR_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
+          PACKAGE_DIR: ${{ runner.temp }}/packages
         run: |
           owner="${GITHUB_REPOSITORY_OWNER}"
           repo="${GITHUB_REPOSITORY#*/}"
-          cr upload -o "$owner" -r "$repo" -c "$GITHUB_SHA" --skip-existing
-          cr index -o "$owner" -r "$repo" --push
+          cr upload -o "$owner" -r "$repo" -c "$GITHUB_SHA" --skip-existing \
+            --package-path "$PACKAGE_DIR"
+          cr index -o "$owner" -r "$repo" --push --package-path "$PACKAGE_DIR"
 
       - name: Authenticate to GHCR
         uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3.7.0
@@ -129,8 +132,10 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Push chart to GHCR
+        env:
+          PACKAGE_DIR: ${{ runner.temp }}/packages
         run: |
-          package_path=".cr-release-packages/${{ matrix.chart }}-${{ steps.version.outputs.version }}.tgz"
+          package_path="$PACKAGE_DIR/${{ matrix.chart }}-${{ steps.version.outputs.version }}.tgz"
           if [[ ! -f "$package_path" ]]; then
             echo "No packaged chart found for ${{ matrix.chart }}" >&2
             exit 1
