@@ -106,9 +106,10 @@ jobs:
         with:
           install_only: "true"
 
+      - name: Set package dir
+        run: echo "PACKAGE_DIR=${{ runner.temp }}/packages" >> "$GITHUB_ENV"
+
       - name: Package chart
-        env:
-          PACKAGE_DIR: ${{ runner.temp }}/packages
         run: |
           mkdir -p "$PACKAGE_DIR"
           cr package "charts/${{ matrix.chart }}" --package-path "$PACKAGE_DIR"
@@ -116,7 +117,6 @@ jobs:
       - name: Publish chart release and index
         env:
           CR_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
-          PACKAGE_DIR: ${{ runner.temp }}/packages
         run: |
           owner="${GITHUB_REPOSITORY_OWNER}"
           repo="${GITHUB_REPOSITORY#*/}"
@@ -132,8 +132,6 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Push chart to GHCR
-        env:
-          PACKAGE_DIR: ${{ runner.temp }}/packages
         run: |
           package_path="$PACKAGE_DIR/${{ matrix.chart }}-${{ steps.version.outputs.version }}.tgz"
           if [[ ! -f "$package_path" ]]; then
