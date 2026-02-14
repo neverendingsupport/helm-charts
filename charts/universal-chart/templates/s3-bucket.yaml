@@ -1,0 +1,31 @@
+{{- if .Values.s3.enabled }}
+---
+apiVersion: s3.services.k8s.aws/v1alpha1
+kind: Bucket
+metadata:
+  name: {{ .Values.s3.s3bucketName }}
+  labels:
+    {{- include "universal-chart.labels" . | nindent 4 }}
+spec:
+  name: {{ .Values.s3.s3bucketName }}
+  encryption:
+    rules:
+      - applyServerSideEncryptionByDefault:
+          sseAlgorithm: {{ .Values.s3.encryption.sseAlgorithm | default "AES256" }}
+          {{- if .Values.s3.encryption.kmsMasterKeyID }}
+          kmsMasterKeyID: {{ .Values.s3.encryption.kmsMasterKeyID }}
+          {{- end }}
+  versioning:
+    status: {{ .Values.s3.versioning | default "Suspended" }}
+  {{- if and .Values.s3.lifecycle (ne (len .Values.s3.lifecycle) 0) }}
+  lifecycle:
+    {{- toYaml .Values.s3.lifecycle | nindent 4 }}
+  {{- end }}
+  {{- if and .Values.s3.cors (ne (len .Values.s3.cors) 0) }}
+  cors:
+    {{- toYaml .Values.s3.cors | nindent 4 }}
+  {{- end }}
+  {{- if and .Values.s3.policy (ne (len .Values.s3.policy) 0) }}
+  policy: {{ .Values.s3.policy | toJson | quote }}
+  {{- end }}
+{{- end }}

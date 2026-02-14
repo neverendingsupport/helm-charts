@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import json
+
 import pytest
 
 from .chart_test_utils import (
@@ -372,3 +374,326 @@ def test_spread_values_reject_invalid_booleans(helm_runner) -> None:
     for key in ("spread_azs", "spread_spot"):
         with pytest.raises(HelmTemplateError):
             render_chart(helm_runner, CHART, values={key: "hero"})
+
+
+def test_s3_bucket_renders_when_enabled(helm_runner) -> None:
+    """Ensure an S3 Bucket is created when enabled."""
+
+    rendered = render_chart(
+        helm_runner,
+        CHART,
+        values={
+            "s3": {
+                "enabled": True,
+                "s3bucketName": "test-bucket",
+            }
+        },
+    )
+    manifests = load_manifests(rendered)
+    bucket = get_manifest(manifests, "Bucket")
+
+    assert bucket["metadata"]["name"] == "test-bucket"
+    assert bucket["spec"]["name"] == "test-bucket"
+    assert bucket["apiVersion"] == "s3.services.k8s.aws/v1alpha1"
+    assert bucket["kind"] == "Bucket"
+
+
+def test_s3_bucket_is_not_rendered_when_disabled(helm_runner) -> None:
+    """Ensure the S3 Bucket is omitted when disabled."""
+
+    rendered = render_chart(
+        helm_runner,
+        CHART,
+        values={"s3": {"enabled": False}},
+    )
+    manifests = load_manifests(rendered)
+
+    assert all(manifest.get("kind") != "Bucket" for manifest in manifests)
+
+
+def test_s3_bucket_has_correct_labels(helm_runner) -> None:
+    """Ensure the S3 Bucket has the correct chart labels."""
+
+    rendered = render_chart(
+        helm_runner,
+        CHART,
+        values={
+            "s3": {
+                "enabled": True,
+                "s3bucketName": "test-bucket",
+            }
+        },
+    )
+    manifests = load_manifests(rendered)
+    bucket = get_manifest(manifests, "Bucket")
+    labels = bucket["metadata"]["labels"]
+
+    assert labels["app.kubernetes.io/name"] == "universal-chart"
+    assert labels["app.kubernetes.io/instance"] == CHART.release
+    assert labels["app.kubernetes.io/managed-by"] == "Helm"
+    assert "helm.sh/chart" in labels
+
+
+def test_s3_bucket_encryption_defaults_to_aes256(helm_runner) -> None:
+    """Ensure encryption defaults to AES256 when not specified."""
+
+    rendered = render_chart(
+        helm_runner,
+        CHART,
+        values={
+            "s3": {
+                "enabled": True,
+                "s3bucketName": "test-bucket",
+            }
+        },
+    )
+    manifests = load_manifests(rendered)
+    bucket = get_manifest(manifests, "Bucket")
+
+    encryption = bucket["spec"]["encryption"]["rules"][0][
+        "applyServerSideEncryptionByDefault"
+    ]
+    assert encryption["sseAlgorithm"] == "AES256"
+    assert "kmsMasterKeyID" not in encryption
+
+
+def test_s3_bucket_encryption_supports_kms(helm_runner) -> None:
+    """Ensure KMS encryption is rendered when specified."""
+
+    rendered = render_chart(
+        helm_runner,
+        CHART,
+        values={
+            "s3": {
+                "enabled": True,
+                "s3bucketName": "test-bucket",
+                "encryption": {
+                    "sseAlgorithm": "aws:kms",
+                    "kmsMasterKeyID": "alias/my-key",
+                },
+            }
+        },
+    )
+    manifests = load_manifests(rendered)
+    bucket = get_manifest(manifests, "Bucket")
+
+    encryption = bucket["spec"]["encryption"]["rules"][0][
+        "applyServerSideEncryptionByDefault"
+    ]
+    assert encryption["sseAlgorithm"] == "aws:kms"
+    assert encryption["kmsMasterKeyID"] == "alias/my-key"
+
+
+def test_s3_bucket_versioning_defaults_to_suspended(helm_runner) -> None:
+    """Ensure versioning defaults to Suspended when not specified."""
+
+    rendered = render_chart(
+        helm_runner,
+        CHART,
+        values={
+            "s3": {
+                "enabled": True,
+                "s3bucketName": "test-bucket",
+            }
+        },
+    )
+    manifests = load_manifests(rendered)
+    bucket = get_manifest(manifests, "Bucket")
+
+    assert bucket["spec"]["versioning"]["status"] == "Suspended"
+
+
+def test_s3_bucket_versioning_can_be_enabled(helm_runner) -> None:
+    """Ensure versioning can be set to Enabled."""
+
+    rendered = render_chart(
+        helm_runner,
+        CHART,
+        values={
+            "s3": {
+                "enabled": True,
+                "s3bucketName": "test-bucket",
+                "versioning": "Enabled",
+            }
+        },
+    )
+    manifests = load_manifests(rendered)
+    bucket = get_manifest(manifests, "Bucket")
+
+    assert bucket["spec"]["versioning"]["status"] == "Enabled"
+
+
+def test_s3_bucket_lifecycle_rules_are_rendered(helm_runner) -> None:
+    """Ensure lifecycle rules are rendered when provided."""
+
+    rendered = render_chart(
+        helm_runner,
+        CHART,
+        values={
+            "s3": {
+                "enabled": True,
+                "s3bucketName": "test-bucket",
+                "lifecycle": {
+                    "rules": [
+                        {
+                            "id": "expire-old-objects",
+                            "status": "Enabled",
+                            "filter": {"prefix": "logs/"},
+                            "expiration": {"days": 365},
+                        }
+                    ]
+                },
+            }
+        },
+    )
+    manifests = load_manifests(rendered)
+    bucket = get_manifest(manifests, "Bucket")
+
+    assert "lifecycle" in bucket["spec"]
+    lifecycle = bucket["spec"]["lifecycle"]
+    assert len(lifecycle["rules"]) == 1
+    assert lifecycle["rules"][0]["id"] == "expire-old-objects"
+    assert lifecycle["rules"][0]["status"] == "Enabled"
+    assert lifecycle["rules"][0]["filter"]["prefix"] == "logs/"
+    assert lifecycle["rules"][0]["expiration"]["days"] == 365
+
+
+def test_s3_bucket_lifecycle_is_omitted_when_empty(helm_runner) -> None:
+    """Ensure lifecycle section is omitted when empty."""
+
+    rendered = render_chart(
+        helm_runner,
+        CHART,
+        values={
+            "s3": {
+                "enabled": True,
+                "s3bucketName": "test-bucket",
+                "lifecycle": {},
+            }
+        },
+    )
+    manifests = load_manifests(rendered)
+    bucket = get_manifest(manifests, "Bucket")
+
+    assert "lifecycle" not in bucket["spec"]
+
+
+def test_s3_bucket_cors_rules_are_rendered(helm_runner) -> None:
+    """Ensure CORS rules are rendered when provided."""
+
+    rendered = render_chart(
+        helm_runner,
+        CHART,
+        values={
+            "s3": {
+                "enabled": True,
+                "s3bucketName": "test-bucket",
+                "cors": {
+                    "corsRules": [
+                        {
+                            "id": "test-cors-rule",
+                            "allowedOrigins": ["*"],
+                            "allowedMethods": ["GET", "PUT"],
+                            "allowedHeaders": ["*"],
+                            "maxAgeSeconds": 3000,
+                        }
+                    ]
+                },
+            }
+        },
+    )
+    manifests = load_manifests(rendered)
+    bucket = get_manifest(manifests, "Bucket")
+
+    assert "cors" in bucket["spec"]
+    cors = bucket["spec"]["cors"]
+    assert len(cors["corsRules"]) == 1
+    assert cors["corsRules"][0]["id"] == "test-cors-rule"
+    assert cors["corsRules"][0]["allowedOrigins"] == ["*"]
+    assert cors["corsRules"][0]["allowedMethods"] == ["GET", "PUT"]
+    assert cors["corsRules"][0]["allowedHeaders"] == ["*"]
+    assert cors["corsRules"][0]["maxAgeSeconds"] == 3000
+
+
+def test_s3_bucket_cors_is_omitted_when_empty(helm_runner) -> None:
+    """Ensure CORS section is omitted when empty."""
+
+    rendered = render_chart(
+        helm_runner,
+        CHART,
+        values={
+            "s3": {
+                "enabled": True,
+                "s3bucketName": "test-bucket",
+                "cors": {},
+            }
+        },
+    )
+    manifests = load_manifests(rendered)
+    bucket = get_manifest(manifests, "Bucket")
+
+    assert "cors" not in bucket["spec"]
+
+
+def test_s3_bucket_policy_is_rendered_as_json_string(helm_runner) -> None:
+    """Ensure policy is rendered as a JSON string when provided."""
+
+    rendered = render_chart(
+        helm_runner,
+        CHART,
+        values={
+            "s3": {
+                "enabled": True,
+                "s3bucketName": "test-bucket",
+                "policy": {
+                    "Version": "2012-10-17",
+                    "Statement": [
+                        {
+                            "Sid": "PublicReadGetObject",
+                            "Effect": "Allow",
+                            "Principal": "*",
+                            "Action": ["s3:GetObject"],
+                            "Resource": ["arn:aws:s3:::test-bucket/*"],
+                        }
+                    ],
+                },
+            }
+        },
+    )
+    manifests = load_manifests(rendered)
+    bucket = get_manifest(manifests, "Bucket")
+
+    assert "policy" in bucket["spec"]
+    policy_str = bucket["spec"]["policy"]
+    assert isinstance(policy_str, str)
+
+    policy_dict = json.loads(policy_str)
+    assert policy_dict["Version"] == "2012-10-17"
+    assert len(policy_dict["Statement"]) == 1
+    assert policy_dict["Statement"][0]["Sid"] == "PublicReadGetObject"
+    assert policy_dict["Statement"][0]["Effect"] == "Allow"
+    assert policy_dict["Statement"][0]["Principal"] == "*"
+    assert policy_dict["Statement"][0]["Action"] == ["s3:GetObject"]
+    assert policy_dict["Statement"][0]["Resource"] == [
+        "arn:aws:s3:::test-bucket/*"
+    ]
+
+
+def test_s3_bucket_policy_is_omitted_when_empty(helm_runner) -> None:
+    """Ensure policy section is omitted when empty."""
+
+    rendered = render_chart(
+        helm_runner,
+        CHART,
+        values={
+            "s3": {
+                "enabled": True,
+                "s3bucketName": "test-bucket",
+                "policy": {},
+            }
+        },
+    )
+    manifests = load_manifests(rendered)
+    bucket = get_manifest(manifests, "Bucket")
+
+    assert "policy" not in bucket["spec"]

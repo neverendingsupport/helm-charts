@@ -515,3 +515,119 @@ redis:
             summary: Redis(R) instance {{ "{{ $labels.instance }}" }} has evicted keys
             description: |
               Redis(R) instance {{ "{{ $labels.instance }}" }} has evicted {{ "{{ $value }}" }} keys in the last 5 minutes.
+
+########################################
+# S3 bucket configuration (mirrors managed-s3)
+s3:
+  # @schema
+  # type: boolean
+  # default: false
+  # @schema
+  # -- When true, create an S3 bucket CR via ACK.
+  enabled: false
+
+  # @schema
+  # type: string
+  # minlength: 3
+  # maxlength: 63
+  # pattern: ^[a-z0-9][a-z0-9.-]*[a-z0-9]$
+  # @schema
+  # -- S3 bucket name (required). Must be globally unique and follow S3 naming rules.
+  s3bucketName: ""
+
+  # @schema
+  # type: string
+  # enum:
+  #   - AES256
+  #   - aws:kms
+  #   - aws:kms:dsse
+  # default: AES256
+  # @schema
+  # -- Server-side encryption algorithm. AES256 is SSE-S3 (S3-managed keys).
+  # Use aws:kms for KMS-managed keys.
+  # @schema
+  # type: string
+  # @schema
+  # -- KMS master key ID (optional). Required when using aws:kms or aws:kms:dsse.
+  # Can be a key ID, key ARN, or alias (e.g., "alias/my-key").
+  encryption:
+    sseAlgorithm: AES256
+    # kmsMasterKeyID: ""
+
+  # @schema
+  # type: object
+  # default: {}
+  # @schema
+  # -- Lifecycle configuration rules. Leave empty for no lifecycle rules.
+  # Example:
+  #   lifecycle:
+  #     rules:
+  #       - id: expire-old-objects
+  #         status: Enabled
+  #         filter:
+  #           prefix: ""
+  #           objectSizeGreaterThan: 1024
+  #           objectSizeLessThan: 10240
+  #           tags:
+  #             - key: "Environment"
+  #               value: "Production"
+  #         expiration:
+  #           days: 365
+  #       - id: transition-to-ia
+  #         status: Enabled
+  #         filter:
+  #           prefix: "logs/"
+  #         transitions:
+  #           - days: 30
+  #             storageClass: STANDARD_IA
+  lifecycle: {}
+
+  # @schema
+  # type: object
+  # default: {}
+  # @schema
+  # -- CORS configuration. Leave empty for no CORS rules.
+  # Example:
+  #   cors:
+  #     corsRules:
+  #       - id: "my-cors-rule"
+  #         allowedOrigins:
+  #           - "*"
+  #         allowedMethods:
+  #           - GET
+  #           - PUT
+  #         allowedHeaders:
+  #           - "*"
+  #         exposeHeaders:
+  #           - "x-amz-server-side-encryption"
+  #         maxAgeSeconds: 3000
+  cors: {}
+
+  # @schema
+  # type: object
+  # default: {}
+  # @schema
+  # -- Bucket policy as a YAML object (will be converted to JSON string).
+  # Leave empty for no bucket policy. Use AWS IAM policy format with capitalized keys.
+  # Example:
+  #   policy:
+  #     Version: "2012-10-17"
+  #     Statement:
+  #       - Sid: PublicReadGetObject
+  #         Effect: Allow
+  #         Principal: "*"
+  #         Action:
+  #           - "s3:GetObject"
+  #         Resource:
+  #           - "arn:aws:s3:::my-bucket-name/*"
+  policy: {}
+
+  # @schema
+  # type: string
+  # enum:
+  #   - Enabled
+  #   - Suspended
+  # default: Suspended
+  # @schema
+  # -- Versioning status. Set to "Enabled" to enable versioning, "Suspended" to suspend it.
+  versioning: Suspended
