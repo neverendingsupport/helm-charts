@@ -1,0 +1,4 @@
+dbCluster:
+  spec:
+    dbClusterIdentifier: sample-docdb
+    engineVersion: "5.0.0"

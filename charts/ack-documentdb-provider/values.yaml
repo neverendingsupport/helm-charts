@@ -1,0 +1,67 @@
+# Default values for ack-documentdb-provider.
+
+nameOverride: ""
+fullnameOverride: ""
+
+dbCluster:
+  # -- Optional explicit DBCluster metadata.name.
+  name: ""
+  # -- Extra annotations for the DBCluster object metadata.
+  annotations: {}
+  # @schema
+  # type: object
+  # additionalProperties: true
+  # @schema
+  # -- Full `spec` payload for the ACK DBCluster CRD.
+  spec: {}
+
+connectionSecret:
+  create: true
+  name: ""
+  annotations: {}
+
+auth:
+  # @schema
+  # enum:
+  # - password
+  # - irsa
+  # @schema
+  mode: password
+  username: docdbadmin
+  irsaRoleArn: ""
+  password:
+    key: PASSWORD
+    length: 32
+    digits: 8
+    symbols: 4
+    noUpper: false
+    allowRepeat: true
+
+reflector:
+  enabled: false
+  pushNamespaces: []
+  allowedNamespaces: []
+
+fieldExport:
+  enabled: true
+  mappings:
+    - name: endpoint
+      path: ".status.endpoint"
+      key: ENDPOINT
+    - name: port
+      path: ".status.port"
+      key: PORT
+    - name: arn
+      path: ".status.ackResourceMetadata.arn"
+      key: ARN
+
+pushSecret:
+  enabled: false
+  name: ""
+  storeKind: SecretStore
+  refreshInterval: 1h
+  sourceKey: ENDPOINT
+  target:
+    name: ""
+    provider: ""
+    type: Opaque

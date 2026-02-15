@@ -1,0 +1,12 @@
+apiVersion: opensearchservice.services.k8s.aws/v1alpha1
+kind: Domain
+metadata:
+  name: {{ default (include "ack-opensearch-provider.fullname" .) .Values.domain.name }}
+  labels:
+    {{- include "ack-opensearch-provider.labels" . | nindent 4 }}
+  {{- with .Values.domain.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  {{- toYaml .Values.domain.spec | nindent 2 }}

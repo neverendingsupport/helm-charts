@@ -1,0 +1,12 @@
+apiVersion: docdb.services.k8s.aws/v1alpha1
+kind: DBCluster
+metadata:
+  name: {{ default (include "ack-documentdb-provider.fullname" .) .Values.dbCluster.name }}
+  labels:
+    {{- include "ack-documentdb-provider.labels" . | nindent 4 }}
+  {{- with .Values.dbCluster.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  {{- toYaml .Values.dbCluster.spec | nindent 2 }}
