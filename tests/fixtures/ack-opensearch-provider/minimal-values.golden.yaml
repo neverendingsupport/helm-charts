@@ -1,0 +1,122 @@
+---
+# Source: ack-opensearch-provider/templates/connection-secret.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: ack-opensearch-provider-connection
+  labels:
+    helm.sh/chart: ack-opensearch-provider-0.2.0
+    app.kubernetes.io/name: ack-opensearch-provider
+    app.kubernetes.io/instance: ack-opensearch-provider
+    app.kubernetes.io/version: "1.0.0"
+    app.kubernetes.io/managed-by: Helm
+type: Opaque
+stringData:
+  USERNAME: "admin"
+---
+# Source: ack-opensearch-provider/templates/domain.yaml
+apiVersion: opensearchservice.services.k8s.aws/v1alpha1
+kind: Domain
+metadata:
+  name: ack-opensearch-provider
+  labels:
+    helm.sh/chart: ack-opensearch-provider-0.2.0
+    app.kubernetes.io/name: ack-opensearch-provider
+    app.kubernetes.io/instance: ack-opensearch-provider
+    app.kubernetes.io/version: "1.0.0"
+    app.kubernetes.io/managed-by: Helm
+spec:
+  domainName: sample-domain
+  engineVersion: OpenSearch_2.11
+---
+# Source: ack-opensearch-provider/templates/password-generator.yaml
+apiVersion: external-secrets.io/v1
+kind: ExternalSecret
+metadata:
+  name: ack-opensearch-provider-auth
+  labels:
+    helm.sh/chart: ack-opensearch-provider-0.2.0
+    app.kubernetes.io/name: ack-opensearch-provider
+    app.kubernetes.io/instance: ack-opensearch-provider
+    app.kubernetes.io/version: "1.0.0"
+    app.kubernetes.io/managed-by: Helm
+spec:
+  refreshInterval: 1h
+  target:
+    name: ack-opensearch-provider-connection
+    creationPolicy: Merge
+    template:
+      type: Opaque
+      data:
+        USERNAME: "admin"
+  data:
+    - secretKey: PASSWORD
+      sourceRef:
+        generatorRef:
+          apiVersion: generators.external-secrets.io/v1alpha1
+          kind: Password
+          name: ack-opensearch-provider-password
+---
+# Source: ack-opensearch-provider/templates/field-exports.yaml
+apiVersion: services.k8s.aws/v1alpha1
+kind: FieldExport
+metadata:
+  name: ack-opensearch-provider-endpoint
+  labels:
+    helm.sh/chart: ack-opensearch-provider-0.2.0
+    app.kubernetes.io/name: ack-opensearch-provider
+    app.kubernetes.io/instance: ack-opensearch-provider
+    app.kubernetes.io/version: "1.0.0"
+    app.kubernetes.io/managed-by: Helm
+spec:
+  from:
+    path: ".status.endpoint"
+    resource:
+      group: opensearchservice.services.k8s.aws
+      kind: Domain
+      name: ack-opensearch-provider
+  to:
+    kind: secret
+    name: ack-opensearch-provider-connection
+    key: ENDPOINT
+---
+# Source: ack-opensearch-provider/templates/field-exports.yaml
+apiVersion: services.k8s.aws/v1alpha1
+kind: FieldExport
+metadata:
+  name: ack-opensearch-provider-arn
+  labels:
+    helm.sh/chart: ack-opensearch-provider-0.2.0
+    app.kubernetes.io/name: ack-opensearch-provider
+    app.kubernetes.io/instance: ack-opensearch-provider
+    app.kubernetes.io/version: "1.0.0"
+    app.kubernetes.io/managed-by: Helm
+spec:
+  from:
+    path: ".status.arn"
+    resource:
+      group: opensearchservice.services.k8s.aws
+      kind: Domain
+      name: ack-opensearch-provider
+  to:
+    kind: secret
+    name: ack-opensearch-provider-connection
+    key: ARN
+---
+# Source: ack-opensearch-provider/templates/password-generator.yaml
+apiVersion: generators.external-secrets.io/v1alpha1
+kind: Password
+metadata:
+  name: ack-opensearch-provider-password
+  labels:
+    helm.sh/chart: ack-opensearch-provider-0.2.0
+    app.kubernetes.io/name: ack-opensearch-provider
+    app.kubernetes.io/instance: ack-opensearch-provider
+    app.kubernetes.io/version: "1.0.0"
+    app.kubernetes.io/managed-by: Helm
+spec:
+  length: 32
+  digits: 8
+  symbols: 4
+  noUpper: false
+  allowRepeat: true
