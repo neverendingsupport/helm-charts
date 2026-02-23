@@ -7,7 +7,7 @@ repos:
   # github
   ########################################
   - repo: https://github.com/rhysd/actionlint
-    rev: v1.7.10
+    rev: v1.7.11
     hooks:
       - id: actionlint
 # - repo: local
@@ -61,7 +61,7 @@ repos:
   ########################################
   # Format imports first
   - repo: https://github.com/pycqa/isort
-    rev: 7.0.0
+    rev: 8.0.0
     hooks:
       - id: isort
         args: ["--profile", "black", "--line-length", "80"]
