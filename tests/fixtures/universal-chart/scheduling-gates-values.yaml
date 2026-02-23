@@ -1,0 +1,5 @@
+image:
+  repository: ghcr.io/example/app
+  tag: "1.2.3"
+schedulingGates:
+  - name: s3.csi.aws.com/reserve-headroom-for-mppod

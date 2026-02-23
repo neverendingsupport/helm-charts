@@ -202,6 +202,15 @@ podAnnotations: {}
 # For more information check out: https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/
 podLabels: {}
 
+# -- Scheduling gates to add to the pod spec. Pods with scheduling gates remain
+# unschedulable until all gates are removed (e.g. by a controller). Use for
+# features like S3 Mountpoint CSI driver headroom reservation:
+# https://github.com/awslabs/mountpoint-s3-csi-driver/blob/main/docs/HEADROOM_FOR_MPPOD.md
+# Example:
+#   schedulingGates:
+#     - name: s3.csi.aws.com/reserve-headroom-for-mppod
+schedulingGates: []
+
 podSecurityContext: {}
   # fsGroup: 2000
 
