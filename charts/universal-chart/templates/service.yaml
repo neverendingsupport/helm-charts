@@ -13,3 +13,21 @@ spec:
       name: http
   selector:
     {{- include "universal-chart.selectorLabels" . | nindent 4 }}
+{{- if .Values.serviceMonitor.alternatePort }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "universal-chart.fullname" . }}-metrics
+  labels:
+    {{- include "universal-chart.labels" . | nindent 4 }}
+spec:
+  type: ClusterIP
+  ports:
+    - port: {{ .Values.serviceMonitor.alternatePort }}
+      targetPort: {{ .Values.serviceMonitor.alternatePort }}
+      protocol: TCP
+      name: metrics
+  selector:
+    {{- include "universal-chart.selectorLabels" . | nindent 4 }}
+{{- end }}

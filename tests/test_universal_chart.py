@@ -254,6 +254,70 @@ def test_service_monitor_supports_custom_path_and_interval(helm_runner) -> None:
     assert endpoint["interval"] == "30s"
 
 
+def test_metrics_service_renders_when_alternate_port_is_set(
+    helm_runner,
+) -> None:
+    """Ensure a dedicated metrics service is created for alternate ports."""
+
+    rendered = render_chart(
+        helm_runner,
+        CHART,
+        values={"serviceMonitor": {"alternatePort": 9090}},
+    )
+    manifests = load_manifests(rendered)
+
+    services = [
+        manifest for manifest in manifests if manifest.get("kind") == "Service"
+    ]
+    assert len(services) == 2
+
+    main_service = next(
+        service
+        for service in services
+        if service["metadata"]["name"] == CHART.release
+    )
+    metrics_service = next(
+        service
+        for service in services
+        if service["metadata"]["name"] == f"{CHART.release}-metrics"
+    )
+
+    assert metrics_service["spec"]["type"] == "ClusterIP"
+    assert (
+        metrics_service["spec"]["selector"] == main_service["spec"]["selector"]
+    )
+    assert metrics_service["spec"]["ports"] == [
+        {
+            "name": "metrics",
+            "port": 9090,
+            "protocol": "TCP",
+            "targetPort": 9090,
+        }
+    ]
+
+
+def test_service_monitor_uses_metrics_service_for_alternate_port(
+    helm_runner,
+) -> None:
+    """Ensure ServiceMonitor targets the metrics service when configured."""
+
+    rendered = render_chart(
+        helm_runner,
+        CHART,
+        values={
+            "serviceMonitor": {
+                "enabled": True,
+                "alternatePort": 9090,
+            }
+        },
+    )
+    manifests = load_manifests(rendered)
+    endpoint = get_manifest(manifests, "ServiceMonitor")["spec"]["endpoints"][0]
+
+    assert endpoint["port"] == "metrics"
+    assert endpoint["path"] == "/metrics"
+
+
 def test_service_monitor_interval_supports_minimum_value(helm_runner) -> None:
     """Ensure the minimum interval value renders correctly."""
 
