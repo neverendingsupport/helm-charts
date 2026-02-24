@@ -10,7 +10,7 @@ spec:
     matchLabels:
       {{- include "universal-chart.selectorLabels" . | nindent 6 }}
   endpoints:
-    - port: http
+    - port: {{ if .Values.serviceMonitor.alternatePort }}metrics{{ else }}http{{ end }}
       {{- with .Values.serviceMonitor.path }}
       path: {{ . }}
       {{- end }}

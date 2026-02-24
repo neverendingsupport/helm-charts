@@ -67,6 +67,18 @@
               "type": "null"
             }
           ]
+        },
+        "alternatePort": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 65535
+            },
+            {
+              "type": "null"
+            }
+          ]
         }
       }
     },

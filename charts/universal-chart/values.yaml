@@ -242,6 +242,12 @@ service:
 #       - type: integer
 #         minimum: 1
 #       - type: "null"
+#   alternatePort:
+#     anyof:
+#       - type: integer
+#         minimum: 1
+#         maximum: 65535
+#       - type: "null"
 # @schema
 # -- Configure a ServiceMonitor for scraping metrics from the service.
 serviceMonitor:
@@ -251,6 +257,9 @@ serviceMonitor:
   path: /metrics
   # -- Optional scrape interval (in seconds). When null, the operator default is used.
   interval: null
+  # -- Optional alternate port to scrape via a dedicated "<release>-metrics" Service.
+  # When null, the ServiceMonitor targets the main service as before.
+  alternatePort: null
 
 # -- This block is for setting up the ingress.
 # More information can be found here: https://kubernetes.io/docs/concepts/services-networking/ingress/
