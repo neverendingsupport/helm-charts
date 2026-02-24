@@ -181,6 +181,9 @@ jobs:
         run: |
           owner="${GITHUB_REPOSITORY_OWNER}"
           repo="${GITHUB_REPOSITORY#*/}"
+          # cr index writes index.yaml atomically via temporary files under .cr-index/
+          rm -rf .cr-index
+          mkdir -p .cr-index
           cr upload -o "$owner" -r "$repo" -c "$GITHUB_SHA" --skip-existing \
             --package-path "$PACKAGE_DIR"
           cr index -o "$owner" -r "$repo" --push --package-path "$PACKAGE_DIR"
