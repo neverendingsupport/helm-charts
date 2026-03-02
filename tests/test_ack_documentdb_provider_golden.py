@@ -12,6 +12,8 @@ CHART = ChartContext("ack-documentdb-provider")
 
 
 def discover_golden_pairs() -> list[tuple[Path, Path]]:
+    """Return (values_file, golden_file) fixture pairs for the chart."""
+
     pairs: list[tuple[Path, Path]] = []
     fixtures_dir = CHART.fixtures_dir
     for values_file in sorted(fixtures_dir.glob("*-values.yaml")):
@@ -25,6 +27,8 @@ def discover_golden_pairs() -> list[tuple[Path, Path]]:
 def test_golden_renderings(
     helm_runner, fixture_pair: tuple[Path, Path]
 ) -> None:
+    """Ensure rendered templates match the stored golden output."""
+
     values_file, golden_file = fixture_pair
     rendered = render_chart(helm_runner, CHART, values_files=[values_file])
     assert_matches_golden(rendered, golden_file)

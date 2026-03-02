@@ -13,6 +13,8 @@ CHART = ChartContext("ack-documentdb-provider")
 
 
 def test_chart_renders_with_defaults(helm_runner) -> None:
+    """Ensure default values render core DocumentDB resources."""
+
     rendered = render_chart(helm_runner, CHART)
     manifests = load_manifests(rendered)
 
@@ -22,6 +24,8 @@ def test_chart_renders_with_defaults(helm_runner) -> None:
 
 
 def test_dbcluster_spec_supports_crd_fields(helm_runner) -> None:
+    """Ensure DBCluster CRD spec fields can be set through values."""
+
     rendered = render_chart(
         helm_runner,
         CHART,
@@ -40,6 +44,8 @@ def test_dbcluster_spec_supports_crd_fields(helm_runner) -> None:
 
 
 def test_field_export_and_push_secret_options(helm_runner) -> None:
+    """Ensure field exports and PushSecret honor value overrides."""
+
     rendered = render_chart(
         helm_runner,
         CHART,
@@ -63,6 +69,8 @@ def test_field_export_and_push_secret_options(helm_runner) -> None:
 
 
 def test_irsa_mode_skips_password_generator(helm_runner) -> None:
+    """Ensure IRSA mode omits password generation and uses empty password."""
+
     rendered = render_chart(helm_runner, CHART, values={"auth.mode": "irsa"})
     manifests = load_manifests(rendered)
     secret = get_manifest(manifests, "Secret")
@@ -72,6 +80,8 @@ def test_irsa_mode_skips_password_generator(helm_runner) -> None:
 
 
 def test_reflector_annotations_render(helm_runner) -> None:
+    """Ensure reflector namespace list values become secret annotations."""
+
     rendered = render_chart(
         helm_runner,
         CHART,

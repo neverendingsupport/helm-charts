@@ -13,6 +13,8 @@ CHART = ChartContext("ack-opensearch-provider")
 
 
 def test_chart_renders_domain_with_defaults(helm_runner) -> None:
+    """Ensure default values render core OpenSearch resources."""
+
     rendered = render_chart(helm_runner, CHART)
     manifests = load_manifests(rendered)
 
@@ -23,6 +25,8 @@ def test_chart_renders_domain_with_defaults(helm_runner) -> None:
 
 
 def test_domain_spec_supports_crd_fields(helm_runner) -> None:
+    """Ensure Domain CRD spec fields can be configured via values."""
+
     rendered = render_chart(
         helm_runner,
         CHART,
@@ -44,6 +48,8 @@ def test_domain_spec_supports_crd_fields(helm_runner) -> None:
 
 
 def test_reflector_annotations_render(helm_runner) -> None:
+    """Ensure reflector lists are rendered as secret annotations."""
+
     rendered = render_chart(
         helm_runner,
         CHART,
@@ -72,6 +78,8 @@ def test_reflector_annotations_render(helm_runner) -> None:
 
 
 def test_field_export_secret_name_override(helm_runner) -> None:
+    """Ensure FieldExport targets follow secret name overrides."""
+
     rendered = render_chart(
         helm_runner,
         CHART,
@@ -87,6 +95,8 @@ def test_field_export_secret_name_override(helm_runner) -> None:
 
 
 def test_push_secret_renders_target_configuration(helm_runner) -> None:
+    """Ensure PushSecret renders provider/name/type target configuration."""
+
     rendered = render_chart(
         helm_runner,
         CHART,
@@ -111,6 +121,8 @@ def test_push_secret_renders_target_configuration(helm_runner) -> None:
 
 
 def test_irsa_auth_uses_empty_password(helm_runner) -> None:
+    """Ensure IRSA mode uses empty password and no Password generator."""
+
     rendered = render_chart(
         helm_runner,
         CHART,
