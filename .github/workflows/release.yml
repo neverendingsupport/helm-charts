@@ -11,6 +11,8 @@ on:
         required: true
         type: choice
         options:
+          - ack-documentdb-provider
+          - ack-opensearch-provider
           - nes-node-web
           - universal-chart
       bump:
