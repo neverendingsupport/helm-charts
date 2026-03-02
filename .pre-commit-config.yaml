@@ -61,7 +61,7 @@ repos:
   ########################################
   # Format imports first
   - repo: https://github.com/pycqa/isort
-    rev: 8.0.0
+    rev: 8.0.1
     hooks:
       - id: isort
         args: ["--profile", "black", "--line-length", "80"]
