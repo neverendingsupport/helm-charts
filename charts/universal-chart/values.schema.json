@@ -88,6 +88,18 @@
     "spread_spot": {
       "type": "boolean"
     },
+    "terminationGracePeriodSeconds": {
+      "anyOf": [
+        {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 900
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
     "revisionHistoryLimit": {
       "type": "integer",
       "minimum": 0
