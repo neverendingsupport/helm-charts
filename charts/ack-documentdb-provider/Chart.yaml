@@ -1,0 +1,6 @@
+apiVersion: v2
+name: ack-documentdb-provider
+description: Helm chart to manage ACK DocumentDB DBClusters and exported connection secrets
+type: application
+version: 0.1.0
+appVersion: "1.0.0"

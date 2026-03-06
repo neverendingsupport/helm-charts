@@ -1,0 +1,88 @@
+# Default values for ack-opensearch-provider.
+
+nameOverride: ""
+fullnameOverride: ""
+
+# -- OpenSearch Domain resource configuration.
+domain:
+  # -- Optional explicit Domain metadata.name.
+  name: ""
+  # -- Extra annotations for the Domain object metadata.
+  annotations: {}
+  # @schema
+  # type: object
+  # additionalProperties: true
+  # @schema
+  # -- Full `spec` payload for the ACK Domain CRD.
+  # Every CRD field can be set here.
+  spec: {}
+
+# -- Connection secret generated and updated by FieldExport/ExternalSecret.
+connectionSecret:
+  # -- Create the connection secret shell object.
+  create: true
+  # -- Name for the generated connection secret.
+  # Defaults to `<release>-<chart>-connection`.
+  name: ""
+  # -- Additional annotations to place on the connection secret.
+  annotations: {}
+
+# -- Authentication settings for the generated connection secret.
+auth:
+  # @schema
+  # enum:
+  # - password
+  # - irsa
+  # @schema
+  # -- Use generated password auth or IRSA (empty password) auth.
+  mode: password
+  # -- Username written to the connection secret.
+  username: admin
+  # -- Optional IAM role ARN written in IRSA mode.
+  irsaRoleArn: ""
+  password:
+    # -- Key used for the generated password in the connection secret.
+    key: PASSWORD
+    # -- Generated password length.
+    length: 32
+    # -- Include digits in generated password.
+    digits: 8
+    # -- Include symbols in generated password.
+    symbols: 4
+    # -- Disallow upper-case chars.
+    noUpper: false
+    # -- Allow repeated characters.
+    allowRepeat: true
+
+# -- Reflector annotations for syncing connection secret across namespaces.
+reflector:
+  enabled: false
+  # -- Namespaces to push reflected secrets into.
+  pushNamespaces: []
+  # -- Namespaces allowed to pull/reflect this secret.
+  allowedNamespaces: []
+
+fieldExport:
+  enabled: true
+  # -- Fields exported from Domain status into the generated secret.
+  mappings:
+    - name: endpoint
+      path: ".status.endpoint"
+      key: ENDPOINT
+    - name: arn
+      path: ".status.arn"
+      key: ARN
+
+pushSecret:
+  enabled: false
+  name: ""
+  storeKind: SecretStore
+  refreshInterval: 1h
+  sourceKey: ENDPOINT
+  target:
+    # -- Remote secret name in the target provider.
+    name: ""
+    # -- External Secrets store ref name (e.g. aws-secrets-manager).
+    provider: ""
+    # -- Remote provider-specific secret type/property.
+    type: Opaque

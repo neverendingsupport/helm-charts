@@ -1,0 +1,145 @@
+---
+# Source: ack-documentdb-provider/templates/connection-secret.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: ack-documentdb-provider-connection
+  labels:
+    helm.sh/chart: ack-documentdb-provider-0.1.0
+    app.kubernetes.io/name: ack-documentdb-provider
+    app.kubernetes.io/instance: ack-documentdb-provider
+    app.kubernetes.io/version: "1.0.0"
+    app.kubernetes.io/managed-by: Helm
+type: Opaque
+stringData:
+  USERNAME: "docdbadmin"
+---
+# Source: ack-documentdb-provider/templates/dbcluster.yaml
+apiVersion: docdb.services.k8s.aws/v1alpha1
+kind: DBCluster
+metadata:
+  name: ack-documentdb-provider
+  labels:
+    helm.sh/chart: ack-documentdb-provider-0.1.0
+    app.kubernetes.io/name: ack-documentdb-provider
+    app.kubernetes.io/instance: ack-documentdb-provider
+    app.kubernetes.io/version: "1.0.0"
+    app.kubernetes.io/managed-by: Helm
+spec:
+  dbClusterIdentifier: sample-docdb
+  engineVersion: 5.0.0
+---
+# Source: ack-documentdb-provider/templates/password-generator.yaml
+apiVersion: external-secrets.io/v1
+kind: ExternalSecret
+metadata:
+  name: ack-documentdb-provider-auth
+  labels:
+    helm.sh/chart: ack-documentdb-provider-0.1.0
+    app.kubernetes.io/name: ack-documentdb-provider
+    app.kubernetes.io/instance: ack-documentdb-provider
+    app.kubernetes.io/version: "1.0.0"
+    app.kubernetes.io/managed-by: Helm
+spec:
+  refreshInterval: 1h
+  target:
+    name: ack-documentdb-provider-connection
+    creationPolicy: Merge
+    template:
+      type: Opaque
+      data:
+        USERNAME: "docdbadmin"
+  data:
+    - secretKey: PASSWORD
+      sourceRef:
+        generatorRef:
+          apiVersion: generators.external-secrets.io/v1alpha1
+          kind: Password
+          name: ack-documentdb-provider-password
+---
+# Source: ack-documentdb-provider/templates/field-exports.yaml
+apiVersion: services.k8s.aws/v1alpha1
+kind: FieldExport
+metadata:
+  name: ack-documentdb-provider-endpoint
+  labels:
+    helm.sh/chart: ack-documentdb-provider-0.1.0
+    app.kubernetes.io/name: ack-documentdb-provider
+    app.kubernetes.io/instance: ack-documentdb-provider
+    app.kubernetes.io/version: "1.0.0"
+    app.kubernetes.io/managed-by: Helm
+spec:
+  from:
+    path: ".status.endpoint"
+    resource:
+      group: docdb.services.k8s.aws
+      kind: DBCluster
+      name: ack-documentdb-provider
+  to:
+    kind: secret
+    name: ack-documentdb-provider-connection
+    key: ENDPOINT
+---
+# Source: ack-documentdb-provider/templates/field-exports.yaml
+apiVersion: services.k8s.aws/v1alpha1
+kind: FieldExport
+metadata:
+  name: ack-documentdb-provider-port
+  labels:
+    helm.sh/chart: ack-documentdb-provider-0.1.0
+    app.kubernetes.io/name: ack-documentdb-provider
+    app.kubernetes.io/instance: ack-documentdb-provider
+    app.kubernetes.io/version: "1.0.0"
+    app.kubernetes.io/managed-by: Helm
+spec:
+  from:
+    path: ".status.port"
+    resource:
+      group: docdb.services.k8s.aws
+      kind: DBCluster
+      name: ack-documentdb-provider
+  to:
+    kind: secret
+    name: ack-documentdb-provider-connection
+    key: PORT
+---
+# Source: ack-documentdb-provider/templates/field-exports.yaml
+apiVersion: services.k8s.aws/v1alpha1
+kind: FieldExport
+metadata:
+  name: ack-documentdb-provider-arn
+  labels:
+    helm.sh/chart: ack-documentdb-provider-0.1.0
+    app.kubernetes.io/name: ack-documentdb-provider
+    app.kubernetes.io/instance: ack-documentdb-provider
+    app.kubernetes.io/version: "1.0.0"
+    app.kubernetes.io/managed-by: Helm
+spec:
+  from:
+    path: ".status.ackResourceMetadata.arn"
+    resource:
+      group: docdb.services.k8s.aws
+      kind: DBCluster
+      name: ack-documentdb-provider
+  to:
+    kind: secret
+    name: ack-documentdb-provider-connection
+    key: ARN
+---
+# Source: ack-documentdb-provider/templates/password-generator.yaml
+apiVersion: generators.external-secrets.io/v1alpha1
+kind: Password
+metadata:
+  name: ack-documentdb-provider-password
+  labels:
+    helm.sh/chart: ack-documentdb-provider-0.1.0
+    app.kubernetes.io/name: ack-documentdb-provider
+    app.kubernetes.io/instance: ack-documentdb-provider
+    app.kubernetes.io/version: "1.0.0"
+    app.kubernetes.io/managed-by: Helm
+spec:
+  length: 32
+  digits: 8
+  symbols: 4
+  noUpper: false
+  allowRepeat: true

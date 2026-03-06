@@ -1,0 +1,4 @@
+domain:
+  spec:
+    domainName: sample-domain
+    engineVersion: OpenSearch_2.11
