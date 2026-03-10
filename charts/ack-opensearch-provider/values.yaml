@@ -1,0 +1,447 @@
+# Default values for ack-opensearch-provider.
+
+nameOverride: ""
+fullnameOverride: ""
+
+# -- Optional explicit Domain metadata.name. Defaults to the chart fullname.
+resourceName: ""
+
+# @schema
+# type: object
+# additionalProperties: true
+# @schema
+# -- Extra annotations for the Domain object metadata.
+annotations: {}
+
+# @schema
+# anyof:
+#   - type: string
+#     pattern: '^[a-z][a-z0-9-]+$'
+#   - type: "null"
+# @schema
+# -- OpenSearch domain name from `Domain.spec.name`.
+name: null
+
+# @schema
+# anyof:
+#   - type: string
+#     pattern: '^Elasticsearch_[0-9]{1}\.[0-9]{1,2}$|^OpenSearch_[0-9]{1,2}\.[0-9]{1,2}$'
+#   - type: "null"
+# @schema
+engineVersion: null
+
+# @schema
+# anyof:
+#   - type: string
+#   - type: "null"
+# @schema
+accessPolicies: null
+
+# @schema
+# type: object
+# additionalProperties:
+#   type: string
+# @schema
+# -- Advanced key-value configuration options for the OpenSearch domain.
+advancedOptions: {}
+
+# @schema
+# type: object
+# additionalProperties: true
+# properties:
+#   enabled:
+#     type: boolean
+#   internalUserDatabaseEnabled:
+#     type: boolean
+#   masterUserOptions:
+#     type: object
+#     additionalProperties: true
+# @schema
+# -- Fine-grained access control settings for the OpenSearch domain.
+advancedSecurityOptions: {}
+
+# @schema
+# type: object
+# additionalProperties: true
+# @schema
+# -- AIML feature settings for the OpenSearch domain.
+aimlOptions: {}
+
+# @schema
+# type: object
+# additionalProperties: true
+# properties:
+#   desiredState:
+#     type: string
+#   maintenanceSchedules:
+#     type: array
+#     items:
+#       type: object
+#       additionalProperties: true
+#   rollbackOnDisable:
+#     type: string
+#   useOffPeakWindow:
+#     type: boolean
+# @schema
+# -- Auto-Tune maintenance scheduling and rollback settings for the OpenSearch domain.
+autoTuneOptions: {}
+
+# @schema
+# type: object
+# additionalProperties: true
+# properties:
+#   coldStorageOptions:
+#     type: object
+#     additionalProperties: true
+#     properties:
+#       enabled:
+#         type: boolean
+#   dedicatedMasterCount:
+#     type: integer
+#   dedicatedMasterEnabled:
+#     type: boolean
+#   dedicatedMasterType:
+#     type: string
+#   instanceCount:
+#     type: integer
+#   instanceType:
+#     type: string
+#   multiAZWithStandbyEnabled:
+#     type: boolean
+#   warmCount:
+#     type: integer
+#   warmEnabled:
+#     type: boolean
+#   warmType:
+#     type: string
+#   zoneAwarenessConfig:
+#     type: object
+#     additionalProperties: true
+#     properties:
+#       availabilityZoneCount:
+#         type: integer
+#   zoneAwarenessEnabled:
+#     type: boolean
+# @schema
+# -- Cluster topology and instance sizing settings for the OpenSearch domain.
+clusterConfig: {}
+
+# @schema
+# type: object
+# additionalProperties: true
+# properties:
+#   enabled:
+#     type: boolean
+#   identityPoolID:
+#     type: string
+#   roleARN:
+#     type: string
+#   userPoolID:
+#     type: string
+# @schema
+# -- Amazon Cognito authentication settings for the OpenSearch domain.
+cognitoOptions: {}
+
+# @schema
+# type: object
+# additionalProperties: true
+# properties:
+#   customEndpoint:
+#     type: string
+#   customEndpointCertificateARN:
+#     type: string
+#   customEndpointEnabled:
+#     type: boolean
+#   enforceHTTPS:
+#     type: boolean
+#   tlsSecurityPolicy:
+#     type: string
+# @schema
+# -- Custom endpoint, TLS, and HTTPS settings for the domain endpoint.
+domainEndpointOptions: {}
+
+# @schema
+# type: object
+# additionalProperties: true
+# properties:
+#   ebsEnabled:
+#     type: boolean
+#   iops:
+#     type: integer
+#   throughput:
+#     type: integer
+#   volumeSize:
+#     type: integer
+#   volumeType:
+#     type: string
+# @schema
+# -- EBS volume settings for data nodes in the OpenSearch domain.
+ebsOptions: {}
+
+# @schema
+# type: object
+# additionalProperties: true
+# properties:
+#   enabled:
+#     type: boolean
+#   kmsKeyID:
+#     type: string
+# @schema
+# -- Encryption at rest settings for the OpenSearch domain.
+encryptionAtRestOptions: {}
+
+# @schema
+# anyof:
+#   - type: string
+#   - type: "null"
+# @schema
+ipAddressType: null
+
+# @schema
+# type: object
+# additionalProperties: true
+# @schema
+# -- Log publishing settings for the OpenSearch domain.
+logPublishingOptions: {}
+
+# @schema
+# type: object
+# additionalProperties: true
+# properties:
+#   enabled:
+#     type: boolean
+# @schema
+# -- Node-to-node encryption settings for the OpenSearch domain.
+nodeToNodeEncryptionOptions: {}
+
+# @schema
+# type: object
+# additionalProperties: true
+# properties:
+#   enabled:
+#     type: boolean
+#   offPeakWindow:
+#     type: object
+#     additionalProperties: true
+#     properties:
+#       windowStartTime:
+#         type: object
+#         additionalProperties: true
+#         properties:
+#           hours:
+#             type: integer
+#           minutes:
+#             type: integer
+# @schema
+# -- Off-peak maintenance window settings for the OpenSearch domain.
+offPeakWindowOptions: {}
+
+# @schema
+# type: object
+# additionalProperties: true
+# properties:
+#   autoSoftwareUpdateEnabled:
+#     type: boolean
+# @schema
+# -- Software update preferences for the OpenSearch domain.
+softwareUpdateOptions: {}
+
+# @schema
+# type: array
+# items:
+#   type: object
+#   additionalProperties: true
+#   properties:
+#     key:
+#       type: string
+#       minLength: 1
+#       maxLength: 128
+#     value:
+#       type: string
+#       maxLength: 256
+# @schema
+tags: []
+
+# @schema
+# type: object
+# additionalProperties: true
+# properties:
+#   securityGroupIDs:
+#     type: array
+#     items:
+#       type: string
+#   subnetIDs:
+#     type: array
+#     items:
+#       type: string
+# @schema
+# -- VPC networking settings for the OpenSearch domain.
+vpcOptions: {}
+
+# @schema
+# type: object
+# properties:
+#   create:
+#     type: boolean
+#   name:
+#     type: string
+#   annotations:
+#     type: object
+#     additionalProperties: true
+# @schema
+# -- Settings for the generated in-cluster connection secret.
+connectionSecret:
+  # -- Create the connection secret shell object.
+  create: true
+  # -- Name for the generated connection secret.
+  # Defaults to `<release>-<chart>-connection`.
+  name: ""
+  # -- Additional annotations to place on the connection secret.
+  annotations: {}
+
+# @schema
+# type: object
+# properties:
+#   mode:
+#     enum:
+#       - password
+#       - irsa
+#   username:
+#     type: string
+#   irsaRoleArn:
+#     type: string
+#   password:
+#     type: object
+#     properties:
+#       key:
+#         type: string
+#       length:
+#         type: integer
+#         minimum: 1
+#       digits:
+#         type: integer
+#         minimum: 0
+#       symbols:
+#         type: integer
+#         minimum: 0
+#       noUpper:
+#         type: boolean
+#       allowRepeat:
+#         type: boolean
+# @schema
+# -- Authentication data written into the generated connection secret.
+auth:
+  # -- Use generated password auth or IRSA (empty password) auth.
+  mode: password
+  # -- Username written to the connection secret.
+  username: admin
+  # -- Optional IAM role ARN written in IRSA mode.
+  irsaRoleArn: ""
+  password:
+    # -- Key used for the generated password in the connection secret.
+    key: PASSWORD
+    # -- Generated password length.
+    length: 32
+    # -- Include digits in generated password.
+    digits: 8
+    # -- Include symbols in generated password.
+    symbols: 4
+    # -- Disallow upper-case chars.
+    noUpper: false
+    # -- Allow repeated characters.
+    allowRepeat: true
+
+# @schema
+# type: object
+# properties:
+#   enabled:
+#     type: boolean
+#   pushNamespaces:
+#     type: array
+#     items:
+#       type: string
+#   allowedNamespaces:
+#     type: array
+#     items:
+#       type: string
+# @schema
+# -- Secret reflector settings for syncing the connection secret across namespaces.
+reflector:
+  enabled: false
+  # -- Namespaces to push reflected secrets into.
+  pushNamespaces: []
+  # -- Namespaces allowed to pull/reflect this secret.
+  allowedNamespaces: []
+
+# @schema
+# type: object
+# properties:
+#   enabled:
+#     type: boolean
+#   mappings:
+#     type: array
+#     items:
+#       type: object
+#       required:
+#         - name
+#         - path
+#         - key
+#       properties:
+#         name:
+#           type: string
+#         path:
+#           type: string
+#         key:
+#           type: string
+# @schema
+# -- FieldExport settings for copying Domain status fields into the connection secret.
+fieldExport:
+  enabled: true
+  # -- Fields exported from Domain status into the generated secret.
+  mappings:
+    - name: endpoint
+      path: ".status.endpoint"
+      key: ENDPOINT
+    - name: arn
+      path: ".status.arn"
+      key: ARN
+
+# @schema
+# type: object
+# properties:
+#   enabled:
+#     type: boolean
+#   name:
+#     type: string
+#   storeKind:
+#     enum:
+#       - SecretStore
+#       - ClusterSecretStore
+#   refreshInterval:
+#     type: string
+#   sourceKey:
+#     type: string
+#   target:
+#     type: object
+#     properties:
+#       name:
+#         type: string
+#       provider:
+#         type: string
+#       type:
+#         type: string
+# @schema
+# -- External Secrets PushSecret settings for publishing a selected secret key to an external store.
+pushSecret:
+  enabled: false
+  name: ""
+  storeKind: SecretStore
+  refreshInterval: 1h
+  sourceKey: ENDPOINT
+  target:
+    # -- Remote secret name in the target provider.
+    name: ""
+    # -- External Secrets store ref name (e.g. aws-secrets-manager).
+    provider: ""
+    # -- Remote provider-specific secret type/property.
+    type: Opaque

@@ -4,7 +4,7 @@
 
 NES Universal Helm Chart
 
-![Chart Version](https://img.shields.io/github/v/release/neverendingsupport/helm-charts?filter=universal-chart-*&label=chart%20version&style=flat-square)![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square)
+![Version: 0.0.0-a.placeholder](https://img.shields.io/badge/Version-0.0.0--a.placeholder-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square)
 
 ## Additional Information
 
@@ -126,13 +126,13 @@ elsewhere (TODO: add link here)
 | initContainers[0].command | list | `[]` | the command to run in the init container This overrides the command in the container.  Leave it empty to just run the container's default command. |
 | initContainers[0].extraContainerProps | object | `{}` | a map of additional properties for the init container.  This can technically be any values from the spec, though reusing image, command, securityContext, volumes, env, or envFrom might cause unexpected behavior. |
 | initContainers[0].image | string | `nil` | the image to run on init if this is left as null or a false-ish value, the initContainers section of the deploment will be skipped |
-| livenessProbe | string | `nil` | Configure a liveness probe, please more information can be found here: https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/ |
+| livenessProbe | string | `nil` | Configure a liveness probe to detect hung or dead containers. The liveness probe determines if a container is still running and healthy. If the liveness probe fails, Kubernetes will restart the container. This is useful for detecting situations where the application is running but unable to make progress (e.g., deadlocked). The liveness probe runs throughout the container's lifetime. More information can be found here: https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/ Example configuration:   livenessProbe:     httpGet:       path: /internal/health       port: http     initialDelaySeconds: 30     periodSeconds: 10 |
 | nameOverride | string | `""` |  |
 | nodeSelector | object | `{}` | Select specific nodes to run upon Normally this should be an empty map |
 | podAnnotations | object | `{}` | Add additional annotations to the pod. Annotations are generally for "people" uses and interoperability. For more information check out: https://kubernetes.io/docs/concepts/overview/working-with-objects/annotations/ |
 | podLabels | object | `{}` | Add additional labels to the pods. Labels are generally for k8s internal use (pod selectors, etc) For more information check out: https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/ |
 | podSecurityContext | object | `{}` |  |
-| readinessProbe | string | `nil` | Configure a readiness probe, please |
+| readinessProbe | string | `nil` | Configure a readiness probe to gate traffic until the application is ready to serve. The readiness probe determines if a container is ready to accept traffic. If the readiness probe fails, Kubernetes will remove the pod from service endpoints, preventing traffic from being routed to it. Unlike the liveness probe, a failed readiness probe does not restart the container - it simply stops sending traffic to the pod until it becomes ready again. This is useful for applications that need time to initialize or load data before they can handle requests. More information can be found here: https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/ Example configuration:   readinessProbe:     httpGet:       path: /internal/ready       port: http     initialDelaySeconds: 0     periodSeconds: 10     failureThreshold: 3 |
 | redis | object | `{"auth":{"enabled":true,"usePasswordFiles":false},"autoscaling":{"enabled":true,"maxReplicas":5,"minReplicas":1,"targetCPU":80,"targetMemory":80},"enabled":false,"image":{"repository":"bitnamilegacy/redis","tag":"8.2.1-debian-12-r0"},"master":{"resourcesPreset":"micro"},"metrics":{"enabled":true,"image":{"repository":"bitnamilegacy/redis-exporter","tag":"1.76.0-debian-12-r0"},"prometheusRule":{"enabled":true,"rules":[{"alert":"RedisDown","annotations":{"description":"Redis(R) instance {{ \"{{ $labels.instance }}\" }} is down","summary":"Redis(R) instance {{ \"{{ $labels.instance }}\" }} down"},"expr":"redis_up{service=\"{{ template \"common.names.fullname\" . }}-metrics\"} == 0","for":"2m","labels":{"severity":"error"}},{"alert":"RedisMemoryHigh","annotations":{"description":"Redis(R) instance {{ \"{{ $labels.instance }}\" }} is using {{ \"{{ $value }}\" }}% of its available memory.\n","summary":"Redis(R) instance {{ \"{{ $labels.instance }}\" }} is using too much memory"},"expr":"redis_memory_used_bytes{service=\"{{ template \"common.names.fullname\" . }}-metrics\"} * 100 / redis_memory_max_bytes{service=\"{{ template \"common.names.fullname\" . }}-metrics\"} > 90\n","for":"2m","labels":{"severity":"error"}},{"alert":"RedisKeyEviction","annotations":{"description":"Redis(R) instance {{ \"{{ $labels.instance }}\" }} has evicted {{ \"{{ $value }}\" }} keys in the last 5 minutes.\n","summary":"Redis(R) instance {{ \"{{ $labels.instance }}\" }} has evicted keys"},"expr":"increase(redis_evicted_keys_total{service=\"{{ template \"common.names.fullname\" . }}-metrics\"}[5m]) > 0\n","for":"1s","labels":{"severity":"error"}}]},"serviceMonitor":{"enabled":true}},"replica":{"resourcesPreset":"micro"},"tls":{"enabled":false}}` | Redis subchart configuration values. Default values are at https://artifacthub.io/packages/helm/bitnami/redis |
 | redis.auth | object | `{"enabled":true,"usePasswordFiles":false}` | beware: overriding auth in your values file might be a mistake |
 | redis.autoscaling | object | `{"enabled":true,"maxReplicas":5,"minReplicas":1,"targetCPU":80,"targetMemory":80}` | autoscaling is basically always the right answer :D |
@@ -146,8 +146,8 @@ elsewhere (TODO: add link here)
 | redis.replica | object | `{"resourcesPreset":"micro"}` | use presets for resource limits. See https://github.com/bitnami/charts/blob/main/bitnami/common/templates/_resources.tpl |
 | redis.tls.enabled | bool | `false` | enable or disable TLS |
 | replicaCount | int | `1` | set a fixed number of replicas in the deployment This value is ignored if autoscaling is enabled |
-| revisionHistoryLimit | int | `3` | number of old ReplicaSets to retain for rollback |
 | resources | object | `{}` | resource requests and limits. typically you can accept the values commented below, but ideally you'd run this in dev with some synthetic load and then either check on the monitoring values from Grafana or look at the Vertical Pod Autoscaler's recomendations via Goldilocks. |
+| revisionHistoryLimit | int | `3` | number of old ReplicaSets to retain for rollback |
 | securityContext | object | `{}` |  |
 | service | object | `{"port":3000,"type":"ClusterIP"}` | A "service" is basically a named port which follows a pod or pods; you should always use a service when networking in k8s. More information can be found here: https://kubernetes.io/docs/concepts/services-networking/service/ |
 | service.port | int | `3000` | Defines the port the service listens upon. This is the *external* port exposed by the container, not necessarily the internal port inside the container.  It also doesn't have to be 80 or 443; an ingress (if used) will listen on a differnet port and communicate with the container on this service/port combination. more information can be found here: https://kubernetes.io/docs/concepts/services-networking/service/#field-spec-ports |
@@ -156,13 +156,18 @@ elsewhere (TODO: add link here)
 | serviceAccount.automount | bool | `true` |  |
 | serviceAccount.create | bool | `true` |  |
 | serviceAccount.name | string | `""` |  |
-| serviceMonitor | object | `{"enabled":false,"interval":null,"path":"/metrics"}` | Configure a ServiceMonitor for scraping metrics from the service. |
+| serviceMonitor | object | `{"alternatePort":null,"enabled":false,"interval":null,"path":"/metrics"}` | Configure a ServiceMonitor for scraping metrics from the service. |
+| serviceMonitor.alternatePort | string | `nil` | Optional alternate port to scrape via a dedicated "<release>-metrics" Service. When null, the ServiceMonitor targets the main service as before. |
 | serviceMonitor.enabled | bool | `false` | Whether to create a ServiceMonitor resource. |
 | serviceMonitor.interval | string | `nil` | Optional scrape interval (in seconds). When null, the operator default is used. |
 | serviceMonitor.path | string | `"/metrics"` | HTTP path to scrape for metrics. |
 | spread_azs | boolean | `false` | Add a topology spread rule across Karpenter availability zones. |
 | spread_spot | boolean | `false` | Add a topology spread rule across Karpenter capacity types (spot vs on-demand). |
+| startupProbe | string | `nil` | Configure a startup probe to check if the application has started successfully. The startup probe is used to give the application more time to start up before the liveness probe takes over. This is especially useful for applications that take a long time to initialize. Once the startup probe succeeds once, Kubernetes will stop using it and switch to the liveness probe for ongoing health checks. More information can be found here: https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/ Example configuration:   startupProbe:     httpGet:       path: /diagnostics/health       port: http     periodSeconds: 5     failureThreshold: 60 |
 | tolerations | list | `[]` | List of taints these pods should tolerate. Normally this should be an empty list |
-| topologySpreadConstraints | list | `[{"maxSkew":1,"topologyKey":"topology.kubernetes.io/zone","whenUnsatisfiable":"ScheduleAnyway"}]` | When deploying with multiple replicas, spread pods around using these rules. The default is to spread pods evenly among the Availability Zones defined in the cluster. With a Karpenter-managed EKS cluster (like HeroDevs uses), there will usually be 3 AZs in a region where a cluster is deployed. If a constraint omits `labelSelector`, the chart injects selector labels. |
+| topologySpreadConstraints | list | `[{"maxSkew":1,"topologyKey":"topology.kubernetes.io/zone","whenUnsatisfiable":"ScheduleAnyway"}]` | When deploying with multiple replicas, spread pods around using these rules. The default is to spread pods evenly among the Availability Zones defined in the cluster. With a Karpenter-managed EKS cluster (like HeroDevs uses), there will usually be 3 AZs in a region where a cluster is deployed. If a constraint omits labelSelector, the chart injects selector labels. |
 | volumeMounts | list | `[]` | Additional volumes to mount |
 | volumes | list | `[]` | Additional volumes to create |
+
+----------------------------------------------
+Autogenerated from chart metadata using [helm-docs v1.14.2](https://github.com/norwoodj/helm-docs/releases/v1.14.2)

@@ -1,0 +1,6 @@
+dbCluster:
+  name: legacy-resource
+  annotations:
+    example.com/test: "true"
+  spec:
+    dbClusterIdentifier: legacy-docdb

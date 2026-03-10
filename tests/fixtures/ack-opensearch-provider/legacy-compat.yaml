@@ -1,0 +1,6 @@
+domain:
+  name: legacy-resource
+  annotations:
+    example.com/test: "true"
+  spec:
+    name: legacy-domain
