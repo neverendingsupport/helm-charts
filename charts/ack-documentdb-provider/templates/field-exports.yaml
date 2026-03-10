@@ -1,0 +1,25 @@
+{{- if .Values.fieldExport.enabled }}
+{{- $legacy := .Values.dbCluster | default dict }}
+{{- $clusterName := coalesce .Values.resourceName $legacy.name (include "ack-documentdb-provider.fullname" .) }}
+{{- $secretName := include "ack-documentdb-provider.connectionSecretName" . }}
+{{- range $mapping := .Values.fieldExport.mappings }}
+---
+apiVersion: services.k8s.aws/v1alpha1
+kind: FieldExport
+metadata:
+  name: {{ printf "%s-%s" (include "ack-documentdb-provider.fullname" $) $mapping.name | trunc 63 | trimSuffix "-" }}
+  labels:
+    {{- include "ack-documentdb-provider.labels" $ | nindent 4 }}
+spec:
+  from:
+    path: {{ $mapping.path | quote }}
+    resource:
+      group: documentdb.services.k8s.aws
+      kind: DBCluster
+      name: {{ $clusterName }}
+  to:
+    kind: secret
+    name: {{ $secretName }}
+    key: {{ $mapping.key }}
+{{- end }}
+{{- end }}

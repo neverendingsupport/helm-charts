@@ -20,6 +20,7 @@ from packaging.version import InvalidVersion, Version
 
 DEFAULT_CHART_ROOT = "charts"
 DEFAULT_FALLBACK_VERSION = "0.0.0"
+PLACEHOLDER_VERSION = "0.0.0-a.placeholder"
 
 
 def parse_args() -> argparse.Namespace:
@@ -157,6 +158,12 @@ def main() -> int:
             failures.append(
                 f"Chart '{chart}' has an invalid version string: {exc}"
             )
+            continue
+
+        if (
+            current_version == PLACEHOLDER_VERSION
+            and base_version == PLACEHOLDER_VERSION
+        ):
             continue
 
         if current <= base:
