@@ -432,6 +432,65 @@ def test_spread_topology_defaults_do_not_include_extra_spreads(
     )
 
 
+def test_termination_grace_period_not_rendered_when_null(helm_runner) -> None:
+    """Ensure terminationGracePeriodSeconds is omitted when null."""
+
+    rendered = render_chart(helm_runner, CHART)
+    manifests = load_manifests(rendered)
+    deployment = get_manifest(manifests, "Deployment")
+    pod_spec = deployment["spec"]["template"]["spec"]
+
+    assert "terminationGracePeriodSeconds" not in pod_spec
+
+
+def test_termination_grace_period_renders_zero(helm_runner) -> None:
+    """Ensure terminationGracePeriodSeconds: 0 is rendered."""
+
+    rendered = render_chart(
+        helm_runner, CHART, values={"terminationGracePeriodSeconds": 0}
+    )
+    manifests = load_manifests(rendered)
+    deployment = get_manifest(manifests, "Deployment")
+    pod_spec = deployment["spec"]["template"]["spec"]
+
+    assert pod_spec["terminationGracePeriodSeconds"] == 0
+
+
+def test_termination_grace_period_renders_one(helm_runner) -> None:
+    """Ensure terminationGracePeriodSeconds: 1 is rendered."""
+
+    rendered = render_chart(
+        helm_runner, CHART, values={"terminationGracePeriodSeconds": 1}
+    )
+    manifests = load_manifests(rendered)
+    deployment = get_manifest(manifests, "Deployment")
+    pod_spec = deployment["spec"]["template"]["spec"]
+
+    assert pod_spec["terminationGracePeriodSeconds"] == 1
+
+
+def test_termination_grace_period_renders_realistic_value(helm_runner) -> None:
+    """Ensure a realistic value like 120 is rendered."""
+
+    rendered = render_chart(
+        helm_runner, CHART, values={"terminationGracePeriodSeconds": 120}
+    )
+    manifests = load_manifests(rendered)
+    deployment = get_manifest(manifests, "Deployment")
+    pod_spec = deployment["spec"]["template"]["spec"]
+
+    assert pod_spec["terminationGracePeriodSeconds"] == 120
+
+
+def test_termination_grace_period_rejects_out_of_range(helm_runner) -> None:
+    """Ensure values above 900 are rejected by schema validation."""
+
+    with pytest.raises(HelmTemplateError):
+        render_chart(
+            helm_runner, CHART, values={"terminationGracePeriodSeconds": 1000}
+        )
+
+
 def test_spread_values_reject_invalid_booleans(helm_runner) -> None:
     """Invalid boolean values fail schema validation for spread options."""
 
