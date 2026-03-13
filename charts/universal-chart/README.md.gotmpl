@@ -12,7 +12,24 @@ of helpful extra features:
 * built-in support for loading env vars from an AWS Secret Manager secret
 * Bitnami redis chart
 
-TODO: Explain how those work better
+To generate more than one `ExternalSecret`, prefer `awsEnvSecrets.secrets`:
+
+```yaml
+awsEnvSecrets:
+  secrets:
+    - env_secret_name: app1-env
+      externalSecret:
+        secretPath: test-app1/stage/environment
+        secretStoreRef:
+          kind: ClusterSecretStore
+          name: aws-secrets-manager
+    - env_secret_name: apps-common-env
+      externalSecret:
+        secretPath: apps-common/stage/environment
+        secretStoreRef:
+          kind: ClusterSecretStore
+          name: aws-secrets-manager
+```
 
 ## Using The Chart
 

@@ -60,3 +60,40 @@ Create the name of the service account to use
 {{- default "default" .Values.serviceAccount.name }}
 {{- end }}
 {{- end }}
+
+{{/*
+Normalize awsEnvSecrets into a reusable list of generated ExternalSecrets.
+*/}}
+{{- define "universal-chart.awsEnvSecretEntries" -}}
+{{- $items := list -}}
+{{- $awsEnvSecrets := .Values.awsEnvSecrets | default dict -}}
+{{- $legacyExternalSecret := $awsEnvSecrets.externalSecret | default dict -}}
+{{- $legacySecretStoreRef := $legacyExternalSecret.secretStoreRef | default dict -}}
+{{- if $legacyExternalSecret.secretPath }}
+{{- $items = append $items (dict
+  "env_secret_name" ($awsEnvSecrets.env_secret_name | default "aws-env")
+  "externalSecret" (dict
+    "secretPath" $legacyExternalSecret.secretPath
+    "secretStoreRef" (dict
+      "kind" ($legacySecretStoreRef.kind | default "SecretStore")
+      "name" ($legacySecretStoreRef.name | default "aws-secrets-manager")
+    )
+  )
+) -}}
+{{- end }}
+{{- range $secret := ($awsEnvSecrets.secrets | default list) }}
+{{- $externalSecret := $secret.externalSecret | default dict -}}
+{{- $secretStoreRef := $externalSecret.secretStoreRef | default dict -}}
+{{- $items = append $items (dict
+  "env_secret_name" $secret.env_secret_name
+  "externalSecret" (dict
+    "secretPath" $externalSecret.secretPath
+    "secretStoreRef" (dict
+      "kind" ($secretStoreRef.kind | default "SecretStore")
+      "name" ($secretStoreRef.name | default "aws-secrets-manager")
+    )
+  )
+) -}}
+{{- end }}
+{{- toYaml (dict "items" $items) -}}
+{{- end }}

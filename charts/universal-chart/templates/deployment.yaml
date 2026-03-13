@@ -1,3 +1,4 @@
+{{- $awsEnvSecretEntries := ((include "universal-chart.awsEnvSecretEntries" . | fromYaml).items | default list) -}}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -69,11 +70,11 @@ spec:
               {{- end }}
               {{- end }}
             {{- end }}
-          {{- if or .Values.awsEnvSecrets.externalSecret.secretPath .Values.extraEnvSecrets .Values.extraEnvConfigmaps }}
+          {{- if or $awsEnvSecretEntries .Values.extraEnvSecrets .Values.extraEnvConfigmaps }}
           envFrom:
-            {{- if .Values.awsEnvSecrets.externalSecret.secretPath }}
+            {{- range $secret := $awsEnvSecretEntries }}
             - secretRef:
-                name: {{ .Values.awsEnvSecrets.env_secret_name }}
+                name: {{ $secret.env_secret_name }}
             {{- end }}
             {{- range .Values.extraEnvSecrets }}
             - secretRef:
@@ -140,11 +141,11 @@ spec:
             {{- toYaml . | nindent 12 }}
           {{- end }}
           env: *containerenv
-          {{- if or $.Values.awsEnvSecrets.externalSecret.secretPath $.Values.extraEnvSecrets $.Values.extraEnvConfigmaps }}
+          {{- if or $awsEnvSecretEntries $.Values.extraEnvSecrets $.Values.extraEnvConfigmaps }}
           envFrom:
-            {{- if $.Values.awsEnvSecrets.externalSecret.secretPath }}
+            {{- range $secret := $awsEnvSecretEntries }}
             - secretRef:
-                name: {{ $.Values.awsEnvSecrets.env_secret_name }}
+                name: {{ $secret.env_secret_name }}
             {{- end }}
             {{- range $.Values.extraEnvSecrets }}
             - secretRef:
