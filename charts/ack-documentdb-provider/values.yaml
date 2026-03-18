@@ -1,0 +1,413 @@
+# Default values for ack-documentdb-provider.
+
+nameOverride: ""
+fullnameOverride: ""
+
+# -- Optional explicit DBCluster metadata.name. Defaults to the chart fullname.
+resourceName: ""
+
+# @schema
+# type: object
+# additionalProperties: true
+# @schema
+# -- Extra annotations for the DBCluster object metadata.
+annotations: {}
+
+# @schema
+# anyof:
+#   - type: string
+#     minLength: 1
+#     maxLength: 63
+#     pattern: '^[a-z](?:[a-z0-9-]*[a-z0-9])?$'
+#   - type: "null"
+# @schema
+# -- DocumentDB cluster identifier from `DBCluster.spec.dbClusterIdentifier`.
+dbClusterIdentifier: null
+
+# @schema
+# anyof:
+#   - type: string
+#   - type: "null"
+# @schema
+engineVersion: null
+
+# @schema
+# anyof:
+#   - enum:
+#       - docdb
+#   - type: "null"
+# @schema
+engine: null
+
+# @schema
+# anyof:
+#   - type: integer
+#     minimum: 1
+#     maximum: 35
+#   - type: "null"
+# @schema
+backupRetentionPeriod: null
+
+# @schema
+# type: array
+# items:
+#   type: string
+# @schema
+availabilityZones: []
+
+# @schema
+# anyof:
+#   - type: string
+#   - type: "null"
+# @schema
+dbClusterParameterGroupName: null
+
+# @schema
+# anyof:
+#   - type: string
+#   - type: "null"
+# @schema
+dbSubnetGroupName: null
+
+# @schema
+# type: object
+# additionalProperties: true
+# properties:
+#   from:
+#     type: object
+#     additionalProperties: true
+#     properties:
+#       name:
+#         type: string
+#       namespace:
+#         type: string
+# @schema
+# -- Reference to another ACK resource that supplies the DB subnet group identifier.
+dbSubnetGroupRef: {}
+
+# @schema
+# anyof:
+#   - type: boolean
+#   - type: "null"
+# @schema
+deletionProtection: null
+
+# @schema
+# anyof:
+#   - type: string
+#   - type: "null"
+# @schema
+destinationRegion: null
+
+# @schema
+# type: array
+# items:
+#   type: string
+#   enum:
+#     - audit
+#     - profiler
+# @schema
+enableCloudwatchLogsExports: []
+
+# @schema
+# anyof:
+#   - type: string
+#     pattern: '^[A-Za-z][0-9A-Za-z-:._]*$'
+#   - type: "null"
+# @schema
+globalClusterIdentifier: null
+
+# @schema
+# anyof:
+#   - type: string
+#   - type: "null"
+# @schema
+kmsKeyID: null
+
+# @schema
+# type: object
+# additionalProperties: true
+# properties:
+#   from:
+#     type: object
+#     additionalProperties: true
+#     properties:
+#       name:
+#         type: string
+#       namespace:
+#         type: string
+# @schema
+# -- Reference to another ACK resource that supplies the KMS key identifier.
+kmsKeyRef: {}
+
+# @schema
+# type: object
+# properties:
+#   key:
+#     type: string
+#   name:
+#     type: string
+#   namespace:
+#     type: string
+# @schema
+# -- Secret reference containing the master database user password.
+masterUserPassword: {}
+
+# @schema
+# anyof:
+#   - type: string
+#     minLength: 1
+#     maxLength: 63
+#     pattern: '^[A-Za-z][A-Za-z0-9]*$'
+#   - type: "null"
+# @schema
+masterUsername: null
+
+# @schema
+# anyof:
+#   - type: integer
+#   - type: "null"
+# @schema
+port: null
+
+# @schema
+# anyof:
+#   - type: string
+#   - type: "null"
+# @schema
+preSignedURL: null
+
+# @schema
+# anyof:
+#   - type: string
+#     pattern: '^[0-9]{2}:[0-9]{2}-[0-9]{2}:[0-9]{2}$'
+#   - type: "null"
+# @schema
+preferredBackupWindow: null
+
+# @schema
+# anyof:
+#   - type: string
+#     pattern: '^(Mon|Tue|Wed|Thu|Fri|Sat|Sun):[0-9]{2}:[0-9]{2}-(Mon|Tue|Wed|Thu|Fri|Sat|Sun):[0-9]{2}:[0-9]{2}$'
+#   - type: "null"
+# @schema
+preferredMaintenanceWindow: null
+
+# @schema
+# anyof:
+#   - type: string
+#   - type: "null"
+# @schema
+snapshotIdentifier: null
+
+# @schema
+# anyof:
+#   - type: string
+#   - type: "null"
+# @schema
+sourceRegion: null
+
+# @schema
+# anyof:
+#   - type: boolean
+#   - type: "null"
+# @schema
+storageEncrypted: null
+
+# @schema
+# anyof:
+#   - enum:
+#       - standard
+#       - iopt1
+#   - type: "null"
+# @schema
+storageType: null
+
+# @schema
+# type: array
+# items:
+#   type: object
+#   additionalProperties: true
+#   properties:
+#     key:
+#       type: string
+#     value:
+#       type: string
+# @schema
+tags: []
+
+# @schema
+# type: array
+# items:
+#   type: string
+# @schema
+vpcSecurityGroupIDs: []
+
+# @schema
+# type: array
+# items:
+#   type: object
+#   additionalProperties: true
+#   properties:
+#     from:
+#       type: object
+#       additionalProperties: true
+#       properties:
+#         name:
+#           type: string
+#         namespace:
+#           type: string
+# @schema
+vpcSecurityGroupRefs: []
+
+# @schema
+# type: object
+# properties:
+#   create:
+#     type: boolean
+#   name:
+#     type: string
+#   annotations:
+#     type: object
+#     additionalProperties: true
+# @schema
+# -- Settings for the generated in-cluster connection secret.
+connectionSecret:
+  create: true
+  name: ""
+  annotations: {}
+
+# @schema
+# type: object
+# properties:
+#   mode:
+#     enum:
+#       - password
+#       - irsa
+#   username:
+#     type: string
+#   irsaRoleArn:
+#     type: string
+#   password:
+#     type: object
+#     properties:
+#       key:
+#         type: string
+#       length:
+#         type: integer
+#         minimum: 1
+#       digits:
+#         type: integer
+#         minimum: 0
+#       symbols:
+#         type: integer
+#         minimum: 0
+#       noUpper:
+#         type: boolean
+#       allowRepeat:
+#         type: boolean
+# @schema
+# -- Authentication data written into the generated connection secret.
+auth:
+  mode: password
+  username: docdbadmin
+  irsaRoleArn: ""
+  password:
+    key: PASSWORD
+    length: 32
+    digits: 8
+    symbols: 4
+    noUpper: false
+    allowRepeat: true
+
+# @schema
+# type: object
+# properties:
+#   enabled:
+#     type: boolean
+#   pushNamespaces:
+#     type: array
+#     items:
+#       type: string
+#   allowedNamespaces:
+#     type: array
+#     items:
+#       type: string
+# @schema
+# -- Secret reflector settings for syncing the connection secret across namespaces.
+reflector:
+  enabled: false
+  pushNamespaces: []
+  allowedNamespaces: []
+
+# @schema
+# type: object
+# properties:
+#   enabled:
+#     type: boolean
+#   mappings:
+#     type: array
+#     items:
+#       type: object
+#       required:
+#         - name
+#         - path
+#         - key
+#       properties:
+#         name:
+#           type: string
+#         path:
+#           type: string
+#         key:
+#           type: string
+# @schema
+# -- FieldExport settings for copying DBCluster status fields into the connection secret.
+fieldExport:
+  enabled: true
+  mappings:
+    - name: endpoint
+      path: ".status.endpoint"
+      key: ENDPOINT
+    - name: port
+      path: ".status.port"
+      key: PORT
+    - name: arn
+      path: ".status.ackResourceMetadata.arn"
+      key: ARN
+
+# @schema
+# type: object
+# properties:
+#   enabled:
+#     type: boolean
+#   name:
+#     type: string
+#   storeKind:
+#     enum:
+#       - SecretStore
+#       - ClusterSecretStore
+#   refreshInterval:
+#     type: string
+#   sourceKey:
+#     type: string
+#   target:
+#     type: object
+#     properties:
+#       name:
+#         type: string
+#       provider:
+#         type: string
+#       type:
+#         type: string
+# @schema
+# -- External Secrets PushSecret settings for publishing a selected secret key to an external store.
+pushSecret:
+  enabled: false
+  name: ""
+  storeKind: SecretStore
+  refreshInterval: 1h
+  sourceKey: ENDPOINT
+  target:
+    name: ""
+    provider: ""
+    type: Opaque
