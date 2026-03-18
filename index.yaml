@@ -11,6 +11,17 @@ entries:
     urls:
     - https://github.com/neverendingsupport/helm-charts/releases/download/ack-documentdb-provider-0.0.1/ack-documentdb-provider-0.0.1.tgz
     version: 0.0.1
+  ack-opensearch-provider:
+  - apiVersion: v2
+    created: "2026-03-18T19:12:46.087802591Z"
+    description: Helm chart to manage ACK OpenSearch domains and exported connection
+      secrets
+    digest: 3aa4dda850c4adff66524705755f63778cf419199e265d725e534eff6d7a3495
+    name: ack-opensearch-provider
+    type: application
+    urls:
+    - https://github.com/neverendingsupport/helm-charts/releases/download/ack-opensearch-provider-0.0.1/ack-opensearch-provider-0.0.1.tgz
+    version: 0.0.1
   nes-node-web:
   - apiVersion: v2
     created: "2025-11-30T18:40:01.553400933Z"
@@ -318,4 +329,4 @@ entries:
     urls:
     - https://github.com/neverendingsupport/helm-charts/releases/download/universal-chart-1.0.0/universal-chart-1.0.0.tgz
     version: 1.0.0
-generated: "2026-03-18T19:12:18.542761802Z"
+generated: "2026-03-18T19:12:46.087863361Z"
