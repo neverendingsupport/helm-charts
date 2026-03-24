@@ -237,9 +237,7 @@ def test_service_annotations_render_on_primary_service_only(
 
     assert main_service["metadata"]["annotations"] == {
         "teleport.dev/name": "example-app",
-        "teleport.dev/public-addr": (
-            "example-app.teleport.apps.herodevs.io"
-        ),
+        "teleport.dev/public-addr": ("example-app.teleport.apps.herodevs.io"),
     }
     assert "annotations" not in metrics_service["metadata"]
 
