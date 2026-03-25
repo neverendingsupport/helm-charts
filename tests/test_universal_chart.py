@@ -199,6 +199,49 @@ def test_deployment_annotations_renders_correctly(helm_runner) -> None:
     assert metadata["annotations"].get("reloader.stakater.com/auto") == "true"
 
 
+def test_service_annotations_render_on_primary_service_only(
+    helm_runner,
+) -> None:
+    """Ensure service annotations apply only to the main app service."""
+
+    rendered = render_chart(
+        helm_runner,
+        CHART,
+        values={
+            "service": {
+                "annotations": {
+                    "teleport.dev/name": "example-app",
+                    "teleport.dev/public-addr": (
+                        "example-app.teleport.apps.herodevs.io"
+                    ),
+                }
+            },
+            "serviceMonitor": {"alternatePort": 9090},
+        },
+    )
+    manifests = load_manifests(rendered)
+    services = [
+        manifest for manifest in manifests if manifest.get("kind") == "Service"
+    ]
+
+    main_service = next(
+        service
+        for service in services
+        if service["metadata"]["name"] == CHART.release
+    )
+    metrics_service = next(
+        service
+        for service in services
+        if service["metadata"]["name"] == f"{CHART.release}-metrics"
+    )
+
+    assert main_service["metadata"]["annotations"] == {
+        "teleport.dev/name": "example-app",
+        "teleport.dev/public-addr": ("example-app.teleport.apps.herodevs.io"),
+    }
+    assert "annotations" not in metrics_service["metadata"]
+
+
 def test_service_monitor_renders_when_enabled(helm_runner) -> None:
     """Ensure a ServiceMonitor is created when enabled."""
 

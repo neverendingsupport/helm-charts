@@ -220,6 +220,11 @@ service:
   # -- Define the service type
   # more information can be found here: https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types
   type: ClusterIP
+  # @schema
+  # additionalProperties: true
+  # @schema
+  # -- a map of annotations to define on the main Service resource
+  annotations: {}
   # -- Defines the port the service listens upon. This is the *external* port
   # exposed by the container, not necessarily the internal port inside the
   # container.  It also doesn't have to be 80 or 443; an ingress (if used) will
