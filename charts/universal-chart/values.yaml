@@ -536,6 +536,31 @@ terminationGracePeriodSeconds: null
 # -- number of old ReplicaSets to retain for rollback
 revisionHistoryLimit: 3
 
+# @schema
+# type: object
+# properties:
+#   enabled:
+#     type: boolean
+#   minReplicas:
+#     type: integer
+#     minimum: 1
+#   maxReplicas:
+#     type: integer
+#     minimum: 1
+#   targetCPUUtilizationPercentage:
+#     anyof:
+#       - type: integer
+#         minimum: 1
+#       - type: "null"
+#   targetMemoryUtilizationPercentage:
+#     anyof:
+#       - type: integer
+#         minimum: 1
+#       - type: "null"
+#   annotations:
+#     type: object
+#     additionalProperties: true
+# @schema
 # -- section for configuring autoscaling.
 # More information can be found here: https://kubernetes.io/docs/concepts/workloads/autoscaling/
 autoscaling:
@@ -549,6 +574,8 @@ autoscaling:
   targetCPUUtilizationPercentage: 80
   # -- If Memory utilization of replicas exceeds this percentage of requested Memory, start a new replica
   targetMemoryUtilizationPercentage: null
+  # -- Additional annotations to add to the HorizontalPodAutoscaler metadata.
+  annotations: {}
 
 # -- Additional volumes to create
 volumes: []

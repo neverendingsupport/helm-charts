@@ -1,0 +1,42 @@
+{{- $annotations := default dict .Values.annotations }}
+{{- $auth := .Values.auth | default dict }}
+{{- $connectionSecretEnabled := .Values.connectionSecret.create | default false }}
+{{- $sequencedConnectionEnabled := .Values.sequencedConnection.enabled | default false }}
+{{- $resolvedAuthToken := dict }}
+{{- if and $sequencedConnectionEnabled (not $connectionSecretEnabled) }}
+{{- fail "connectionSecret.create must be true when sequencedConnection.enabled=true" }}
+{{- end }}
+{{- if eq $auth.mode "password" }}
+{{- if not $connectionSecretEnabled }}
+{{- fail "connectionSecret.create must be true when auth.mode=password" }}
+{{- end }}
+{{- $_ := set $resolvedAuthToken "name" (include "ack-elasticache-provider.connectionSecretName" .) }}
+{{- $_ := set $resolvedAuthToken "key" $auth.password.key }}
+{{- else if eq $auth.mode "secretRef" }}
+{{- $_ := set $resolvedAuthToken "name" (required "auth.existingSecret.name is required when auth.mode=secretRef" $auth.existingSecret.name) }}
+{{- $_ := set $resolvedAuthToken "key" (required "auth.existingSecret.key is required when auth.mode=secretRef" $auth.existingSecret.key) }}
+{{- with $auth.existingSecret.namespace }}
+{{- $_ := set $resolvedAuthToken "namespace" . }}
+{{- end }}
+{{- end }}
+{{- $spec := dict }}
+{{- range $key, $value := (omit .Values "nameOverride" "fullnameOverride" "resourceName" "annotations" "connectionSecret" "auth" "reflector" "fieldExport" "pushSecret" "sequencedConnection") }}
+{{- if and (ne $value nil) (not (and (kindIs "map" $value) (eq (len $value) 0))) (not (and (kindIs "slice" $value) (eq (len $value) 0))) }}
+{{- $_ := set $spec $key $value }}
+{{- end }}
+{{- end }}
+{{- if gt (len $resolvedAuthToken) 0 }}
+{{- $_ := set $spec "authToken" $resolvedAuthToken }}
+{{- end }}
+apiVersion: elasticache.services.k8s.aws/v1alpha1
+kind: ReplicationGroup
+metadata:
+  name: {{ coalesce .Values.resourceName (include "ack-elasticache-provider.fullname" .) }}
+  labels:
+    {{- include "ack-elasticache-provider.labels" . | nindent 4 }}
+  {{- with $annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  {{- toYaml $spec | nindent 2 }}

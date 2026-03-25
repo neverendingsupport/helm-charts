@@ -19,9 +19,13 @@ def test_chart_renders_domain_with_defaults(helm_runner) -> None:
     manifests = load_manifests(rendered)
 
     assert get_manifest(manifests, "Domain")
-    assert get_manifest(manifests, "Secret")
+    secret = get_manifest(manifests, "Secret")
     assert get_manifest(manifests, "Password")
     assert get_manifest(manifests, "ExternalSecret")
+    assert secret["stringData"]["OPENSEARCH_USERNAME"] == "admin"
+    assert secret["stringData"]["OPENSEARCH_PORT"] == "443"
+    assert secret["stringData"]["OPENSEARCH_URL"] == ""
+    assert secret["stringData"]["OPENSEARCH_AUTH_URL"] == ""
 
 
 def test_domain_spec_supports_crd_fields(helm_runner) -> None:
@@ -152,9 +156,93 @@ def test_irsa_auth_uses_empty_password(helm_runner) -> None:
     manifests = load_manifests(rendered)
     secret = get_manifest(manifests, "Secret")
 
-    assert 'PASSWORD: ""' in rendered
+    assert 'OPENSEARCH_PASSWORD: ""' in rendered
     assert all(m.get("kind") != "Password" for m in manifests)
     assert (
         secret["stringData"]["AWS_ROLE_ARN"]
         == "arn:aws:iam::123456789012:role/opensearch"
+    )
+    assert secret["stringData"]["OPENSEARCH_PASSWORD"] == ""
+
+
+def test_sequenced_connection_renders_hook_jobs(helm_runner) -> None:
+    """Ensure sequenced mode owns secret creation and endpoint syncing."""
+
+    rendered = render_chart(
+        helm_runner,
+        CHART,
+        values={
+            "sequencedConnection.enabled": True,
+            "connectionSecret.name": "domain-connection",
+            "auth.mode": "password",
+            "auth.password.key": "OPENSEARCH_PASSWORD",
+        },
+    )
+
+    manifests = load_manifests(rendered)
+    domain = get_manifest(manifests, "Domain")
+    service_account = get_manifest(manifests, "ServiceAccount")
+    role = get_manifest(manifests, "Role")
+    role_binding = get_manifest(manifests, "RoleBinding")
+    jobs = [m for m in manifests if m.get("kind") == "Job"]
+
+    assert domain["spec"]["name"] == "sample-domain"
+    assert all(m.get("kind") != "Secret" for m in manifests)
+    assert all(m.get("kind") != "FieldExport" for m in manifests)
+    assert all(m.get("kind") != "Password" for m in manifests)
+    assert all(m.get("kind") != "ExternalSecret" for m in manifests)
+    assert service_account["metadata"]["annotations"][
+        "argocd.argoproj.io/hook"
+    ] == ("PreSync")
+    assert (
+        service_account["metadata"]["annotations"][
+            "argocd.argoproj.io/hook-delete-policy"
+        ]
+        == "BeforeHookCreation"
+    )
+    assert (
+        role["metadata"]["annotations"]["argocd.argoproj.io/hook-delete-policy"]
+        == "BeforeHookCreation"
+    )
+    assert (
+        role_binding["metadata"]["annotations"][
+            "argocd.argoproj.io/hook-delete-policy"
+        ]
+        == "BeforeHookCreation"
+    )
+    assert role["rules"][0]["resources"] == ["secrets"]
+    assert (
+        role_binding["subjects"][0]["name"]
+        == service_account["metadata"]["name"]
+    )
+    assert len(jobs) == 2
+
+    bootstrap_job = next(
+        job
+        for job in jobs
+        if job["metadata"]["name"].endswith("bootstrap-secret")
+    )
+    sync_job = next(
+        job
+        for job in jobs
+        if job["metadata"]["name"].endswith("sync-connection")
+    )
+
+    bootstrap_script = bootstrap_job["spec"]["template"]["spec"]["containers"][
+        0
+    ]["args"][0]
+    sync_script = sync_job["spec"]["template"]["spec"]["containers"][0]["args"][
+        0
+    ]
+
+    assert 'username_key="OPENSEARCH_USERNAME"' in bootstrap_script
+    assert 'password_key="OPENSEARCH_PASSWORD"' in bootstrap_script
+    assert 'url_key="OPENSEARCH_URL"' in sync_script
+    assert 'auth_url_key="OPENSEARCH_AUTH_URL"' in sync_script
+    assert "kubectl create -f" in bootstrap_script
+    assert "domains.opensearchservice.services.k8s.aws" in sync_script
+    assert ".status.ackResourceMetadata.arn" in sync_script
+    assert (
+        sync_job["metadata"]["annotations"]["argocd.argoproj.io/sync-wave"]
+        == "20"
     )

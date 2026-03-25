@@ -288,6 +288,21 @@ vpcOptions: {}
 #   annotations:
 #     type: object
 #     additionalProperties: true
+#   keys:
+#     type: object
+#     properties:
+#       username:
+#         type: string
+#       host:
+#         type: string
+#       port:
+#         type: string
+#       url:
+#         type: string
+#       authURL:
+#         type: string
+#       arn:
+#         type: string
 # @schema
 # -- Settings for the generated in-cluster connection secret.
 connectionSecret:
@@ -298,6 +313,14 @@ connectionSecret:
   name: ""
   # -- Additional annotations to place on the connection secret.
   annotations: {}
+  # -- Output key names written into the generated connection secret.
+  keys:
+    username: OPENSEARCH_USERNAME
+    host: OPENSEARCH_HOST
+    port: OPENSEARCH_PORT
+    url: OPENSEARCH_URL
+    authURL: OPENSEARCH_AUTH_URL
+    arn: OPENSEARCH_ARN
 
 # @schema
 # type: object
@@ -339,7 +362,7 @@ auth:
   irsaRoleArn: ""
   password:
     # -- Key used for the generated password in the connection secret.
-    key: PASSWORD
+    key: OPENSEARCH_PASSWORD
     # -- Generated password length.
     length: 32
     # -- Include digits in generated password.
@@ -350,6 +373,40 @@ auth:
     noUpper: false
     # -- Allow repeated characters.
     allowRepeat: true
+
+# @schema
+# type: object
+# properties:
+#   enabled:
+#     type: boolean
+#   syncWave:
+#     type: integer
+#   pollIntervalSeconds:
+#     type: integer
+#     minimum: 1
+#   maxWaitSeconds:
+#     type: integer
+#     minimum: 1
+#   ttlSecondsAfterFinished:
+#     type: integer
+#     minimum: 0
+#   kubectlImage:
+#     type: string
+# @schema
+# -- Use Argo hook jobs to create a stable connection secret before sync and patch endpoint data after the Domain becomes ready.
+sequencedConnection:
+  # -- Enable Argo-hooked secret bootstrapping and connection-data syncing.
+  enabled: false
+  # -- Sync wave used by the post-resource connection sync job.
+  syncWave: 20
+  # -- Poll interval for waiting on the Domain endpoint.
+  pollIntervalSeconds: 15
+  # -- Maximum time to wait for the Domain endpoint to appear.
+  maxWaitSeconds: 3600
+  # -- TTL for completed sequencing jobs.
+  ttlSecondsAfterFinished: 3600
+  # -- kubectl image used by the sequencing jobs.
+  kubectlImage: bitnami/kubectl:latest
 
 # @schema
 # type: object
@@ -399,12 +456,12 @@ fieldExport:
   enabled: true
   # -- Fields exported from Domain status into the generated secret.
   mappings:
-    - name: endpoint
+    - name: host
       path: ".status.endpoint"
-      key: ENDPOINT
+      key: OPENSEARCH_HOST
     - name: arn
       path: ".status.arn"
-      key: ARN
+      key: OPENSEARCH_ARN
 
 # @schema
 # type: object
@@ -437,7 +494,7 @@ pushSecret:
   name: ""
   storeKind: SecretStore
   refreshInterval: 1h
-  sourceKey: ENDPOINT
+  sourceKey: OPENSEARCH_HOST
   target:
     # -- Remote secret name in the target provider.
     name: ""

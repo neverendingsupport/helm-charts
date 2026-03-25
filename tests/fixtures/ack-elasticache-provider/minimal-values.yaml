@@ -1,0 +1,6 @@
+replicationGroupID: sample-cache
+description: Sample ElastiCache replication group
+engine: redis
+cacheNodeType: cache.t4g.micro
+numNodeGroups: 1
+replicasPerNodeGroup: 0
