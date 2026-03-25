@@ -4,6 +4,15 @@
 
 Helm chart to manage ACK OpenSearch domains and exported connection secrets
 
+This chart follows the same provider pattern as the DocumentDB and ElastiCache charts:
+
+- it creates a connection secret shell
+- it exports connection data with `FieldExport`
+- it can optionally publish a selected key with `PushSecret`
+- by default `auth.mode=password`, so it generates the OpenSearch admin password into the connection secret
+- if you set `auth.mode=irsa`, it writes an empty `PASSWORD` and optionally includes `AWS_ROLE_ARN`
+- if you set `sequencedConnection.enabled=true`, Argo hook jobs create a stable connection secret before sync and patch `ENDPOINT` and `ARN` into it after ACK reports the domain endpoint
+
 ## Values
 
 | Key | Type | Default | Description |
@@ -51,6 +60,13 @@ Helm chart to manage ACK OpenSearch domains and exported connection secrets
 | reflector.allowedNamespaces | list | `[]` | Namespaces allowed to pull/reflect this secret. |
 | reflector.pushNamespaces | list | `[]` | Namespaces to push reflected secrets into. |
 | resourceName | string | `""` | Optional explicit Domain metadata.name. Defaults to the chart fullname. |
+| sequencedConnection | object | `{"enabled":false,"kubectlImage":"bitnami/kubectl:latest","maxWaitSeconds":3600,"pollIntervalSeconds":15,"syncWave":20,"ttlSecondsAfterFinished":3600}` | Use Argo hook jobs to create a stable connection secret before sync and patch endpoint data after the Domain becomes ready. |
+| sequencedConnection.enabled | bool | `false` | Enable Argo-hooked secret bootstrapping and connection-data syncing. |
+| sequencedConnection.kubectlImage | string | `"bitnami/kubectl:latest"` | kubectl image used by the sequencing jobs. |
+| sequencedConnection.maxWaitSeconds | int | `3600` | Maximum time to wait for the Domain endpoint to appear. |
+| sequencedConnection.pollIntervalSeconds | int | `15` | Poll interval for waiting on the Domain endpoint. |
+| sequencedConnection.syncWave | int | `20` | Sync wave used by the post-resource connection sync job. |
+| sequencedConnection.ttlSecondsAfterFinished | int | `3600` | TTL for completed sequencing jobs. |
 | softwareUpdateOptions | object | `{}` | Software update preferences for the OpenSearch domain. |
 | tags | list | `[]` |  |
 | vpcOptions | object | `{}` | VPC networking settings for the OpenSearch domain. |
