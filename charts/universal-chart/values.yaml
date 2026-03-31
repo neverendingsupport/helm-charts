@@ -415,6 +415,18 @@ readinessProbe:
 replicaCount: 1
 
 # @schema
+# anyof:
+#   - type: integer
+#     minimum: 0
+#     maximum: 900
+#   - type: "null"
+# @schema
+# -- Override the default termination grace period (in seconds).
+# When null, the Kubernetes default of 30 seconds is used.
+# Maximum allowed is 900 (15 minutes).
+terminationGracePeriodSeconds: null
+
+# @schema
 # type: integer
 # minimum: 0
 # @schema
