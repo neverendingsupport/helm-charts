@@ -156,8 +156,9 @@ elsewhere (TODO: add link here)
 | s3.s3bucketName | string | `""` | S3 bucket name (required). Must be globally unique and follow S3 naming rules. |
 | s3.versioning | string | `"Suspended"` | Versioning status. Set to "Enabled" to enable versioning, "Suspended" to suspend it. |
 | securityContext | object | `{}` |  |
-| service | object | `{"annotations":{},"port":3000,"type":"ClusterIP"}` | A "service" is basically a named port which follows a pod or pods; you should always use a service when networking in k8s. More information can be found here: https://kubernetes.io/docs/concepts/services-networking/service/ |
+| service | object | `{"annotations":{},"labels":{},"port":3000,"type":"ClusterIP"}` | A "service" is basically a named port which follows a pod or pods; you should always use a service when networking in k8s. More information can be found here: https://kubernetes.io/docs/concepts/services-networking/service/ |
 | service.annotations | object | `{}` | a map of annotations to define on the main Service resource |
+| service.labels | object | `{}` | a map of labels to define on the main Service resource |
 | service.port | int | `3000` | Defines the port the service listens upon. This is the *external* port exposed by the container, not necessarily the internal port inside the container.  It also doesn't have to be 80 or 443; an ingress (if used) will listen on a differnet port and communicate with the container on this service/port combination. more information can be found here: https://kubernetes.io/docs/concepts/services-networking/service/#field-spec-ports |
 | service.type | string | `"ClusterIP"` | Define the service type more information can be found here: https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types |
 | serviceAccount.annotations | object | `{}` |  |
