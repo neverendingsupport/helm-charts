@@ -1,0 +1,18 @@
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: helm-charts-nes-node-web
+  title: nes-node-web
+  description: Helm chart for Node-based web workloads.
+  annotations:
+    github.com/project-slug: neverendingsupport/helm-charts
+    backstage.io/techdocs-ref: dir:.
+  tags:
+    - helm
+    - kubernetes
+    - nodejs
+    - infrastructure
+spec:
+  type: library
+  lifecycle: production
+  owner: group:default/infrastructure

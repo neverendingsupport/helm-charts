@@ -1,0 +1,4 @@
+interface:
+  display_name: "New Helm Chart"
+  short_description: "Create a new chart in this repo with tests, helm-docs output, and Backstage docs scaffolding."
+  default_prompt: "Use the new-helm-chart skill to create a new chart in this repo."

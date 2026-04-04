@@ -1,0 +1,19 @@
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: helm-charts-ack-documentdb-provider
+  title: ack-documentdb-provider
+  description: Helm chart for ACK-managed DocumentDB resources and exported connection secrets.
+  annotations:
+    github.com/project-slug: neverendingsupport/helm-charts
+    backstage.io/techdocs-ref: dir:.
+  tags:
+    - helm
+    - kubernetes
+    - aws
+    - documentdb
+    - infrastructure
+spec:
+  type: library
+  lifecycle: production
+  owner: group:default/infrastructure

@@ -4,6 +4,17 @@
 
 Docs are generated with helm-docs.  Just run `helm-docs` at the root of the directory and it'll work.
 
+When adding a new chart, also add the Backstage/TechDocs scaffold:
+
+- `charts/<chart>/catalog-info.yaml`
+- `charts/<chart>/mkdocs.yml`
+- `charts/<chart>/docs/index.md`
+- `charts/<chart>/docs/reference.md -> ../README.md`
+- `./charts/<chart>/catalog-info.yaml` in the root `catalog-info.yaml`
+
+The generated chart `README.md` remains the source of truth for values docs,
+and `docs/reference.md` should stay as a symlink to that file.
+
 Schemas are generated with helm-schema.  Run `helm-schema -k required` to regenerate the schema, as the default behavior is to assume everything is required.  Perhaps this should be revisited, though.
 
 

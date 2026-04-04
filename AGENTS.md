@@ -91,7 +91,45 @@ Charts may use dependencies that require `helm repo add`, and the test helpers
 auto-detect and configure missing repos. Agents should not insert manual repo commands
 unless modifying the test harness.
 
-## 4. Golden File Test Regeneration
+## 4. Chart Docs Scaffold
+
+Every chart in `charts/<chart>/` must carry its own Backstage/TechDocs
+scaffold so the docs work both in GitHub and in Backstage.
+
+Required files:
+
+```text
+charts/<chart>/catalog-info.yaml
+charts/<chart>/mkdocs.yml
+charts/<chart>/docs/index.md
+charts/<chart>/docs/reference.md -> ../README.md
+```
+
+Rules:
+
+- `docs/reference.md` must be a symlink to `../README.md`.
+- `mkdocs.yml` must include `Generated Reference: reference.md`.
+- `catalog-info.yaml` must include `backstage.io/techdocs-ref: dir:.`.
+- The root `catalog-info.yaml` must list `./charts/<chart>/catalog-info.yaml`
+  in the `Location` targets.
+
+### How agents should create a new chart
+
+When adding a new chart, do all of the following in the same change:
+
+1. Add the chart itself.
+2. Add the chart test scaffold under `tests/fixtures/<chart>/`.
+3. Add the chart docs scaffold listed above.
+4. Add the chart's `catalog-info.yaml` path to the root `catalog-info.yaml`.
+5. Run `helm-docs` so `README.md` exists and the Backstage reference page has
+   live content.
+6. If an agent is doing the work, prefer `.agents/skills/new-helm-chart/SKILL.md`.
+
+The `validate_chart_backstage_scaffold.py` pre-commit hook will fail if any of
+these pieces are missing or miswired. The repo also validates the Agent Skills
+layout and compatibility symlinks through `validate_agent_skills.py`.
+
+## 5. Golden File Test Regeneration
 
 If templates or values change, regenerate golden files:
 
@@ -99,7 +137,7 @@ If templates or values change, regenerate golden files:
 scripts/regenerate_golden_files.py
 ```
 
-## 5. Pre-Commit Check Behavior
+## 6. Pre-Commit Check Behavior
 
 Agents should expect failures like:
 
@@ -107,6 +145,8 @@ Agents should expect failures like:
 - missing golden file
 - missing minimal-values file
 - helm lint errors due to invalid YAML
+- missing chart docs scaffold
+- missing root catalog target for a chart
 
 Fix the underlying issue rather than disabling hooks.
 
@@ -116,10 +156,12 @@ dependencies to the python "black" hook, add "language: python".  This is to
 enable renovate to automatically update those versions, as described in the
 docs at https://docs.renovatebot.com/modules/manager/pre-commit/#additional-dependencies
 
-## 6. General Guidelines for Automated Agents
+## 7. General Guidelines for Automated Agents
 
 - Always regenerate golden files when templates or values change.
 - Keep fixture value files and golden files in sync.
+- When adding a new chart, always create the Backstage/TechDocs scaffold in the
+  same commit as the chart itself.
 - Ensure golden values output files reflect the current chart version; if chart
   versions are bumped without updating the corresponding goldens, the golden
   file tests will fail.
