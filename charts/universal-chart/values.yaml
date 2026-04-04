@@ -221,6 +221,12 @@ service:
   # more information can be found here: https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types
   type: ClusterIP
   # @schema
+  # type: object
+  # additionalProperties: true
+  # @schema
+  # -- a map of labels to define on the main Service resource
+  labels: {}
+  # @schema
   # additionalProperties: true
   # @schema
   # -- a map of annotations to define on the main Service resource
