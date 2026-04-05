@@ -92,6 +92,8 @@ awsEnvSecrets:
       name: aws-secrets-manager
   # -- name of secret to store AWS secretmanager values within
   env_secret_name: aws-env
+  # -- additional AWS secretmanager secrets which will define env vars
+  secrets: []
 
 # @schema
 # type: object

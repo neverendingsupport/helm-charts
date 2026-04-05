@@ -24,10 +24,19 @@
       ]
     },
     "awsEnvSecrets": {
+      "type": "object",
       "properties": {
+        "env_secret_name": {
+          "type": "string"
+        },
         "externalSecret": {
+          "type": "object",
           "properties": {
+            "secretPath": {
+              "type": "string"
+            },
             "secretStoreRef": {
+              "type": "object",
               "properties": {
                 "kind": {
                   "type": "string",
@@ -35,9 +44,53 @@
                     "SecretStore",
                     "ClusterSecretStore"
                   ]
+                },
+                "name": {
+                  "type": "string"
                 }
               }
             }
+          }
+        },
+        "secrets": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "env_secret_name": {
+                "type": "string"
+              },
+              "externalSecret": {
+                "type": "object",
+                "properties": {
+                  "secretPath": {
+                    "type": "string"
+                  },
+                  "secretStoreRef": {
+                    "type": "object",
+                    "properties": {
+                      "kind": {
+                        "type": "string",
+                        "enum": [
+                          "SecretStore",
+                          "ClusterSecretStore"
+                        ]
+                      },
+                      "name": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                },
+                "required": [
+                  "secretPath"
+                ]
+              }
+            },
+            "required": [
+              "env_secret_name",
+              "externalSecret"
+            ]
           }
         }
       }

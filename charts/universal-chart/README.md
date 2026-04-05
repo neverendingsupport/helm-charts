@@ -13,7 +13,24 @@ of helpful extra features:
 * built-in support for loading env vars from an AWS Secret Manager secret
 * Bitnami redis chart
 
-TODO: Explain how those work better
+To generate more than one `ExternalSecret`, prefer `awsEnvSecrets.secrets`:
+
+```yaml
+awsEnvSecrets:
+  secrets:
+    - env_secret_name: app1-env
+      externalSecret:
+        secretPath: test-app1/stage/environment
+        secretStoreRef:
+          kind: ClusterSecretStore
+          name: aws-secrets-manager
+    - env_secret_name: apps-common-env
+      externalSecret:
+        secretPath: apps-common/stage/environment
+        secretStoreRef:
+          kind: ClusterSecretStore
+          name: aws-secrets-manager
+```
 
 ## Using The Chart
 
@@ -104,6 +121,7 @@ elsewhere (TODO: add link here)
 | awsEnvSecrets.externalSecret.secretPath | string | `""` | secret path |
 | awsEnvSecrets.externalSecret.secretStoreRef.kind | string | `"SecretStore"` | Is the store in this namespace or cluster-wide? |
 | awsEnvSecrets.externalSecret.secretStoreRef.name | string | `"aws-secrets-manager"` | name of the secret store; aws-secret-manager is usually right |
+| awsEnvSecrets.secrets | list | `[]` | additional AWS secretmanager secrets which will define env vars |
 | deployment.annotations | object | `{}` | extra annotations to add to the deployment resource's metadata. These annotations are key-value pairs attached directly to the Deployment resource. They can be used by external tooling, operators, or for tracking deployment metadata and events. For more info, see: https://kubernetes.io/docs/concepts/overview/working-with-objects/annotations/ |
 | extraContainerPorts | list | `[]` | extra ports to be exposed directly from pods (no service) |
 | extraContainerProps | object | `{}` | A dictionary of extra attributes to add to the container spec in the deployment. Elements will be directly added to the deployment's `spec.template.spec.containers` object. Note that adding an element already in the deployment template like `env` or `image` will cause undesirable behavior. |
