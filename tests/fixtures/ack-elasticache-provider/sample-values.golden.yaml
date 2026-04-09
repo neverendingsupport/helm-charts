@@ -13,6 +13,7 @@ type: Opaque
 stringData:
   REDIS_USERNAME: "default"
   REDIS_PORT: "6379"
+  REDIS_TLS: "true"
   REDIS_URL: ""
   REDIS_AUTH_URL: ""
   REDIS_PASSWORD: ""

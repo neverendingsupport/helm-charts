@@ -203,6 +203,8 @@ kmsKeyID: null
 #         type: string
 #       port:
 #         type: string
+#       tls:
+#         type: string
 #       url:
 #         type: string
 #       authURL:
@@ -224,6 +226,7 @@ connectionSecret:
     username: REDIS_USERNAME
     host: REDIS_HOST
     port: REDIS_PORT
+    tls: REDIS_TLS
     url: REDIS_URL
     authURL: REDIS_AUTH_URL
     arn: REDIS_ARN

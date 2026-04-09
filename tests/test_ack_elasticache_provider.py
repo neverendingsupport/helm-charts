@@ -28,6 +28,7 @@ def test_chart_renders_replication_group_with_minimal_values(
     assert secret["stringData"]["REDIS_USERNAME"] == "default"
     assert secret["stringData"]["REDIS_PASSWORD"] == ""
     assert secret["stringData"]["REDIS_PORT"] == "6379"
+    assert secret["stringData"]["REDIS_TLS"] == "false"
     assert secret["stringData"]["REDIS_URL"] == ""
     assert secret["stringData"]["REDIS_AUTH_URL"] == ""
     assert replication_group["spec"]["replicationGroupID"] == "sample-cache"
@@ -156,6 +157,7 @@ def test_generated_password_backs_auth_token_reference(helm_runner) -> None:
     template_data = external_secret["spec"]["target"]["template"]["data"]
     assert template_data["REDIS_USERNAME"] == "default"
     assert template_data["REDIS_PORT"] == "6379"
+    assert template_data["REDIS_TLS"] == "false"
     assert template_data["REDIS_URL"] == ""
     assert template_data["REDIS_AUTH_URL"] == ""
 
@@ -245,6 +247,7 @@ def test_sequenced_connection_renders_hook_jobs(helm_runner) -> None:
             "auth.mode": "password",
             "connectionSecret.name": "cache-connection",
             "auth.password.key": "REDIS_PASSWORD",
+            "transitEncryptionEnabled": True,
         },
     )
     manifests = load_manifests(rendered)
@@ -308,8 +311,12 @@ def test_sequenced_connection_renders_hook_jobs(helm_runner) -> None:
 
     assert 'username_key="REDIS_USERNAME"' in bootstrap_script
     assert 'password_key="REDIS_PASSWORD"' in bootstrap_script
+    assert 'tls_key="REDIS_TLS"' in bootstrap_script
+    assert '"${tls_key}":"true"' in bootstrap_script
     assert 'url_key="REDIS_URL"' in sync_script
     assert 'auth_url_key="REDIS_AUTH_URL"' in sync_script
+    assert 'tls_key="REDIS_TLS"' in sync_script
+    assert '"${tls_key}":"true"' in sync_script
     assert "kubectl create -f" in bootstrap_script
     assert "replicationgroups.elasticache.services.k8s.aws" in sync_script
     assert (
