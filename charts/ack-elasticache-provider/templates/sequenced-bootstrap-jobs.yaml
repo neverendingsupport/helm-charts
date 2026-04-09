@@ -103,6 +103,7 @@ spec:
               password_key={{ .Values.auth.password.key | quote }}
               host_key={{ .Values.connectionSecret.keys.host | quote }}
               port_key={{ .Values.connectionSecret.keys.port | quote }}
+              tls_key={{ .Values.connectionSecret.keys.tls | quote }}
               url_key={{ .Values.connectionSecret.keys.url | quote }}
               auth_url_key={{ .Values.connectionSecret.keys.authURL | quote }}
               arn_key={{ .Values.connectionSecret.keys.arn | quote }}
@@ -132,21 +133,26 @@ spec:
               if [ "$secret_exists" = true ]; then
                 existing_password="$(kubectl get secret "$secret_name" -o jsonpath="{.data.${password_key}}" 2>/dev/null | base64 --decode || true)"
                 if [ -n "$existing_password" ]; then
-                  exit 0
+                  password="$existing_password"
                 fi
               fi
 
-              digits_part="$(random_chars {{ $passwordDigits }} '0-9')"
-              symbols_part="$(random_chars {{ $passwordSymbols }} '!@#%^*_+=')"
-              base_charset='a-z0-9!@#%^*_+='
-              {{- if not .Values.auth.password.noUpper }}
-              base_charset='A-Za-z0-9!@#%^*_+='
-              {{- end }}
-              remaining_part="$(random_chars {{ sub $passwordLength (add $passwordDigits $passwordSymbols) }} "$base_charset")"
-              password="${digits_part}${symbols_part}${remaining_part}"
+              if [ -z "$password" ]; then
+                digits_part="$(random_chars {{ $passwordDigits }} '0-9')"
+                symbols_part="$(random_chars {{ $passwordSymbols }} '!@#%^*_+=')"
+                base_charset='a-z0-9!@#%^*_+='
+                {{- if not .Values.auth.password.noUpper }}
+                base_charset='A-Za-z0-9!@#%^*_+='
+                {{- end }}
+                remaining_part="$(random_chars {{ sub $passwordLength (add $passwordDigits $passwordSymbols) }} "$base_charset")"
+                password="${digits_part}${symbols_part}${remaining_part}"
+              fi
               {{- else }}
               if [ "$secret_exists" = true ]; then
-                exit 0
+                existing_password="$(kubectl get secret "$secret_name" -o jsonpath="{.data.${password_key}}" 2>/dev/null | base64 --decode || true)"
+                if [ -n "$existing_password" ]; then
+                  password="$existing_password"
+                fi
               fi
               {{- end }}
 
@@ -166,6 +172,7 @@ spec:
                 {{ .Values.connectionSecret.keys.username }}: {{ .Values.auth.username | quote }}
                 {{ .Values.connectionSecret.keys.host }}: ""
                 {{ .Values.connectionSecret.keys.port }}: {{ default 6379 .Values.port | quote }}
+                {{ .Values.connectionSecret.keys.tls }}: {{ (.Values.transitEncryptionEnabled | default false) | quote }}
                 {{ .Values.connectionSecret.keys.url }}: ""
                 {{ .Values.connectionSecret.keys.authURL }}: ""
                 {{ .Values.connectionSecret.keys.arn }}: ""
@@ -178,7 +185,7 @@ spec:
 
               if [ "$secret_exists" = true ]; then
                 cat > "$tmp_secret_patch" <<EOF
-              {"stringData":{"${username_key}":"${username}","${host_key}":"","${port_key}":"{{ default 6379 .Values.port }}","${url_key}":"","${auth_url_key}":"","${arn_key}":"","${password_key}":"${password}"}}
+              {"stringData":{"${username_key}":"${username}","${host_key}":"","${port_key}":"{{ default 6379 .Values.port }}","${tls_key}":"{{ .Values.transitEncryptionEnabled | default false }}","${url_key}":"","${auth_url_key}":"","${arn_key}":"","${password_key}":"${password}"}}
               EOF
                 kubectl patch secret "$secret_name" --type merge --patch-file "$tmp_secret_patch"
               else
@@ -218,6 +225,7 @@ spec:
               password_key={{ .Values.auth.password.key | quote }}
               host_key={{ .Values.connectionSecret.keys.host | quote }}
               port_key={{ .Values.connectionSecret.keys.port | quote }}
+              tls_key={{ .Values.connectionSecret.keys.tls | quote }}
               url_key={{ .Values.connectionSecret.keys.url | quote }}
               auth_url_key={{ .Values.connectionSecret.keys.authURL | quote }}
               arn_key={{ .Values.connectionSecret.keys.arn | quote }}
@@ -241,7 +249,7 @@ spec:
                     auth_url="${scheme}://${username}:${password}@${endpoint}:${port}"
                   fi
                   cat > "$tmp_patch" <<EOF
-              {"stringData":{"${host_key}":"${endpoint}","${port_key}":"${port}","${url_key}":"${url}","${auth_url_key}":"${auth_url}","${arn_key}":"${arn}"}}
+              {"stringData":{"${host_key}":"${endpoint}","${port_key}":"${port}","${tls_key}":"{{ .Values.transitEncryptionEnabled | default false }}","${url_key}":"${url}","${auth_url_key}":"${auth_url}","${arn_key}":"${arn}"}}
               EOF
                   kubectl patch secret "$secret_name" --type merge --patch-file "$tmp_patch"
                   exit 0
