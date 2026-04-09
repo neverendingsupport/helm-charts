@@ -139,10 +139,10 @@ spec:
 
               if [ -z "$password" ]; then
                 digits_part="$(random_chars {{ $passwordDigits }} '0-9')"
-                symbols_part="$(random_chars {{ $passwordSymbols }} '!@#%^*_+=')"
-                base_charset='a-z0-9!@#%^*_+='
+                symbols_part="$(random_chars {{ $passwordSymbols }} '!&#$^<>-')"
+                base_charset='a-z0-9!&#$^<>-'
                 {{- if not .Values.auth.password.noUpper }}
-                base_charset='A-Za-z0-9!@#%^*_+='
+                base_charset='A-Za-z0-9!&#$^<>-'
                 {{- end }}
                 remaining_part="$(random_chars {{ sub $passwordLength (add $passwordDigits $passwordSymbols) }} "$base_charset")"
                 password="${digits_part}${symbols_part}${remaining_part}"
