@@ -1,0 +1,23 @@
+image:
+  repository: ghcr.io/example/app
+  tag: "1.2.3"
+
+service:
+  port: 8080
+  labels:
+    herodevs.com/teleport-access: "true"
+  annotations:
+    teleport.dev/name: "example-stage"
+    teleport.dev/public-addr: "example-stage.teleport.infra.apps.herodevs.io"
+    teleport.dev/port: "5000"
+    teleport.dev/protocol: "http"
+  extraPorts:
+    - name: ui
+      port: 5000
+      targetPort: ui
+      protocol: TCP
+
+extraContainerPorts:
+  - name: ui
+    containerPort: 5000
+    protocol: TCP
