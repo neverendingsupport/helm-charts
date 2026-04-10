@@ -104,6 +104,35 @@ preferredMaintenanceWindow: null
 cacheSubnetGroupName: null
 
 # @schema
+# type: object
+# properties:
+#   create:
+#     type: boolean
+#   name:
+#     type: string
+#   family:
+#     type: string
+#   description:
+#     type: string
+#   parameters:
+#     type: object
+#     additionalProperties:
+#       type: string
+# @schema
+# -- Optional CacheParameterGroup to create and attach to the replication group.
+cacheParameterGroup:
+  # -- Create a CacheParameterGroup resource.
+  create: false
+  # -- AWS CacheParameterGroup name. Defaults to resourceName/fullname when omitted.
+  name: ""
+  # -- Cache parameter group family, for example `redis7`.
+  family: ""
+  # -- Optional description for the cache parameter group.
+  description: ""
+  # -- Parameter name/value map rendered into `parameterNameValues`.
+  parameters: {}
+
+# @schema
 # type: array
 # items:
 #   type: string

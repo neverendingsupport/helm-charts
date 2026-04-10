@@ -29,6 +29,10 @@ app.kubernetes.io/managed-by: {{ .Release.Service }}
 {{- default (printf "%s-connection" (include "ack-elasticache-provider.fullname" .)) .Values.connectionSecret.name -}}
 {{- end -}}
 
+{{- define "ack-elasticache-provider.cacheParameterGroupName" -}}
+{{- default (coalesce .Values.resourceName (include "ack-elasticache-provider.fullname" .)) .Values.cacheParameterGroup.name -}}
+{{- end -}}
+
 {{- define "ack-elasticache-provider.connectionSecretAnnotations" -}}
 {{- $annotations := dict -}}
 {{- if .Values.reflector.enabled -}}
