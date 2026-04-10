@@ -238,6 +238,37 @@ service:
   # service/port combination.
   # more information can be found here: https://kubernetes.io/docs/concepts/services-networking/service/#field-spec-ports
   port: 3000
+  # @schema
+  # type: array
+  # items:
+  #   type: object
+  #   required:
+  #     - name
+  #     - port
+  #   properties:
+  #     name:
+  #       type: string
+  #       minLength: 1
+  #     port:
+  #       type: integer
+  #       minimum: 1
+  #       maximum: 65535
+  #     targetPort:
+  #       anyOf:
+  #         - type: integer
+  #           minimum: 1
+  #           maximum: 65535
+  #         - type: string
+  #         - type: "null"
+  #     protocol:
+  #       type: string
+  #       enum:
+  #         - TCP
+  #         - UDP
+  #         - SCTP
+  # @schema
+  # -- Additional ports to expose from the main Service.
+  extraPorts: []
 
 # @schema
 # type: object

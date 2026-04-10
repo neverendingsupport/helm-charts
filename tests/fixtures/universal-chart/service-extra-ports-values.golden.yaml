@@ -1,0 +1,93 @@
+---
+# Source: universal-chart/templates/serviceaccount.yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: universal-chart
+  labels:
+    helm.sh/chart: universal-chart-0.0.0-a.placeholder
+    app.kubernetes.io/name: universal-chart
+    app.kubernetes.io/instance: universal-chart
+    app.kubernetes.io/managed-by: Helm
+automountServiceAccountToken: true
+---
+# Source: universal-chart/templates/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: universal-chart
+  labels:
+    helm.sh/chart: universal-chart-0.0.0-a.placeholder
+    app.kubernetes.io/name: universal-chart
+    app.kubernetes.io/instance: universal-chart
+    app.kubernetes.io/managed-by: Helm
+    herodevs.com/teleport-access: "true"
+  annotations:
+    teleport.dev/name: example-stage
+    teleport.dev/port: "5000"
+    teleport.dev/protocol: http
+    teleport.dev/public-addr: example-stage.teleport.infra.apps.herodevs.io
+spec:
+  type: ClusterIP
+  ports:
+    - port: 8080
+      targetPort: http
+      protocol: TCP
+      name: http
+    - port: 5000
+      targetPort: ui
+      protocol: TCP
+      name: ui
+  selector:
+    app.kubernetes.io/name: universal-chart
+    app.kubernetes.io/instance: universal-chart
+---
+# Source: universal-chart/templates/deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: universal-chart
+  labels:
+    helm.sh/chart: universal-chart-0.0.0-a.placeholder
+    app.kubernetes.io/name: universal-chart
+    app.kubernetes.io/instance: universal-chart
+    app.kubernetes.io/managed-by: Helm
+spec:
+  replicas: 1
+  revisionHistoryLimit: 3
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: universal-chart
+      app.kubernetes.io/instance: universal-chart
+  template:
+    metadata:
+      labels:
+        helm.sh/chart: universal-chart-0.0.0-a.placeholder
+        app.kubernetes.io/name: universal-chart
+        app.kubernetes.io/instance: universal-chart
+        app.kubernetes.io/managed-by: Helm
+    spec:
+      serviceAccountName: universal-chart
+      containers:
+        - name: universal-chart
+          env: &containerenv
+            # placeholder var so we can always make an env list
+            - name: REDIS_ENABLED
+              value: "false"
+          image: "ghcr.io/example/app:1.2.3"
+          imagePullPolicy: Always
+          ports:
+            - name: http
+              containerPort: 8080
+              protocol: TCP
+            - name: ui
+              containerPort: 5000
+              protocol: TCP
+      topologySpreadConstraints:
+        - labelSelector:
+            matchLabels:
+              app.kubernetes.io/instance: universal-chart
+              app.kubernetes.io/name: universal-chart
+          maxSkew: 1
+          topologyKey: topology.kubernetes.io/zone
+          whenUnsatisfiable: ScheduleAnyway
