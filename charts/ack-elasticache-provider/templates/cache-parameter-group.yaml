@@ -1,0 +1,20 @@
+{{- if .Values.cacheParameterGroup.create }}
+{{- $cacheParameterGroup := .Values.cacheParameterGroup | default dict }}
+apiVersion: elasticache.services.k8s.aws/v1alpha1
+kind: CacheParameterGroup
+metadata:
+  name: {{ coalesce .Values.resourceName (include "ack-elasticache-provider.fullname" .) }}
+  labels:
+    {{- include "ack-elasticache-provider.labels" . | nindent 4 }}
+spec:
+  cacheParameterGroupFamily: {{ required "cacheParameterGroup.family is required when cacheParameterGroup.create=true" $cacheParameterGroup.family | quote }}
+  cacheParameterGroupName: {{ include "ack-elasticache-provider.cacheParameterGroupName" . | quote }}
+  description: {{ default (printf "Cache parameter group for %s" (coalesce .Values.resourceName (include "ack-elasticache-provider.fullname" .))) $cacheParameterGroup.description | quote }}
+  {{- if $cacheParameterGroup.parameters }}
+  parameterNameValues:
+    {{- range $name := (keys $cacheParameterGroup.parameters | sortAlpha) }}
+    - parameterName: {{ $name }}
+      parameterValue: {{ index $cacheParameterGroup.parameters $name | quote }}
+    {{- end }}
+  {{- end }}
+{{- end }}
