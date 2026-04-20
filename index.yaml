@@ -44,6 +44,15 @@ entries:
     version: 0.0.1
   nes-node-web:
   - apiVersion: v2
+    created: "2026-04-20T03:02:16.869617171Z"
+    description: A Helm chart for NES Node apps on Kubernetes
+    digest: 4217e81f1b29692074d00ee1ec0c9b239a6919460f4334347df567785f3b95f2
+    name: nes-node-web
+    type: application
+    urls:
+    - https://github.com/neverendingsupport/helm-charts/releases/download/nes-node-web-0.2.11/nes-node-web-0.2.11.tgz
+    version: 0.2.11
+  - apiVersion: v2
     created: "2025-11-30T18:40:01.553400933Z"
     description: A Helm chart for NES Node apps on Kubernetes
     digest: a20dc863f7f6ca83d87e8de3a47fb6c9aaf00f160c3cc8d4141f63ef80e0ff76
@@ -405,4 +414,4 @@ entries:
     urls:
     - https://github.com/neverendingsupport/helm-charts/releases/download/universal-chart-1.0.0/universal-chart-1.0.0.tgz
     version: 1.0.0
-generated: "2026-04-20T03:01:48.916447307Z"
+generated: "2026-04-20T03:02:16.870140548Z"
