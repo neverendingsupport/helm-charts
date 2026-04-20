@@ -18,6 +18,12 @@ spec:
       targetPort: http
       protocol: TCP
       name: http
+    {{- range .Values.service.extraPorts }}
+    - port: {{ .port }}
+      targetPort: {{ default .port .targetPort }}
+      protocol: {{ default "TCP" .protocol }}
+      name: {{ .name }}
+    {{- end }}
   selector:
     {{- include "universal-chart.selectorLabels" . | nindent 4 }}
 {{- if .Values.serviceMonitor.alternatePort }}
