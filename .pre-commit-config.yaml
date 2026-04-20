@@ -40,6 +40,26 @@ repos:
         language: system
         pass_filenames: false
         entry: scripts/check_linter_symlinks.py
+      - id: validate-chart-backstage-scaffold
+        name: Validate chart Backstage scaffold
+        language: system
+        pass_filenames: false
+        entry: python3 scripts/validate_chart_backstage_scaffold.py
+      - id: validate-agent-skills
+        name: validate agent skills
+        language: system
+        pass_filenames: false
+        entry: python3 scripts/validate_agent_skills.py
+        files: ^(\.agents/skills/.*|\.claude/skills$|\.github/skills$|skills$|AGENTS\.md|scripts/validate_agent_skills\.py|\.pre-commit-config\.yaml)$
+      - id: validate-mkdocs
+        name: Validate MkDocs and TechDocs configs
+        language: python
+        additional_dependencies:
+          - mkdocs==1.6.1
+          - mkdocs-techdocs-core==1.6.1
+        pass_filenames: false
+        entry: python scripts/validate_mkdocs.py
+        files: ^(\.pre-commit-config\.yaml|catalog-info\.yaml|docs/.*|mkdocs\.yml|scripts/(validate_mkdocs\.py|validate_chart_backstage_scaffold\.py|validate_agent_skills\.py)|charts/README\.md\.gotmpl|charts/.*/(README\.md|README\.md\.gotmpl|catalog-info\.yaml|docs/.*|mkdocs\.yml))$
 
   - repo: https://github.com/norwoodj/helm-docs
     rev:  "v1.14.2"

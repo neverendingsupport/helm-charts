@@ -53,10 +53,17 @@ When you add a new chart or a new minimal fixture:
    configuration that still renders successfully.
 2. Create a `linter_values.yaml` symlink in `charts/<chart>` that points to
    `../../tests/fixtures/<chart>/minimal-values.yaml`.
+3. Add the chart Backstage/TechDocs scaffold:
+   - `charts/<chart>/catalog-info.yaml`
+   - `charts/<chart>/mkdocs.yml`
+   - `charts/<chart>/docs/index.md`
+   - `charts/<chart>/docs/reference.md -> ../README.md`
+4. Add `./charts/<chart>/catalog-info.yaml` to the root `catalog-info.yaml`
+   Location targets.
 
 The local pre-commit checks will fail with a clear message if either the
 `minimal-values.yaml` file or the `linter_values.yaml` symlink is missing
-or misconfigured.
+or misconfigured. The chart docs scaffold is also validated in pre-commit.
 
 ## Automatic Helm repo configuration
 

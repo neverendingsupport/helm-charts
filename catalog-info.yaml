@@ -1,0 +1,36 @@
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: helm-charts
+  title: Helm Charts
+  description: Shared Helm charts used by HeroDevs application and platform deployments.
+  annotations:
+    github.com/project-slug: neverendingsupport/helm-charts
+    backstage.io/techdocs-ref: dir:.
+  tags:
+    - helm
+    - kubernetes
+    - platform
+    - infrastructure
+  links:
+    - url: https://github.com/neverendingsupport/helm-charts
+      title: GitHub Repository
+      icon: github
+spec:
+  type: library
+  lifecycle: production
+  owner: group:default/infrastructure
+---
+apiVersion: backstage.io/v1alpha1
+kind: Location
+metadata:
+  name: helm-charts-catalog
+  title: Helm Charts Catalog
+  description: Chart-level Backstage entities discovered from the helm-charts repository.
+spec:
+  type: url
+  targets:
+    - ./charts/universal-chart/catalog-info.yaml
+    - ./charts/nes-node-web/catalog-info.yaml
+    - ./charts/ack-documentdb-provider/catalog-info.yaml
+    - ./charts/ack-opensearch-provider/catalog-info.yaml

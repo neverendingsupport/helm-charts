@@ -1,0 +1,7 @@
+site_name: nes-node-web
+docs_dir: docs
+nav:
+  - Overview: index.md
+  - Generated Reference: reference.md
+plugins:
+  - techdocs-core
