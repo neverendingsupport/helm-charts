@@ -2,6 +2,16 @@ apiVersion: v1
 entries:
   ack-documentdb-provider:
   - apiVersion: v2
+    created: "2026-04-20T03:01:24.947479456Z"
+    description: Helm chart to manage ACK DocumentDB DBClusters and exported connection
+      secrets
+    digest: 4c1a427de463bda3d464c5a9208e53ecf276cad6780d7c8e58b02887f1b2f86c
+    name: ack-documentdb-provider
+    type: application
+    urls:
+    - https://github.com/neverendingsupport/helm-charts/releases/download/ack-documentdb-provider-0.0.2/ack-documentdb-provider-0.0.2.tgz
+    version: 0.0.2
+  - apiVersion: v2
     created: "2026-03-18T19:12:18.542694446Z"
     description: Helm chart to manage ACK DocumentDB DBClusters and exported connection
       secrets
@@ -385,4 +395,4 @@ entries:
     urls:
     - https://github.com/neverendingsupport/helm-charts/releases/download/universal-chart-1.0.0/universal-chart-1.0.0.tgz
     version: 1.0.0
-generated: "2026-04-04T15:38:06.380221675Z"
+generated: "2026-04-20T03:01:24.947551814Z"
