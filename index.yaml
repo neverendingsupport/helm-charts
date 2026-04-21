@@ -42,6 +42,28 @@ entries:
     urls:
     - https://github.com/neverendingsupport/helm-charts/releases/download/ack-opensearch-provider-0.0.1/ack-opensearch-provider-0.0.1.tgz
     version: 0.0.1
+  ingress-nginx:
+  - apiVersion: v2
+    appVersion: v1.15.1-ingress-nginx-1.15.2
+    created: "2026-04-21T18:06:31.30707325Z"
+    description: Never Ending Support ingress-nginx controller for Kubernetes using
+      NGINX as a reverse proxy and load balancer
+    digest: 6e8329ba976881b908f946e5cc399ec7fdba5154363ffd9255ebba228ffa9063
+    home: https://github.com/neverendingsupport/ingress-nginx-nes
+    icon: https://upload.wikimedia.org/wikipedia/commons/thumb/c/c5/Nginx_logo.svg/500px-Nginx_logo.svg.png
+    keywords:
+    - ingress
+    - nginx
+    kubeVersion: '>=1.21.0-0'
+    maintainers:
+    - name: neverendingsupport
+    name: ingress-nginx
+    sources:
+    - https://github.com/neverendingsupport/ingress-nginx-nes
+    - https://github.com/kubernetes/ingress-nginx
+    urls:
+    - https://github.com/neverendingsupport/helm-charts/releases/download/ingress-nginx-0.0.1/ingress-nginx-0.0.1.tgz
+    version: 0.0.1
   nes-node-web:
   - apiVersion: v2
     created: "2026-04-20T03:02:16.869617171Z"
@@ -428,4 +450,4 @@ entries:
     urls:
     - https://github.com/neverendingsupport/helm-charts/releases/download/universal-chart-1.0.0/universal-chart-1.0.0.tgz
     version: 1.0.0
-generated: "2026-04-20T03:02:53.133354495Z"
+generated: "2026-04-21T18:06:31.307172396Z"
