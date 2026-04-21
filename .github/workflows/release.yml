@@ -16,15 +16,6 @@ on:
           - ingress-nginx
           - nes-node-web
           - universal-chart
-      bump:
-        description: Version bump to apply
-        required: true
-        type: choice
-        options:
-          - patch
-          - minor
-          - major
-        default: patch
       force:
         description: Force a release even without detected changes
         required: true
@@ -108,40 +99,15 @@ jobs:
           previous_tag=$(git tag -l "${tag_prefix}*" --sort=-version:refname | head -n1)
           echo "tag=$previous_tag" >> "$GITHUB_OUTPUT"
 
-      - name: Determine next tag
-        id: next-tag
-        uses: anothrNick/github-tag-action@4ed44965e0db8dab2b466a16da04aec3cc312fd8 # 1.75.0
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          RELEASE_BRANCHES: main
-          TAG_PREFIX: "${{ matrix.chart }}-"
-          DEFAULT_BUMP: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.bump || 'patch' }}
-          FORCE_WITHOUT_CHANGES: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.force == 'true' }}
-
-      - name: Update chart version
+      - name: Read chart version
         id: version
         run: |
-          tag_prefix="${{ matrix.chart }}-"
-          next_tag="${{ steps.next-tag.outputs.new_tag }}"
-          version="${next_tag#${tag_prefix}}"
-
-          if [[ -z "$version" || "$version" == "$next_tag" ]]; then
-            echo "Failed to determine version from tag: $next_tag" >&2
-            exit 1
-          fi
-
           chart_file="charts/${{ matrix.chart }}/Chart.yaml"
-          backup_file="${chart_file}.bak"
-
-          sed -i.bak -E "s/^version:[[:space:]]*.*/version: \"$version\"/" "$chart_file"
-
-          if [[ ! -f "$chart_file" || ! -s "$chart_file" ]]; then
-            echo "Failed to update version in $chart_file" >&2
-            mv "$backup_file" "$chart_file"
+          version=$(grep '^version:' "$chart_file" | awk '{print $2}' | tr -d '"')
+          if [[ -z "$version" ]]; then
+            echo "Failed to read version from $chart_file" >&2
             exit 1
           fi
-
-          rm -f "$backup_file"
           echo "version=$version" >> "$GITHUB_OUTPUT"
 
       - name: Install chart-releaser
