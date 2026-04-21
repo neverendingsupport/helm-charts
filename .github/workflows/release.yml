@@ -13,6 +13,7 @@ on:
         options:
           - ack-documentdb-provider
           - ack-opensearch-provider
+          - ingress-nginx
           - nes-node-web
           - universal-chart
       bump:
