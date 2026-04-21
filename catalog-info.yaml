@@ -8,14 +8,14 @@ metadata:
     github.com/project-slug: neverendingsupport/helm-charts
     backstage.io/techdocs-ref: dir:.
   tags:
-    - helm
-    - kubernetes
-    - platform
-    - infrastructure
+  - helm
+  - kubernetes
+  - platform
+  - infrastructure
   links:
-    - url: https://github.com/neverendingsupport/helm-charts
-      title: GitHub Repository
-      icon: github
+  - url: https://github.com/neverendingsupport/helm-charts
+    title: GitHub Repository
+    icon: github
 spec:
   type: library
   lifecycle: production
@@ -30,7 +30,8 @@ metadata:
 spec:
   type: url
   targets:
-    - ./charts/universal-chart/catalog-info.yaml
-    - ./charts/nes-node-web/catalog-info.yaml
-    - ./charts/ack-documentdb-provider/catalog-info.yaml
-    - ./charts/ack-opensearch-provider/catalog-info.yaml
+  - ./charts/universal-chart/catalog-info.yaml
+  - ./charts/nes-node-web/catalog-info.yaml
+  - ./charts/ack-documentdb-provider/catalog-info.yaml
+  - ./charts/ack-opensearch-provider/catalog-info.yaml
+  - ./charts/ack-elasticache-provider/catalog-info.yaml

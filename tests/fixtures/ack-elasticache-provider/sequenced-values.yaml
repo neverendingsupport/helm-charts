@@ -1,0 +1,14 @@
+replicationGroupID: sample-cache
+description: Sample ElastiCache replication group
+engine: redis
+cacheNodeType: cache.t4g.micro
+numNodeGroups: 1
+replicasPerNodeGroup: 0
+connectionSecret:
+  name: cache-connection
+auth:
+  mode: password
+  password:
+    key: REDIS_PASSWORD
+sequencedConnection:
+  enabled: true
