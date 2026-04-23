@@ -7,7 +7,7 @@ metadata:
     helm.sh/chart: ingress-nginx-4.15.1-ingress-nginx-4.15.2
     app.kubernetes.io/name: ingress-nginx
     app.kubernetes.io/instance: ingress-nginx
-    app.kubernetes.io/version: "v1.15.1-ingress-nginx-1.15.2"
+    app.kubernetes.io/version: "v1.15.1-nes-1.15.2"
     app.kubernetes.io/part-of: ingress-nginx
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/component: controller
@@ -23,7 +23,7 @@ metadata:
     helm.sh/chart: ingress-nginx-4.15.1-ingress-nginx-4.15.2
     app.kubernetes.io/name: ingress-nginx
     app.kubernetes.io/instance: ingress-nginx
-    app.kubernetes.io/version: "v1.15.1-ingress-nginx-1.15.2"
+    app.kubernetes.io/version: "v1.15.1-nes-1.15.2"
     app.kubernetes.io/part-of: ingress-nginx
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/component: controller
@@ -39,7 +39,7 @@ metadata:
     helm.sh/chart: ingress-nginx-4.15.1-ingress-nginx-4.15.2
     app.kubernetes.io/name: ingress-nginx
     app.kubernetes.io/instance: ingress-nginx
-    app.kubernetes.io/version: "v1.15.1-ingress-nginx-1.15.2"
+    app.kubernetes.io/version: "v1.15.1-nes-1.15.2"
     app.kubernetes.io/part-of: ingress-nginx
     app.kubernetes.io/managed-by: Helm
   name: ingress-nginx
@@ -123,7 +123,7 @@ metadata:
     helm.sh/chart: ingress-nginx-4.15.1-ingress-nginx-4.15.2
     app.kubernetes.io/name: ingress-nginx
     app.kubernetes.io/instance: ingress-nginx
-    app.kubernetes.io/version: "v1.15.1-ingress-nginx-1.15.2"
+    app.kubernetes.io/version: "v1.15.1-nes-1.15.2"
     app.kubernetes.io/part-of: ingress-nginx
     app.kubernetes.io/managed-by: Helm
   name: ingress-nginx
@@ -144,7 +144,7 @@ metadata:
     helm.sh/chart: ingress-nginx-4.15.1-ingress-nginx-4.15.2
     app.kubernetes.io/name: ingress-nginx
     app.kubernetes.io/instance: ingress-nginx
-    app.kubernetes.io/version: "v1.15.1-ingress-nginx-1.15.2"
+    app.kubernetes.io/version: "v1.15.1-nes-1.15.2"
     app.kubernetes.io/part-of: ingress-nginx
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/component: controller
@@ -238,7 +238,7 @@ metadata:
     helm.sh/chart: ingress-nginx-4.15.1-ingress-nginx-4.15.2
     app.kubernetes.io/name: ingress-nginx
     app.kubernetes.io/instance: ingress-nginx
-    app.kubernetes.io/version: "v1.15.1-ingress-nginx-1.15.2"
+    app.kubernetes.io/version: "v1.15.1-nes-1.15.2"
     app.kubernetes.io/part-of: ingress-nginx
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/component: controller
@@ -261,7 +261,7 @@ metadata:
     helm.sh/chart: ingress-nginx-4.15.1-ingress-nginx-4.15.2
     app.kubernetes.io/name: ingress-nginx
     app.kubernetes.io/instance: ingress-nginx
-    app.kubernetes.io/version: "v1.15.1-ingress-nginx-1.15.2"
+    app.kubernetes.io/version: "v1.15.1-nes-1.15.2"
     app.kubernetes.io/part-of: ingress-nginx
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/component: controller
@@ -288,7 +288,7 @@ metadata:
     helm.sh/chart: ingress-nginx-4.15.1-ingress-nginx-4.15.2
     app.kubernetes.io/name: ingress-nginx
     app.kubernetes.io/instance: ingress-nginx
-    app.kubernetes.io/version: "v1.15.1-ingress-nginx-1.15.2"
+    app.kubernetes.io/version: "v1.15.1-nes-1.15.2"
     app.kubernetes.io/part-of: ingress-nginx
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/component: controller
@@ -323,7 +323,7 @@ metadata:
     helm.sh/chart: ingress-nginx-4.15.1-ingress-nginx-4.15.2
     app.kubernetes.io/name: ingress-nginx
     app.kubernetes.io/instance: ingress-nginx
-    app.kubernetes.io/version: "v1.15.1-ingress-nginx-1.15.2"
+    app.kubernetes.io/version: "v1.15.1-nes-1.15.2"
     app.kubernetes.io/part-of: ingress-nginx
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/component: controller
@@ -344,7 +344,7 @@ spec:
         helm.sh/chart: ingress-nginx-4.15.1-ingress-nginx-4.15.2
         app.kubernetes.io/name: ingress-nginx
         app.kubernetes.io/instance: ingress-nginx
-        app.kubernetes.io/version: "v1.15.1-ingress-nginx-1.15.2"
+        app.kubernetes.io/version: "v1.15.1-nes-1.15.2"
         app.kubernetes.io/part-of: ingress-nginx
         app.kubernetes.io/managed-by: Helm
         app.kubernetes.io/component: controller
@@ -352,7 +352,7 @@ spec:
       dnsPolicy: ClusterFirst
       containers:
         - name: controller
-          image: registry.nes.herodevs.com/neverendingsupport/ingress-nginx-controller:v1.15.1-ingress-nginx-1.15.2
+          image: registry.nes.herodevs.com/neverendingsupport/ingress-nginx-controller:v1.15.1-nes-1.15.2
           imagePullPolicy: IfNotPresent
           lifecycle:
             preStop:
@@ -449,7 +449,7 @@ metadata:
     helm.sh/chart: ingress-nginx-4.15.1-ingress-nginx-4.15.2
     app.kubernetes.io/name: ingress-nginx
     app.kubernetes.io/instance: ingress-nginx
-    app.kubernetes.io/version: "v1.15.1-ingress-nginx-1.15.2"
+    app.kubernetes.io/version: "v1.15.1-nes-1.15.2"
     app.kubernetes.io/part-of: ingress-nginx
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/component: controller
@@ -472,7 +472,7 @@ metadata:
     helm.sh/chart: ingress-nginx-4.15.1-ingress-nginx-4.15.2
     app.kubernetes.io/name: ingress-nginx
     app.kubernetes.io/instance: ingress-nginx
-    app.kubernetes.io/version: "v1.15.1-ingress-nginx-1.15.2"
+    app.kubernetes.io/version: "v1.15.1-nes-1.15.2"
     app.kubernetes.io/part-of: ingress-nginx
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/component: admission-webhook
@@ -514,7 +514,7 @@ metadata:
     helm.sh/chart: ingress-nginx-4.15.1-ingress-nginx-4.15.2
     app.kubernetes.io/name: ingress-nginx
     app.kubernetes.io/instance: ingress-nginx
-    app.kubernetes.io/version: "v1.15.1-ingress-nginx-1.15.2"
+    app.kubernetes.io/version: "v1.15.1-nes-1.15.2"
     app.kubernetes.io/part-of: ingress-nginx
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/component: admission-webhook
@@ -532,7 +532,7 @@ metadata:
     helm.sh/chart: ingress-nginx-4.15.1-ingress-nginx-4.15.2
     app.kubernetes.io/name: ingress-nginx
     app.kubernetes.io/instance: ingress-nginx
-    app.kubernetes.io/version: "v1.15.1-ingress-nginx-1.15.2"
+    app.kubernetes.io/version: "v1.15.1-nes-1.15.2"
     app.kubernetes.io/part-of: ingress-nginx
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/component: admission-webhook
@@ -557,7 +557,7 @@ metadata:
     helm.sh/chart: ingress-nginx-4.15.1-ingress-nginx-4.15.2
     app.kubernetes.io/name: ingress-nginx
     app.kubernetes.io/instance: ingress-nginx
-    app.kubernetes.io/version: "v1.15.1-ingress-nginx-1.15.2"
+    app.kubernetes.io/version: "v1.15.1-nes-1.15.2"
     app.kubernetes.io/part-of: ingress-nginx
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/component: admission-webhook
@@ -583,7 +583,7 @@ metadata:
     helm.sh/chart: ingress-nginx-4.15.1-ingress-nginx-4.15.2
     app.kubernetes.io/name: ingress-nginx
     app.kubernetes.io/instance: ingress-nginx
-    app.kubernetes.io/version: "v1.15.1-ingress-nginx-1.15.2"
+    app.kubernetes.io/version: "v1.15.1-nes-1.15.2"
     app.kubernetes.io/part-of: ingress-nginx
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/component: admission-webhook
@@ -609,7 +609,7 @@ metadata:
     helm.sh/chart: ingress-nginx-4.15.1-ingress-nginx-4.15.2
     app.kubernetes.io/name: ingress-nginx
     app.kubernetes.io/instance: ingress-nginx
-    app.kubernetes.io/version: "v1.15.1-ingress-nginx-1.15.2"
+    app.kubernetes.io/version: "v1.15.1-nes-1.15.2"
     app.kubernetes.io/part-of: ingress-nginx
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/component: admission-webhook
@@ -635,7 +635,7 @@ metadata:
     helm.sh/chart: ingress-nginx-4.15.1-ingress-nginx-4.15.2
     app.kubernetes.io/name: ingress-nginx
     app.kubernetes.io/instance: ingress-nginx
-    app.kubernetes.io/version: "v1.15.1-ingress-nginx-1.15.2"
+    app.kubernetes.io/version: "v1.15.1-nes-1.15.2"
     app.kubernetes.io/part-of: ingress-nginx
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/component: admission-webhook
@@ -648,7 +648,7 @@ spec:
         helm.sh/chart: ingress-nginx-4.15.1-ingress-nginx-4.15.2
         app.kubernetes.io/name: ingress-nginx
         app.kubernetes.io/instance: ingress-nginx
-        app.kubernetes.io/version: "v1.15.1-ingress-nginx-1.15.2"
+        app.kubernetes.io/version: "v1.15.1-nes-1.15.2"
         app.kubernetes.io/part-of: ingress-nginx
         app.kubernetes.io/managed-by: Helm
         app.kubernetes.io/component: admission-webhook
@@ -697,7 +697,7 @@ metadata:
     helm.sh/chart: ingress-nginx-4.15.1-ingress-nginx-4.15.2
     app.kubernetes.io/name: ingress-nginx
     app.kubernetes.io/instance: ingress-nginx
-    app.kubernetes.io/version: "v1.15.1-ingress-nginx-1.15.2"
+    app.kubernetes.io/version: "v1.15.1-nes-1.15.2"
     app.kubernetes.io/part-of: ingress-nginx
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/component: admission-webhook
@@ -710,7 +710,7 @@ spec:
         helm.sh/chart: ingress-nginx-4.15.1-ingress-nginx-4.15.2
         app.kubernetes.io/name: ingress-nginx
         app.kubernetes.io/instance: ingress-nginx
-        app.kubernetes.io/version: "v1.15.1-ingress-nginx-1.15.2"
+        app.kubernetes.io/version: "v1.15.1-nes-1.15.2"
         app.kubernetes.io/part-of: ingress-nginx
         app.kubernetes.io/managed-by: Helm
         app.kubernetes.io/component: admission-webhook
