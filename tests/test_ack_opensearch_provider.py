@@ -2,6 +2,10 @@
 
 from __future__ import annotations
 
+import base64
+import json
+import re
+
 from .chart_test_utils import (
     ChartContext,
     get_manifest,
@@ -245,4 +249,64 @@ def test_sequenced_connection_renders_hook_jobs(helm_runner) -> None:
     assert (
         sync_job["metadata"]["annotations"]["argocd.argoproj.io/sync-wave"]
         == "20"
+    )
+
+
+def test_sequenced_connection_clears_removed_reflector_annotations(
+    helm_runner,
+) -> None:
+    """Ensure sequenced mode nulls reflector annotations that should be removed."""
+
+    rendered = render_chart(
+        helm_runner,
+        CHART,
+        values={
+            "sequencedConnection.enabled": True,
+            "connectionSecret.name": "domain-connection",
+            "auth.mode": "password",
+            "auth.password.key": "OPENSEARCH_PASSWORD",
+        },
+    )
+
+    manifests = load_manifests(rendered)
+    bootstrap_job = next(
+        job
+        for job in manifests
+        if job.get("kind") == "Job"
+        and job["metadata"]["name"].endswith("bootstrap-secret")
+    )
+    bootstrap_script = bootstrap_job["spec"]["template"]["spec"]["containers"][
+        0
+    ]["args"][0]
+
+    encoded_patch = re.search(
+        r"echo '([^']+)' \| base64 -d > /tmp/secret-metadata-patch\.json",
+        bootstrap_script,
+    )
+    assert encoded_patch is not None
+
+    metadata_patch = json.loads(
+        base64.b64decode(encoded_patch.group(1)).decode("utf-8")
+    )
+    annotations = metadata_patch["metadata"]["annotations"]
+
+    assert (
+        annotations["reflector.v1.k8s.emberstack.com/reflection-allowed"]
+        is None
+    )
+    assert (
+        annotations[
+            "reflector.v1.k8s.emberstack.com/reflection-allowed-namespaces"
+        ]
+        is None
+    )
+    assert (
+        annotations["reflector.v1.k8s.emberstack.com/reflection-auto-enabled"]
+        is None
+    )
+    assert (
+        annotations[
+            "reflector.v1.k8s.emberstack.com/reflection-auto-namespaces"
+        ]
+        is None
     )

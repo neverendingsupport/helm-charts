@@ -3,6 +3,7 @@
 {{- $resourceName := coalesce .Values.resourceName (include "ack-elasticache-provider.fullname" .) }}
 {{- $secretName := include "ack-elasticache-provider.connectionSecretName" . }}
 {{- $secretAnnotations := include "ack-elasticache-provider.connectionSecretAnnotations" . | trim }}
+{{- $secretMetadataPatch := include "ack-elasticache-provider.connectionSecretMetadataMergePatchJSON" . | trim }}
 {{- $passwordLength := int .Values.auth.password.length }}
 {{- $passwordDigits := int .Values.auth.password.digits }}
 {{- $passwordSymbols := int .Values.auth.password.symbols }}
@@ -133,6 +134,10 @@ spec:
               if [ "$secret_exists" = true ]; then
                 existing_password="$(kubectl get secret "$secret_name" -o jsonpath="{.data.${password_key}}" 2>/dev/null | base64 --decode || true)"
                 if [ -n "$existing_password" ]; then
+{{- if and $secretMetadataPatch (ne $secretMetadataPatch "{}") }}
+                  echo '{{ $secretMetadataPatch | b64enc }}' | base64 -d > /tmp/secret-metadata-patch.json
+                  kubectl patch secret "$secret_name" --type merge --patch-file /tmp/secret-metadata-patch.json
+{{- end }}
                   password="$existing_password"
                 fi
               fi
@@ -151,6 +156,10 @@ spec:
               if [ "$secret_exists" = true ]; then
                 existing_password="$(kubectl get secret "$secret_name" -o jsonpath="{.data.${password_key}}" 2>/dev/null | base64 --decode || true)"
                 if [ -n "$existing_password" ]; then
+{{- if and $secretMetadataPatch (ne $secretMetadataPatch "{}") }}
+                  echo '{{ $secretMetadataPatch | b64enc }}' | base64 -d > /tmp/secret-metadata-patch.json
+                  kubectl patch secret "$secret_name" --type merge --patch-file /tmp/secret-metadata-patch.json
+{{- end }}
                   password="$existing_password"
                 fi
               fi
@@ -188,6 +197,10 @@ spec:
               {"stringData":{"${username_key}":"${username}","${host_key}":"","${port_key}":"{{ default 6379 .Values.port }}","${tls_key}":"{{ .Values.transitEncryptionEnabled | default false }}","${url_key}":"","${auth_url_key}":"","${arn_key}":"","${password_key}":"${password}"}}
               EOF
                 kubectl patch secret "$secret_name" --type merge --patch-file "$tmp_secret_patch"
+{{- if and $secretMetadataPatch (ne $secretMetadataPatch "{}") }}
+                echo '{{ $secretMetadataPatch | b64enc }}' | base64 -d > /tmp/secret-metadata-patch.json
+                kubectl patch secret "$secret_name" --type merge --patch-file /tmp/secret-metadata-patch.json
+{{- end }}
               else
                 kubectl create -f "$tmp_secret_manifest"
               fi

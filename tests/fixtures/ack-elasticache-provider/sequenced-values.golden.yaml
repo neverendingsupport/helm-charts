@@ -138,6 +138,8 @@ spec:
               if [ "$secret_exists" = true ]; then
                 existing_password="$(kubectl get secret "$secret_name" -o jsonpath="{.data.${password_key}}" 2>/dev/null | base64 --decode || true)"
                 if [ -n "$existing_password" ]; then
+                  echo 'eyJtZXRhZGF0YSI6eyJhbm5vdGF0aW9ucyI6eyJyZWZsZWN0b3IudjEuazhzLmVtYmVyc3RhY2suY29tL3JlZmxlY3Rpb24tYWxsb3dlZCI6bnVsbCwicmVmbGVjdG9yLnYxLms4cy5lbWJlcnN0YWNrLmNvbS9yZWZsZWN0aW9uLWFsbG93ZWQtbmFtZXNwYWNlcyI6bnVsbCwicmVmbGVjdG9yLnYxLms4cy5lbWJlcnN0YWNrLmNvbS9yZWZsZWN0aW9uLWF1dG8tZW5hYmxlZCI6bnVsbCwicmVmbGVjdG9yLnYxLms4cy5lbWJlcnN0YWNrLmNvbS9yZWZsZWN0aW9uLWF1dG8tbmFtZXNwYWNlcyI6bnVsbH19fQ==' | base64 -d > /tmp/secret-metadata-patch.json
+                  kubectl patch secret "$secret_name" --type merge --patch-file /tmp/secret-metadata-patch.json
                   password="$existing_password"
                 fi
               fi
@@ -178,6 +180,8 @@ spec:
               {"stringData":{"${username_key}":"${username}","${host_key}":"","${port_key}":"6379","${tls_key}":"false","${url_key}":"","${auth_url_key}":"","${arn_key}":"","${password_key}":"${password}"}}
               EOF
                 kubectl patch secret "$secret_name" --type merge --patch-file "$tmp_secret_patch"
+                echo 'eyJtZXRhZGF0YSI6eyJhbm5vdGF0aW9ucyI6eyJyZWZsZWN0b3IudjEuazhzLmVtYmVyc3RhY2suY29tL3JlZmxlY3Rpb24tYWxsb3dlZCI6bnVsbCwicmVmbGVjdG9yLnYxLms4cy5lbWJlcnN0YWNrLmNvbS9yZWZsZWN0aW9uLWFsbG93ZWQtbmFtZXNwYWNlcyI6bnVsbCwicmVmbGVjdG9yLnYxLms4cy5lbWJlcnN0YWNrLmNvbS9yZWZsZWN0aW9uLWF1dG8tZW5hYmxlZCI6bnVsbCwicmVmbGVjdG9yLnYxLms4cy5lbWJlcnN0YWNrLmNvbS9yZWZsZWN0aW9uLWF1dG8tbmFtZXNwYWNlcyI6bnVsbH19fQ==' | base64 -d > /tmp/secret-metadata-patch.json
+                kubectl patch secret "$secret_name" --type merge --patch-file /tmp/secret-metadata-patch.json
               else
                 kubectl create -f "$tmp_secret_manifest"
               fi
