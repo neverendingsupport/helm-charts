@@ -1,12 +1,19 @@
 {{- $legacy := .Values.domain | default dict }}
 {{- $annotations := mergeOverwrite (deepCopy (default dict $legacy.annotations)) (default dict .Values.annotations) }}
 {{- $topLevelSpec := dict }}
-{{- range $key, $value := (omit .Values "nameOverride" "fullnameOverride" "resourceName" "annotations" "connectionSecret" "auth" "reflector" "fieldExport" "pushSecret" "domain") }}
+{{- range $key, $value := (omit .Values "nameOverride" "fullnameOverride" "resourceName" "annotations" "connectionSecret" "auth" "reflector" "fieldExport" "pushSecret" "domain" "sequencedConnection") }}
 {{- if and (ne $value nil) (not (and (kindIs "map" $value) (eq (len $value) 0))) (not (and (kindIs "slice" $value) (eq (len $value) 0))) }}
 {{- $_ := set $topLevelSpec $key $value }}
 {{- end }}
 {{- end }}
 {{- $spec := mergeOverwrite (deepCopy (default dict $legacy.spec)) $topLevelSpec }}
+{{- if and $spec.vpcOptions (index $spec.vpcOptions "subnetIDs") }}
+{{- $subnetIDs := index $spec.vpcOptions "subnetIDs" }}
+{{- if kindIs "string" $subnetIDs }}
+{{- $newVpc := mergeOverwrite (deepCopy $spec.vpcOptions) (dict "subnetIDs" (fromJson $subnetIDs)) }}
+{{- $_ := set $spec "vpcOptions" $newVpc }}
+{{- end }}
+{{- end }}
 apiVersion: opensearchservice.services.k8s.aws/v1alpha1
 kind: Domain
 metadata:

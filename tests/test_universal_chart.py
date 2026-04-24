@@ -274,6 +274,29 @@ def test_service_monitor_renders_when_enabled(helm_runner) -> None:
     assert "interval" not in endpoint
 
 
+def test_hpa_annotations_render_when_enabled(helm_runner) -> None:
+    """Ensure HPA annotations are rendered."""
+
+    rendered = render_chart(
+        helm_runner,
+        CHART,
+        values={
+            "autoscaling": {
+                "enabled": True,
+                "annotations": {
+                    "argocd.argoproj.io/sync-wave": "10",
+                },
+            }
+        },
+    )
+    manifests = load_manifests(rendered)
+    hpa = get_manifest(manifests, "HorizontalPodAutoscaler")
+
+    assert hpa["metadata"]["annotations"] == {
+        "argocd.argoproj.io/sync-wave": "10"
+    }
+
+
 def test_service_monitor_is_not_rendered_when_disabled(helm_runner) -> None:
     """Ensure the ServiceMonitor is omitted when disabled."""
 

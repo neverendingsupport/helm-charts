@@ -1,0 +1,277 @@
+{{- if .Values.sequencedConnection.enabled }}
+{{- $auth := .Values.auth | default dict }}
+{{- $resourceName := coalesce .Values.resourceName (include "ack-elasticache-provider.fullname" .) }}
+{{- $secretName := include "ack-elasticache-provider.connectionSecretName" . }}
+{{- $secretAnnotations := include "ack-elasticache-provider.connectionSecretAnnotations" . | trim }}
+{{- $secretMetadataPatch := include "ack-elasticache-provider.connectionSecretMetadataMergePatchJSON" . | trim }}
+{{- $passwordLength := int .Values.auth.password.length }}
+{{- $passwordDigits := int .Values.auth.password.digits }}
+{{- $passwordSymbols := int .Values.auth.password.symbols }}
+{{- if and (eq $auth.mode "password") (not .Values.auth.password.allowRepeat) }}
+{{- fail "auth.password.allowRepeat=false is not supported when sequencedConnection.enabled=true" }}
+{{- end }}
+{{- if and (eq $auth.mode "password") (lt $passwordLength (add $passwordDigits $passwordSymbols)) }}
+{{- fail "auth.password.length must be greater than or equal to auth.password.digits + auth.password.symbols when sequencedConnection.enabled=true" }}
+{{- end }}
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: {{ include "ack-elasticache-provider.bootstrapServiceAccountName" . }}
+  labels:
+    {{- include "ack-elasticache-provider.labels" . | nindent 4 }}
+  annotations:
+    argocd.argoproj.io/hook: PreSync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
+    argocd.argoproj.io/sync-wave: "-2"
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: {{ include "ack-elasticache-provider.bootstrapRoleName" . }}
+  labels:
+    {{- include "ack-elasticache-provider.labels" . | nindent 4 }}
+  annotations:
+    argocd.argoproj.io/hook: PreSync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
+    argocd.argoproj.io/sync-wave: "-2"
+rules:
+  - apiGroups:
+      - ""
+    resources:
+      - secrets
+    verbs:
+      - get
+      - create
+      - update
+      - patch
+  - apiGroups:
+      - elasticache.services.k8s.aws
+    resources:
+      - replicationgroups
+    verbs:
+      - get
+      - list
+      - watch
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: {{ include "ack-elasticache-provider.bootstrapRoleBindingName" . }}
+  labels:
+    {{- include "ack-elasticache-provider.labels" . | nindent 4 }}
+  annotations:
+    argocd.argoproj.io/hook: PreSync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
+    argocd.argoproj.io/sync-wave: "-2"
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: {{ include "ack-elasticache-provider.bootstrapRoleName" . }}
+subjects:
+  - kind: ServiceAccount
+    name: {{ include "ack-elasticache-provider.bootstrapServiceAccountName" . }}
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "ack-elasticache-provider.secretBootstrapJobName" . }}
+  labels:
+    {{- include "ack-elasticache-provider.labels" . | nindent 4 }}
+  annotations:
+    argocd.argoproj.io/hook: PreSync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation,HookSucceeded
+    argocd.argoproj.io/sync-wave: "-1"
+spec:
+  ttlSecondsAfterFinished: {{ .Values.sequencedConnection.ttlSecondsAfterFinished }}
+  template:
+    metadata:
+      labels:
+        {{- include "ack-elasticache-provider.labels" . | nindent 8 }}
+    spec:
+      restartPolicy: OnFailure
+      serviceAccountName: {{ include "ack-elasticache-provider.bootstrapServiceAccountName" . }}
+      containers:
+        - name: bootstrap-secret
+          image: {{ .Values.sequencedConnection.kubectlImage | quote }}
+          command:
+            - /bin/sh
+            - -ec
+          args:
+            - |
+              secret_name={{ $secretName | quote }}
+              username={{ .Values.auth.username | quote }}
+              username_key={{ .Values.connectionSecret.keys.username | quote }}
+              password_key={{ .Values.auth.password.key | quote }}
+              host_key={{ .Values.connectionSecret.keys.host | quote }}
+              port_key={{ .Values.connectionSecret.keys.port | quote }}
+              tls_key={{ .Values.connectionSecret.keys.tls | quote }}
+              url_key={{ .Values.connectionSecret.keys.url | quote }}
+              auth_url_key={{ .Values.connectionSecret.keys.authURL | quote }}
+              arn_key={{ .Values.connectionSecret.keys.arn | quote }}
+              tmp_secret_manifest=/tmp/secret.yaml
+              tmp_secret_patch=/tmp/secret-patch.json
+
+              random_chars() {
+                count="$1"
+                charset="$2"
+                if [ "$count" -le 0 ]; then
+                  return 0
+                fi
+                output=""
+                while [ "${#output}" -lt "$count" ]; do
+                  output="${output}$(tr -dc "$charset" </dev/urandom | head -c "$((count - ${#output}))")"
+                done
+                printf '%s' "$output"
+              }
+
+              secret_exists=false
+              if kubectl get secret "$secret_name" >/dev/null 2>&1; then
+                secret_exists=true
+              fi
+
+              password=""
+              {{- if eq $auth.mode "password" }}
+              if [ "$secret_exists" = true ]; then
+                existing_password="$(kubectl get secret "$secret_name" -o jsonpath="{.data.${password_key}}" 2>/dev/null | base64 --decode || true)"
+                if [ -n "$existing_password" ]; then
+{{- if and $secretMetadataPatch (ne $secretMetadataPatch "{}") }}
+                  echo '{{ $secretMetadataPatch | b64enc }}' | base64 -d > /tmp/secret-metadata-patch.json
+                  kubectl patch secret "$secret_name" --type merge --patch-file /tmp/secret-metadata-patch.json
+{{- end }}
+                  password="$existing_password"
+                fi
+              fi
+
+              if [ -z "$password" ]; then
+                digits_part="$(random_chars {{ $passwordDigits }} '0-9')"
+                symbols_part="$(random_chars {{ $passwordSymbols }} '!&#$^<>-')"
+                base_charset='a-z0-9!&#$^<>-'
+                {{- if not .Values.auth.password.noUpper }}
+                base_charset='A-Za-z0-9!&#$^<>-'
+                {{- end }}
+                remaining_part="$(random_chars {{ sub $passwordLength (add $passwordDigits $passwordSymbols) }} "$base_charset")"
+                password="${digits_part}${symbols_part}${remaining_part}"
+              fi
+              {{- else }}
+              if [ "$secret_exists" = true ]; then
+                existing_password="$(kubectl get secret "$secret_name" -o jsonpath="{.data.${password_key}}" 2>/dev/null | base64 --decode || true)"
+                if [ -n "$existing_password" ]; then
+{{- if and $secretMetadataPatch (ne $secretMetadataPatch "{}") }}
+                  echo '{{ $secretMetadataPatch | b64enc }}' | base64 -d > /tmp/secret-metadata-patch.json
+                  kubectl patch secret "$secret_name" --type merge --patch-file /tmp/secret-metadata-patch.json
+{{- end }}
+                  password="$existing_password"
+                fi
+              fi
+              {{- end }}
+
+              cat > "$tmp_secret_manifest" <<EOF
+              apiVersion: v1
+              kind: Secret
+              metadata:
+                name: {{ $secretName }}
+                labels:
+{{ include "ack-elasticache-provider.labels" . | trim | indent 18 }}
+              {{- if $secretAnnotations }}
+                annotations:
+{{ $secretAnnotations | indent 18 }}
+              {{- end }}
+              type: Opaque
+              stringData:
+                {{ .Values.connectionSecret.keys.username }}: {{ .Values.auth.username | quote }}
+                {{ .Values.connectionSecret.keys.host }}: ""
+                {{ .Values.connectionSecret.keys.port }}: {{ default 6379 .Values.port | quote }}
+                {{ .Values.connectionSecret.keys.tls }}: {{ (.Values.transitEncryptionEnabled | default false) | quote }}
+                {{ .Values.connectionSecret.keys.url }}: ""
+                {{ .Values.connectionSecret.keys.authURL }}: ""
+                {{ .Values.connectionSecret.keys.arn }}: ""
+              {{- if eq $auth.mode "password" }}
+                {{ .Values.auth.password.key }}: "${password}"
+              {{- else }}
+                {{ .Values.auth.password.key }}: "${password}"
+              {{- end }}
+              EOF
+
+              if [ "$secret_exists" = true ]; then
+                cat > "$tmp_secret_patch" <<EOF
+              {"stringData":{"${username_key}":"${username}","${host_key}":"","${port_key}":"{{ default 6379 .Values.port }}","${tls_key}":"{{ .Values.transitEncryptionEnabled | default false }}","${url_key}":"","${auth_url_key}":"","${arn_key}":"","${password_key}":"${password}"}}
+              EOF
+                kubectl patch secret "$secret_name" --type merge --patch-file "$tmp_secret_patch"
+{{- if and $secretMetadataPatch (ne $secretMetadataPatch "{}") }}
+                echo '{{ $secretMetadataPatch | b64enc }}' | base64 -d > /tmp/secret-metadata-patch.json
+                kubectl patch secret "$secret_name" --type merge --patch-file /tmp/secret-metadata-patch.json
+{{- end }}
+              else
+                kubectl create -f "$tmp_secret_manifest"
+              fi
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "ack-elasticache-provider.endpointSyncJobName" . }}
+  labels:
+    {{- include "ack-elasticache-provider.labels" . | nindent 4 }}
+  annotations:
+    argocd.argoproj.io/hook: Sync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation,HookSucceeded
+    argocd.argoproj.io/sync-wave: {{ .Values.sequencedConnection.syncWave | quote }}
+spec:
+  ttlSecondsAfterFinished: {{ .Values.sequencedConnection.ttlSecondsAfterFinished }}
+  template:
+    metadata:
+      labels:
+        {{- include "ack-elasticache-provider.labels" . | nindent 8 }}
+    spec:
+      restartPolicy: OnFailure
+      serviceAccountName: {{ include "ack-elasticache-provider.bootstrapServiceAccountName" . }}
+      containers:
+        - name: sync-connection
+          image: {{ .Values.sequencedConnection.kubectlImage | quote }}
+          command:
+            - /bin/sh
+            - -ec
+          args:
+            - |
+              resource_name={{ $resourceName | quote }}
+              secret_name={{ $secretName | quote }}
+              username_key={{ .Values.connectionSecret.keys.username | quote }}
+              password_key={{ .Values.auth.password.key | quote }}
+              host_key={{ .Values.connectionSecret.keys.host | quote }}
+              port_key={{ .Values.connectionSecret.keys.port | quote }}
+              tls_key={{ .Values.connectionSecret.keys.tls | quote }}
+              url_key={{ .Values.connectionSecret.keys.url | quote }}
+              auth_url_key={{ .Values.connectionSecret.keys.authURL | quote }}
+              arn_key={{ .Values.connectionSecret.keys.arn | quote }}
+              scheme={{ ternary "rediss" "redis" (.Values.transitEncryptionEnabled | default false) | quote }}
+              elapsed=0
+              poll_interval={{ .Values.sequencedConnection.pollIntervalSeconds }}
+              max_wait={{ .Values.sequencedConnection.maxWaitSeconds }}
+              tmp_patch=/tmp/secret-patch.json
+
+              while [ "$elapsed" -lt "$max_wait" ]; do
+                endpoint="$(kubectl get replicationgroups.elasticache.services.k8s.aws "$resource_name" -o jsonpath='{.status.nodeGroups[0].primaryEndpoint.address}' 2>/dev/null || true)"
+                port="$(kubectl get replicationgroups.elasticache.services.k8s.aws "$resource_name" -o jsonpath='{.status.nodeGroups[0].primaryEndpoint.port}' 2>/dev/null || true)"
+                arn="$(kubectl get replicationgroups.elasticache.services.k8s.aws "$resource_name" -o jsonpath='{.status.ackResourceMetadata.arn}' 2>/dev/null || true)"
+
+                if [ -n "$endpoint" ] && [ -n "$port" ]; then
+                  url="${scheme}://${endpoint}:${port}"
+                  auth_url="$url"
+                  username="$(kubectl get secret "$secret_name" -o jsonpath="{.data.${username_key}}" 2>/dev/null | base64 --decode || true)"
+                  password="$(kubectl get secret "$secret_name" -o jsonpath="{.data.${password_key}}" 2>/dev/null | base64 --decode || true)"
+                  if [ "{{ $auth.mode }}" = "password" ] && [ -n "$username" ] && [ -n "$password" ]; then
+                    auth_url="${scheme}://${username}:${password}@${endpoint}:${port}"
+                  fi
+                  cat > "$tmp_patch" <<EOF
+              {"stringData":{"${host_key}":"${endpoint}","${port_key}":"${port}","${tls_key}":"{{ .Values.transitEncryptionEnabled | default false }}","${url_key}":"${url}","${auth_url_key}":"${auth_url}","${arn_key}":"${arn}"}}
+              EOF
+                  kubectl patch secret "$secret_name" --type merge --patch-file "$tmp_patch"
+                  exit 0
+                fi
+
+                sleep "$poll_interval"
+                elapsed=$((elapsed + poll_interval))
+              done
+
+              echo "Timed out waiting for ReplicationGroup primary endpoint"
+              exit 1
+{{- end }}

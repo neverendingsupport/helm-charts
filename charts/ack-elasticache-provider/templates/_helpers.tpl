@@ -1,12 +1,12 @@
-{{- define "ack-opensearch-provider.name" -}}
+{{- define "ack-elasticache-provider.name" -}}
 {{- default .Chart.Name .Values.nameOverride | trunc 63 | trimSuffix "-" -}}
 {{- end -}}
 
-{{- define "ack-opensearch-provider.fullname" -}}
+{{- define "ack-elasticache-provider.fullname" -}}
 {{- if .Values.fullnameOverride -}}
 {{- .Values.fullnameOverride | trunc 63 | trimSuffix "-" -}}
 {{- else -}}
-{{- $name := include "ack-opensearch-provider.name" . -}}
+{{- $name := include "ack-elasticache-provider.name" . -}}
 {{- if contains $name .Release.Name -}}
 {{- .Release.Name | trunc 63 | trimSuffix "-" -}}
 {{- else -}}
@@ -15,9 +15,9 @@
 {{- end -}}
 {{- end -}}
 
-{{- define "ack-opensearch-provider.labels" -}}
+{{- define "ack-elasticache-provider.labels" -}}
 helm.sh/chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
-app.kubernetes.io/name: {{ include "ack-opensearch-provider.name" . }}
+app.kubernetes.io/name: {{ include "ack-elasticache-provider.name" . }}
 app.kubernetes.io/instance: {{ .Release.Name }}
 {{- with .Chart.AppVersion }}
 app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
@@ -25,11 +25,15 @@ app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
 app.kubernetes.io/managed-by: {{ .Release.Service }}
 {{- end -}}
 
-{{- define "ack-opensearch-provider.connectionSecretName" -}}
-{{- default (printf "%s-connection" (include "ack-opensearch-provider.fullname" .)) .Values.connectionSecret.name -}}
+{{- define "ack-elasticache-provider.connectionSecretName" -}}
+{{- default (printf "%s-connection" (include "ack-elasticache-provider.fullname" .)) .Values.connectionSecret.name -}}
 {{- end -}}
 
-{{- define "ack-opensearch-provider.connectionSecretAnnotationsJSON" -}}
+{{- define "ack-elasticache-provider.cacheParameterGroupName" -}}
+{{- default (coalesce .Values.resourceName (include "ack-elasticache-provider.fullname" .)) .Values.cacheParameterGroup.name -}}
+{{- end -}}
+
+{{- define "ack-elasticache-provider.connectionSecretAnnotationsJSON" -}}
 {{- $annotations := dict -}}
 {{- if .Values.reflector.enabled -}}
 {{- $_ := set $annotations "reflector.v1.k8s.emberstack.com/reflection-allowed" "true" -}}
@@ -47,8 +51,8 @@ app.kubernetes.io/managed-by: {{ .Release.Service }}
 {{- $annotations | toJson -}}
 {{- end -}}
 
-{{- define "ack-opensearch-provider.connectionSecretAnnotations" -}}
-{{- $json := include "ack-opensearch-provider.connectionSecretAnnotationsJSON" . | trim -}}
+{{- define "ack-elasticache-provider.connectionSecretAnnotations" -}}
+{{- $json := include "ack-elasticache-provider.connectionSecretAnnotationsJSON" . | trim -}}
 {{- if and $json (ne $json "{}") -}}
 {{- $annotations := fromJson $json -}}
 {{- if gt (len $annotations) 0 -}}
@@ -57,8 +61,8 @@ app.kubernetes.io/managed-by: {{ .Release.Service }}
 {{- end -}}
 {{- end -}}
 
-{{- define "ack-opensearch-provider.connectionSecretMetadataMergePatchJSON" -}}
-{{- $json := include "ack-opensearch-provider.connectionSecretAnnotationsJSON" . | trim -}}
+{{- define "ack-elasticache-provider.connectionSecretMetadataMergePatchJSON" -}}
+{{- $json := include "ack-elasticache-provider.connectionSecretAnnotationsJSON" . | trim -}}
 {{- $annotations := dict -}}
 {{- if and $json (ne $json "{}") -}}
 {{- $annotations = fromJson $json -}}
@@ -81,30 +85,30 @@ app.kubernetes.io/managed-by: {{ .Release.Service }}
 {{- end -}}
 {{- end -}}
 
-{{- define "ack-opensearch-provider.passwordGeneratorName" -}}
-{{- printf "%s-password" (include "ack-opensearch-provider.fullname" .) -}}
+{{- define "ack-elasticache-provider.passwordGeneratorName" -}}
+{{- printf "%s-password" (include "ack-elasticache-provider.fullname" .) -}}
 {{- end -}}
 
-{{- define "ack-opensearch-provider.externalSecretName" -}}
-{{- printf "%s-auth" (include "ack-opensearch-provider.fullname" .) -}}
+{{- define "ack-elasticache-provider.externalSecretName" -}}
+{{- printf "%s-auth" (include "ack-elasticache-provider.fullname" .) -}}
 {{- end -}}
 
-{{- define "ack-opensearch-provider.bootstrapServiceAccountName" -}}
-{{- printf "%s-bootstrap" (include "ack-opensearch-provider.fullname" .) -}}
+{{- define "ack-elasticache-provider.bootstrapServiceAccountName" -}}
+{{- printf "%s-bootstrap" (include "ack-elasticache-provider.fullname" .) -}}
 {{- end -}}
 
-{{- define "ack-opensearch-provider.bootstrapRoleName" -}}
-{{- printf "%s-bootstrap" (include "ack-opensearch-provider.fullname" .) -}}
+{{- define "ack-elasticache-provider.bootstrapRoleName" -}}
+{{- printf "%s-bootstrap" (include "ack-elasticache-provider.fullname" .) -}}
 {{- end -}}
 
-{{- define "ack-opensearch-provider.bootstrapRoleBindingName" -}}
-{{- printf "%s-bootstrap" (include "ack-opensearch-provider.fullname" .) -}}
+{{- define "ack-elasticache-provider.bootstrapRoleBindingName" -}}
+{{- printf "%s-bootstrap" (include "ack-elasticache-provider.fullname" .) -}}
 {{- end -}}
 
-{{- define "ack-opensearch-provider.secretBootstrapJobName" -}}
-{{- printf "%s-bootstrap-secret" (include "ack-opensearch-provider.fullname" .) -}}
+{{- define "ack-elasticache-provider.secretBootstrapJobName" -}}
+{{- printf "%s-bootstrap-secret" (include "ack-elasticache-provider.fullname" .) -}}
 {{- end -}}
 
-{{- define "ack-opensearch-provider.endpointSyncJobName" -}}
-{{- printf "%s-sync-connection" (include "ack-opensearch-provider.fullname" .) -}}
+{{- define "ack-elasticache-provider.endpointSyncJobName" -}}
+{{- printf "%s-sync-connection" (include "ack-elasticache-provider.fullname" .) -}}
 {{- end -}}

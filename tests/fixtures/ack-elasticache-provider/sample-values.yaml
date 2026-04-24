@@ -1,0 +1,19 @@
+replicationGroupID: dev-registry-cache
+description: Replication group for dev-registry-cache
+engine: redis
+engineVersion: 6.2.6
+cacheNodeType: cache.t2.micro
+numNodeGroups: 1
+replicasPerNodeGroup: 0
+preferredCacheClusterAZs:
+  - us-west-2c
+preferredMaintenanceWindow: sun:05:00-sun:09:00
+cacheSubnetGroupName: dev-registry-cache-subnet-group
+securityGroupIDs:
+  - sg-08dd4b4ff0fdf2f99
+snapshotRetentionLimit: 0
+snapshotWindow: 09:00-12:00
+networkType: ipv4
+ipDiscovery: ipv4
+atRestEncryptionEnabled: true
+transitEncryptionEnabled: true

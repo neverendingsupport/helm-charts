@@ -1,0 +1,10 @@
+name: sample-domain
+engineVersion: OpenSearch_2.11
+connectionSecret:
+  name: domain-connection
+auth:
+  mode: password
+  password:
+    key: OPENSEARCH_PASSWORD
+sequencedConnection:
+  enabled: true
