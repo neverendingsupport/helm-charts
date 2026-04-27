@@ -7,7 +7,7 @@ repos:
   # github
   ########################################
   - repo: https://github.com/rhysd/actionlint
-    rev: v1.7.11
+    rev: v1.7.12
     hooks:
       - id: actionlint
 # - repo: local
@@ -81,14 +81,14 @@ repos:
   ########################################
   # Format imports first
   - repo: https://github.com/pycqa/isort
-    rev: 8.0.1
+    rev: 9.0.0a3
     hooks:
       - id: isort
         args: ["--profile", "black", "--line-length", "80"]
 
   # Then format code
   - repo: https://github.com/psf/black-pre-commit-mirror
-    rev: 26.1.0
+    rev: 26.3.1
     hooks:
       - id: black
         language_version: python3
@@ -106,7 +106,7 @@ repos:
 
   # Type-check
   - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.19.1
+    rev: v1.20.2
     hooks:
       - id: mypy
         language: python
