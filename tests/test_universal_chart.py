@@ -63,6 +63,51 @@ def test_name_override_updates_all_references(helm_runner) -> None:
     )
 
 
+def test_prometheus_rule_renders_and_templates_rule_strings(
+    helm_runner,
+) -> None:
+    """Ensure PrometheusRule metadata and templated rule strings render."""
+
+    rendered = render_chart(
+        helm_runner,
+        CHART,
+        values={
+            "prometheusRule": {
+                "enabled": True,
+                "annotations": {"example.com/source": "chart"},
+                "additionalLabels": {"team": "example"},
+                "rules": [
+                    {
+                        "alert": "ApplicationDown",
+                        "expr": (
+                            'up{job="{{ include '
+                            '"universal-chart.fullname" . }}"} == 0'
+                        ),
+                        "for": "2m",
+                        "labels": {"severity": "warning"},
+                        "annotations": {
+                            "summary": 'App {{ "{{ $labels.job }}" }} down',
+                            "description": (
+                                'App {{ "{{ $labels.job }}" }} '
+                                "has no healthy targets"
+                            ),
+                        },
+                    }
+                ],
+            }
+        },
+    )
+    manifests = load_manifests(rendered)
+    prom_rule = get_manifest(manifests, "PrometheusRule")
+
+    assert prom_rule["metadata"]["name"] == "universal-chart"
+    assert prom_rule["metadata"]["labels"]["team"] == "example"
+    assert prom_rule["metadata"]["annotations"]["example.com/source"] == "chart"
+    rule = prom_rule["spec"]["groups"][0]["rules"][0]
+    assert rule["expr"] == 'up{job="universal-chart"} == 0'
+    assert rule["annotations"]["summary"] == "App {{ $labels.job }} down"
+
+
 def test_resources_include_requests_for_cpu_and_memory(helm_runner) -> None:
     """Ensure CPU and memory requests are rendered when specified."""
 

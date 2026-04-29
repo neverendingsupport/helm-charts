@@ -103,6 +103,28 @@
     "revisionHistoryLimit": {
       "type": "integer",
       "minimum": 0
+    },
+    "prometheusRule": {
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        },
+        "additionalLabels": {
+          "type": "object",
+          "additionalProperties": true
+        },
+        "annotations": {
+          "type": "object",
+          "additionalProperties": true
+        },
+        "rules": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        }
+      }
     }
   },
   "title": "Values",
