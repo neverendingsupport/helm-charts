@@ -272,6 +272,39 @@ serviceMonitor:
   # When null, the ServiceMonitor targets the main service as before.
   alternatePort: null
 
+# @schema
+# properties:
+#   enabled:
+#     type: boolean
+#   additionalLabels:
+#     type: object
+#     additionalProperties: true
+#   annotations:
+#     type: object
+#     additionalProperties: true
+#   rules:
+#     type: array
+#     items:
+#       type: object
+#       additionalProperties: true
+# @schema
+# -- Configure a PrometheusRule for evaluating alerting rules against scraped metrics.
+prometheusRule:
+  # -- Whether to create a PrometheusRule resource.
+  enabled: false
+  # @schema
+  # additionalProperties: true
+  # @schema
+  # -- Additional labels to add to the PrometheusRule metadata.
+  additionalLabels: {}
+  # @schema
+  # additionalProperties: true
+  # @schema
+  # -- Additional annotations to add to the PrometheusRule metadata.
+  annotations: {}
+  # -- List of Prometheus alerting rules. Rule fields are rendered as Helm templates.
+  rules: []
+
 # -- This block is for setting up the ingress.
 # More information can be found here: https://kubernetes.io/docs/concepts/services-networking/ingress/
 ingress:

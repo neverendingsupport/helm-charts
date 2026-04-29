@@ -1,0 +1,20 @@
+{{- if and .Values.prometheusRule.enabled .Values.prometheusRule.rules }}
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: {{ include "universal-chart.fullname" . }}
+  labels:
+    {{- include "universal-chart.labels" . | nindent 4 }}
+    {{- with .Values.prometheusRule.additionalLabels }}
+    {{- include "universal-chart.tplvalues.render" (dict "value" . "context" $) | nindent 4 }}
+    {{- end }}
+  {{- with .Values.prometheusRule.annotations }}
+  annotations:
+    {{- include "universal-chart.tplvalues.render" (dict "value" . "context" $) | nindent 4 }}
+  {{- end }}
+spec:
+  groups:
+    - name: {{ include "universal-chart.fullname" . }}
+      rules:
+        {{- include "universal-chart.tplvalues.render" (dict "value" .Values.prometheusRule.rules "context" $) | nindent 8 }}
+{{- end }}
