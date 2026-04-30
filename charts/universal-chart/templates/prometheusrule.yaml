@@ -1,4 +1,4 @@
-{{- if and .Values.prometheusRule.enabled .Values.prometheusRule.rules }}
+{{- if and .Values.prometheusRule.enabled (or .Values.prometheusRule.groups .Values.prometheusRule.rules) }}
 apiVersion: monitoring.coreos.com/v1
 kind: PrometheusRule
 metadata:
@@ -6,15 +6,19 @@ metadata:
   labels:
     {{- include "universal-chart.labels" . | nindent 4 }}
     {{- with .Values.prometheusRule.additionalLabels }}
-    {{- include "universal-chart.tplvalues.render" (dict "value" . "context" $) | nindent 4 }}
+    {{- toYaml . | nindent 4 }}
     {{- end }}
   {{- with .Values.prometheusRule.annotations }}
   annotations:
-    {{- include "universal-chart.tplvalues.render" (dict "value" . "context" $) | nindent 4 }}
+    {{- toYaml . | nindent 4 }}
   {{- end }}
 spec:
   groups:
+    {{- if .Values.prometheusRule.groups }}
+    {{- toYaml .Values.prometheusRule.groups | nindent 4 }}
+    {{- else }}
     - name: {{ include "universal-chart.fullname" . }}
       rules:
-        {{- include "universal-chart.tplvalues.render" (dict "value" .Values.prometheusRule.rules "context" $) | nindent 8 }}
+        {{- toYaml .Values.prometheusRule.rules | nindent 8 }}
+    {{- end }}
 {{- end }}

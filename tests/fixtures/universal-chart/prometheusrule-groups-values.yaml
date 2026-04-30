@@ -1,0 +1,27 @@
+image:
+  repository: ghcr.io/example/app
+  tag: "1.2.3"
+prometheusRule:
+  enabled: true
+  additionalLabels:
+    app: eol-api
+  groups:
+    - name: eol-api.rules
+      interval: 1m
+      rules:
+        - alert: EolApiOverallErrorRate
+          expr: |
+            (
+              sum(rate(eol_graphql_operations_total{result="error"}[5m]))
+              /
+              sum(rate(eol_graphql_operations_total[5m]))
+            ) > 0.15
+            and
+            sum(rate(eol_graphql_operations_total[5m])) > 0.05
+          for: 5m
+          labels:
+            severity: warning
+            application: eol-api
+            group: eol
+          annotations:
+            summary: "eol-api (stage): overall GraphQL error rate > 15% for > 5m"
