@@ -1,0 +1,116 @@
+---
+# Source: ack-elasticache-provider/templates/connection-secret.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: ack-elasticache-provider-connection
+  labels:
+    helm.sh/chart: ack-elasticache-provider-0.0.0-a.placeholder
+    app.kubernetes.io/name: ack-elasticache-provider
+    app.kubernetes.io/instance: ack-elasticache-provider
+    app.kubernetes.io/managed-by: Helm
+type: Opaque
+stringData:
+  REDIS_USERNAME: "default"
+  REDIS_PORT: "6379"
+  REDIS_TLS: "true"
+  REDIS_URL: ""
+  REDIS_AUTH_URL: ""
+  REDIS_PASSWORD: ""
+---
+# Source: ack-elasticache-provider/templates/field-exports.yaml
+apiVersion: services.k8s.aws/v1alpha1
+kind: FieldExport
+metadata:
+  name: ack-elasticache-provider-host
+  labels:
+    helm.sh/chart: ack-elasticache-provider-0.0.0-a.placeholder
+    app.kubernetes.io/name: ack-elasticache-provider
+    app.kubernetes.io/instance: ack-elasticache-provider
+    app.kubernetes.io/managed-by: Helm
+spec:
+  from:
+    path: ".status.nodeGroups.0.primaryEndpoint.address"
+    resource:
+      group: elasticache.services.k8s.aws
+      kind: ReplicationGroup
+      name: ack-elasticache-provider
+  to:
+    kind: secret
+    name: ack-elasticache-provider-connection
+    key: REDIS_HOST
+---
+# Source: ack-elasticache-provider/templates/field-exports.yaml
+apiVersion: services.k8s.aws/v1alpha1
+kind: FieldExport
+metadata:
+  name: ack-elasticache-provider-port
+  labels:
+    helm.sh/chart: ack-elasticache-provider-0.0.0-a.placeholder
+    app.kubernetes.io/name: ack-elasticache-provider
+    app.kubernetes.io/instance: ack-elasticache-provider
+    app.kubernetes.io/managed-by: Helm
+spec:
+  from:
+    path: ".status.nodeGroups.0.primaryEndpoint.port"
+    resource:
+      group: elasticache.services.k8s.aws
+      kind: ReplicationGroup
+      name: ack-elasticache-provider
+  to:
+    kind: secret
+    name: ack-elasticache-provider-connection
+    key: REDIS_PORT
+---
+# Source: ack-elasticache-provider/templates/field-exports.yaml
+apiVersion: services.k8s.aws/v1alpha1
+kind: FieldExport
+metadata:
+  name: ack-elasticache-provider-arn
+  labels:
+    helm.sh/chart: ack-elasticache-provider-0.0.0-a.placeholder
+    app.kubernetes.io/name: ack-elasticache-provider
+    app.kubernetes.io/instance: ack-elasticache-provider
+    app.kubernetes.io/managed-by: Helm
+spec:
+  from:
+    path: ".status.ackResourceMetadata.arn"
+    resource:
+      group: elasticache.services.k8s.aws
+      kind: ReplicationGroup
+      name: ack-elasticache-provider
+  to:
+    kind: secret
+    name: ack-elasticache-provider-connection
+    key: REDIS_ARN
+---
+# Source: ack-elasticache-provider/templates/replicationgroup.yaml
+apiVersion: elasticache.services.k8s.aws/v1alpha1
+kind: ReplicationGroup
+metadata:
+  name: ack-elasticache-provider
+  labels:
+    helm.sh/chart: ack-elasticache-provider-0.0.0-a.placeholder
+    app.kubernetes.io/name: ack-elasticache-provider
+    app.kubernetes.io/instance: ack-elasticache-provider
+    app.kubernetes.io/managed-by: Helm
+spec:
+  atRestEncryptionEnabled: true
+  cacheNodeType: cache.t2.micro
+  cacheSubnetGroupName: dev-registry-cache-subnet-group
+  description: Replication group for dev-registry-cache
+  engine: redis
+  engineVersion: 6.2.6
+  ipDiscovery: ipv4
+  networkType: ipv4
+  numNodeGroups: 1
+  preferredCacheClusterAZs:
+  - us-west-2c
+  preferredMaintenanceWindow: sun:05:00-sun:09:00
+  replicasPerNodeGroup: 0
+  replicationGroupID: dev-registry-cache
+  securityGroupIDs:
+  - sg-08dd4b4ff0fdf2f99
+  snapshotRetentionLimit: 0
+  snapshotWindow: 09:00-12:00
+  transitEncryptionEnabled: true

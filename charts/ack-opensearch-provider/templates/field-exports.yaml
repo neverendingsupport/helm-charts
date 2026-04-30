@@ -1,4 +1,4 @@
-{{- if .Values.fieldExport.enabled }}
+{{- if and .Values.fieldExport.enabled (not .Values.sequencedConnection.enabled) }}
 {{- $legacy := .Values.domain | default dict }}
 {{- $domainName := coalesce .Values.resourceName $legacy.name (include "ack-opensearch-provider.fullname" .) }}
 {{- $secretName := include "ack-opensearch-provider.connectionSecretName" . }}

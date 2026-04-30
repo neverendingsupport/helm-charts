@@ -1,0 +1,24 @@
+{{- if and .Values.fieldExport.enabled (not .Values.sequencedConnection.enabled) }}
+{{- $resourceName := coalesce .Values.resourceName (include "ack-elasticache-provider.fullname" .) }}
+{{- $secretName := include "ack-elasticache-provider.connectionSecretName" . }}
+{{- range $mapping := .Values.fieldExport.mappings }}
+---
+apiVersion: services.k8s.aws/v1alpha1
+kind: FieldExport
+metadata:
+  name: {{ printf "%s-%s" (include "ack-elasticache-provider.fullname" $) $mapping.name | trunc 63 | trimSuffix "-" }}
+  labels:
+    {{- include "ack-elasticache-provider.labels" $ | nindent 4 }}
+spec:
+  from:
+    path: {{ $mapping.path | quote }}
+    resource:
+      group: elasticache.services.k8s.aws
+      kind: ReplicationGroup
+      name: {{ $resourceName }}
+  to:
+    kind: secret
+    name: {{ $secretName }}
+    key: {{ $mapping.key }}
+{{- end }}
+{{- end }}

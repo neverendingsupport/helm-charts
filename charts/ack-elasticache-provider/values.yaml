@@ -1,0 +1,458 @@
+# Default values for ack-elasticache-provider.
+
+nameOverride: ""
+fullnameOverride: ""
+
+# -- Optional explicit ReplicationGroup metadata.name. Defaults to the chart fullname.
+resourceName: ""
+
+# @schema
+# type: object
+# additionalProperties: true
+# @schema
+# -- Extra annotations for the ReplicationGroup object metadata.
+annotations: {}
+
+# @schema
+# anyof:
+#   - type: string
+#     minLength: 1
+#     maxLength: 40
+#     pattern: '^[a-z](?:[a-z0-9-]*[a-z0-9])?$'
+#   - type: "null"
+# @schema
+# -- ElastiCache replication group identifier from `ReplicationGroup.spec.replicationGroupID`.
+replicationGroupID: null
+
+# @schema
+# anyof:
+#   - type: string
+#     minLength: 1
+#   - type: "null"
+# @schema
+# -- Description from `ReplicationGroup.spec.description`.
+description: null
+
+# @schema
+# anyof:
+#   - enum:
+#       - redis
+#       - valkey
+#   - type: "null"
+# @schema
+# -- Cache engine from `ReplicationGroup.spec.engine`.
+engine: null
+
+# @schema
+# anyof:
+#   - type: string
+#   - type: "null"
+# @schema
+# -- Engine version from `ReplicationGroup.spec.engineVersion`.
+engineVersion: null
+
+# @schema
+# anyof:
+#   - type: string
+#   - type: "null"
+# @schema
+# -- Node type from `ReplicationGroup.spec.cacheNodeType`.
+cacheNodeType: null
+
+# @schema
+# anyof:
+#   - type: integer
+#     minimum: 1
+#   - type: "null"
+# @schema
+# -- Number of node groups (shards) from `ReplicationGroup.spec.numNodeGroups`.
+numNodeGroups: null
+
+# @schema
+# anyof:
+#   - type: integer
+#     minimum: 0
+#     maximum: 5
+#   - type: "null"
+# @schema
+# -- Replica count per node group from `ReplicationGroup.spec.replicasPerNodeGroup`.
+replicasPerNodeGroup: null
+
+# @schema
+# type: array
+# items:
+#   type: string
+# @schema
+# -- Availability zones from `ReplicationGroup.spec.preferredCacheClusterAZs`.
+preferredCacheClusterAZs: []
+
+# @schema
+# anyof:
+#   - type: string
+#     pattern: '^(sun|mon|tue|wed|thu|fri|sat):[0-9]{2}:[0-9]{2}-(sun|mon|tue|wed|thu|fri|sat):[0-9]{2}:[0-9]{2}$'
+#   - type: "null"
+# @schema
+# -- Weekly maintenance window from `ReplicationGroup.spec.preferredMaintenanceWindow`.
+preferredMaintenanceWindow: null
+
+# @schema
+# anyof:
+#   - type: string
+#   - type: "null"
+# @schema
+# -- Cache subnet group name from `ReplicationGroup.spec.cacheSubnetGroupName`.
+cacheSubnetGroupName: null
+
+# @schema
+# type: object
+# properties:
+#   create:
+#     type: boolean
+#   name:
+#     type: string
+#   family:
+#     type: string
+#   description:
+#     type: string
+#   parameters:
+#     type: object
+#     additionalProperties:
+#       type: string
+# @schema
+# -- Optional CacheParameterGroup to create and attach to the replication group.
+cacheParameterGroup:
+  # -- Create a CacheParameterGroup resource.
+  create: false
+  # -- AWS CacheParameterGroup name. Defaults to resourceName/fullname when omitted.
+  name: ""
+  # -- Cache parameter group family, for example `redis7`.
+  family: ""
+  # -- Optional description for the cache parameter group.
+  description: ""
+  # -- Parameter name/value map rendered into `parameterNameValues`.
+  parameters: {}
+
+# @schema
+# type: array
+# items:
+#   type: string
+# @schema
+# -- VPC security group IDs from `ReplicationGroup.spec.securityGroupIDs`.
+securityGroupIDs: []
+
+# @schema
+# anyof:
+#   - type: integer
+#     minimum: 0
+#   - type: "null"
+# @schema
+# -- Automatic snapshot retention in days from `ReplicationGroup.spec.snapshotRetentionLimit`.
+snapshotRetentionLimit: null
+
+# @schema
+# anyof:
+#   - type: string
+#     pattern: '^[0-9]{2}:[0-9]{2}-[0-9]{2}:[0-9]{2}$'
+#   - type: "null"
+# @schema
+# -- Daily snapshot window from `ReplicationGroup.spec.snapshotWindow`.
+snapshotWindow: null
+
+# @schema
+# anyof:
+#   - enum:
+#       - ipv4
+#       - ipv6
+#       - dual_stack
+#   - type: "null"
+# @schema
+# -- Network type from `ReplicationGroup.spec.networkType`.
+networkType: null
+
+# @schema
+# anyof:
+#   - enum:
+#       - ipv4
+#       - ipv6
+#   - type: "null"
+# @schema
+# -- IP discovery mode from `ReplicationGroup.spec.ipDiscovery`.
+ipDiscovery: null
+
+# @schema
+# anyof:
+#   - type: integer
+#     minimum: 1
+#     maximum: 65535
+#   - type: "null"
+# @schema
+# -- Port from `ReplicationGroup.spec.port`.
+port: null
+
+# @schema
+# anyof:
+#   - type: boolean
+#   - type: "null"
+# @schema
+# -- Enable at-rest encryption via `ReplicationGroup.spec.atRestEncryptionEnabled`.
+atRestEncryptionEnabled: null
+
+# @schema
+# anyof:
+#   - type: boolean
+#   - type: "null"
+# @schema
+# -- Enable in-transit encryption via `ReplicationGroup.spec.transitEncryptionEnabled`.
+transitEncryptionEnabled: null
+
+# @schema
+# anyof:
+#   - type: string
+#   - type: "null"
+# @schema
+# -- KMS key ID from `ReplicationGroup.spec.kmsKeyID`.
+kmsKeyID: null
+
+# @schema
+# type: object
+# properties:
+#   create:
+#     type: boolean
+#   name:
+#     type: string
+#   annotations:
+#     type: object
+#     additionalProperties: true
+#   keys:
+#     type: object
+#     properties:
+#       username:
+#         type: string
+#       host:
+#         type: string
+#       port:
+#         type: string
+#       tls:
+#         type: string
+#       url:
+#         type: string
+#       authURL:
+#         type: string
+#       arn:
+#         type: string
+# @schema
+# -- Settings for the generated in-cluster connection secret.
+connectionSecret:
+  # -- Create the connection secret shell object.
+  create: true
+  # -- Name for the generated connection secret.
+  # Defaults to `<release>-<chart>-connection`.
+  name: ""
+  # -- Additional annotations to place on the connection secret.
+  annotations: {}
+  # -- Output key names written into the generated connection secret.
+  keys:
+    username: REDIS_USERNAME
+    host: REDIS_HOST
+    port: REDIS_PORT
+    tls: REDIS_TLS
+    url: REDIS_URL
+    authURL: REDIS_AUTH_URL
+    arn: REDIS_ARN
+
+# @schema
+# type: object
+# properties:
+#   mode:
+#     enum:
+#       - disabled
+#       - password
+#       - secretRef
+#   username:
+#     type: string
+#   existingSecret:
+#     type: object
+#     properties:
+#       name:
+#         type: string
+#       key:
+#         type: string
+#       namespace:
+#         type: string
+#   password:
+#     type: object
+#     properties:
+#       key:
+#         type: string
+#       length:
+#         type: integer
+#         minimum: 1
+#       digits:
+#         type: integer
+#         minimum: 0
+#       symbols:
+#         type: integer
+#         minimum: 0
+#       noUpper:
+#         type: boolean
+#       allowRepeat:
+#         type: boolean
+# @schema
+# -- Authentication data written into the generated connection secret and used for `spec.authToken`.
+auth:
+  # -- Disable AUTH by default, or use a generated Redis password or existing secret reference.
+  mode: disabled
+  # -- Username written to the connection secret.
+  username: default
+  existingSecret:
+    # -- Existing secret name used when `auth.mode=secretRef`.
+    name: ""
+    # -- Existing secret key used when `auth.mode=secretRef`.
+    key: ""
+    # -- Optional namespace for the existing secret reference.
+    namespace: ""
+  password:
+    # -- Key used for the generated password in the connection secret and `spec.authToken`.
+    key: REDIS_PASSWORD
+    # -- Generated password length.
+    length: 32
+    # -- Include digits in generated password.
+    digits: 8
+    # -- Include symbols in generated password.
+    symbols: 4
+    # -- Disallow upper-case chars.
+    noUpper: false
+    # -- Allow repeated characters.
+    allowRepeat: true
+
+# @schema
+# type: object
+# properties:
+#   enabled:
+#     type: boolean
+#   syncWave:
+#     type: integer
+#   pollIntervalSeconds:
+#     type: integer
+#     minimum: 1
+#   maxWaitSeconds:
+#     type: integer
+#     minimum: 1
+#   ttlSecondsAfterFinished:
+#     type: integer
+#     minimum: 0
+#   kubectlImage:
+#     type: string
+# @schema
+# -- Use Argo hook jobs to create a stable connection secret before sync and patch endpoint data after the ReplicationGroup becomes ready.
+sequencedConnection:
+  # -- Enable Argo-hooked secret bootstrapping and connection-data syncing.
+  enabled: false
+  # -- Sync wave used by the post-resource connection sync job.
+  syncWave: 20
+  # -- Poll interval for waiting on the ReplicationGroup primary endpoint.
+  pollIntervalSeconds: 15
+  # -- Maximum time to wait for the ReplicationGroup endpoint to appear.
+  maxWaitSeconds: 3600
+  # -- TTL for completed sequencing jobs.
+  ttlSecondsAfterFinished: 3600
+  # -- kubectl image used by the sequencing jobs.
+  kubectlImage: bitnami/kubectl:latest
+
+# @schema
+# type: object
+# properties:
+#   enabled:
+#     type: boolean
+#   pushNamespaces:
+#     type: array
+#     items:
+#       type: string
+#   allowedNamespaces:
+#     type: array
+#     items:
+#       type: string
+# @schema
+# -- Secret reflector settings for syncing the connection secret across namespaces.
+reflector:
+  enabled: false
+  # -- Namespaces to push reflected secrets into.
+  pushNamespaces: []
+  # -- Namespaces allowed to pull/reflect this secret.
+  allowedNamespaces: []
+
+# @schema
+# type: object
+# properties:
+#   enabled:
+#     type: boolean
+#   mappings:
+#     type: array
+#     items:
+#       type: object
+#       required:
+#         - name
+#         - path
+#         - key
+#       properties:
+#         name:
+#           type: string
+#         path:
+#           type: string
+#         key:
+#           type: string
+# @schema
+# -- FieldExport settings for copying ReplicationGroup status fields into the connection secret.
+fieldExport:
+  enabled: true
+  # -- Fields exported from ReplicationGroup status into the generated secret.
+  mappings:
+    - name: host
+      path: ".status.nodeGroups.0.primaryEndpoint.address"
+      key: REDIS_HOST
+    - name: port
+      path: ".status.nodeGroups.0.primaryEndpoint.port"
+      key: REDIS_PORT
+    - name: arn
+      path: ".status.ackResourceMetadata.arn"
+      key: REDIS_ARN
+
+# @schema
+# type: object
+# properties:
+#   enabled:
+#     type: boolean
+#   name:
+#     type: string
+#   storeKind:
+#     enum:
+#       - SecretStore
+#       - ClusterSecretStore
+#   refreshInterval:
+#     type: string
+#   sourceKey:
+#     type: string
+#   target:
+#     type: object
+#     properties:
+#       name:
+#         type: string
+#       provider:
+#         type: string
+#       type:
+#         type: string
+# @schema
+# -- External Secrets PushSecret settings for publishing a selected secret key to an external store.
+pushSecret:
+  enabled: false
+  name: ""
+  storeKind: SecretStore
+  refreshInterval: 1h
+  sourceKey: REDIS_HOST
+  target:
+    # -- Remote secret name in the target provider.
+    name: ""
+    # -- External Secrets store ref name (e.g. aws-secrets-manager).
+    provider: ""
+    # -- Remote provider-specific secret type/property.
+    type: Opaque

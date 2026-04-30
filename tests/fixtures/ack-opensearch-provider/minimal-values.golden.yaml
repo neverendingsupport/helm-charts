@@ -11,7 +11,10 @@ metadata:
     app.kubernetes.io/managed-by: Helm
 type: Opaque
 stringData:
-  USERNAME: "admin"
+  OPENSEARCH_USERNAME: "admin"
+  OPENSEARCH_PORT: "443"
+  OPENSEARCH_URL: ""
+  OPENSEARCH_AUTH_URL: ""
 ---
 # Source: ack-opensearch-provider/templates/domain.yaml
 apiVersion: opensearchservice.services.k8s.aws/v1alpha1
@@ -45,9 +48,12 @@ spec:
     template:
       type: Opaque
       data:
-        USERNAME: "admin"
+        OPENSEARCH_USERNAME: "admin"
+        OPENSEARCH_PORT: "443"
+        OPENSEARCH_URL: ""
+        OPENSEARCH_AUTH_URL: ""
   data:
-    - secretKey: PASSWORD
+    - secretKey: OPENSEARCH_PASSWORD
       sourceRef:
         generatorRef:
           apiVersion: generators.external-secrets.io/v1alpha1
@@ -58,7 +64,7 @@ spec:
 apiVersion: services.k8s.aws/v1alpha1
 kind: FieldExport
 metadata:
-  name: ack-opensearch-provider-endpoint
+  name: ack-opensearch-provider-host
   labels:
     helm.sh/chart: ack-opensearch-provider-0.0.0-a.placeholder
     app.kubernetes.io/name: ack-opensearch-provider
@@ -74,7 +80,7 @@ spec:
   to:
     kind: secret
     name: ack-opensearch-provider-connection
-    key: ENDPOINT
+    key: OPENSEARCH_HOST
 ---
 # Source: ack-opensearch-provider/templates/field-exports.yaml
 apiVersion: services.k8s.aws/v1alpha1
@@ -96,7 +102,7 @@ spec:
   to:
     kind: secret
     name: ack-opensearch-provider-connection
-    key: ARN
+    key: OPENSEARCH_ARN
 ---
 # Source: ack-opensearch-provider/templates/password-generator.yaml
 apiVersion: generators.external-secrets.io/v1alpha1

@@ -12,6 +12,7 @@ on:
         type: choice
         options:
           - ack-documentdb-provider
+          - ack-elasticache-provider
           - ack-opensearch-provider
           - ingress-nginx
           - nes-node-web
