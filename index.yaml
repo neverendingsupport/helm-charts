@@ -21,6 +21,16 @@ entries:
     urls:
     - https://github.com/neverendingsupport/helm-charts/releases/download/ack-documentdb-provider-0.0.1/ack-documentdb-provider-0.0.1.tgz
     version: 0.0.1
+  ack-elasticache-provider:
+  - apiVersion: v2
+    created: "2026-04-30T20:39:31.635855219Z"
+    description: Helm chart to manage ACK ElastiCache replication groups
+    digest: c2bde0cf7f2cc18f8b033d1e3efceac350e9d1dc67f561ac5451366e438ba09c
+    name: ack-elasticache-provider
+    type: application
+    urls:
+    - https://github.com/neverendingsupport/helm-charts/releases/download/ack-elasticache-provider-0.0.1/ack-elasticache-provider-0.0.1.tgz
+    version: 0.0.1
   ack-opensearch-provider:
   - apiVersion: v2
     created: "2026-04-20T03:01:48.916346579Z"
@@ -485,4 +495,4 @@ entries:
     urls:
     - https://github.com/neverendingsupport/helm-charts/releases/download/universal-chart-1.0.0/universal-chart-1.0.0.tgz
     version: 1.0.0
-generated: "2026-04-30T20:31:03.240547768Z"
+generated: "2026-04-30T20:39:31.635956328Z"
