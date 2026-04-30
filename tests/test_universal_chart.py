@@ -63,10 +63,10 @@ def test_name_override_updates_all_references(helm_runner) -> None:
     )
 
 
-def test_prometheus_rule_renders_and_templates_rule_strings(
+def test_prometheus_rule_renders_rule_strings_verbatim(
     helm_runner,
 ) -> None:
-    """Ensure PrometheusRule metadata and templated rule strings render."""
+    """Ensure PrometheusRule metadata and rule strings render verbatim."""
 
     rendered = render_chart(
         helm_runner,
@@ -79,17 +79,13 @@ def test_prometheus_rule_renders_and_templates_rule_strings(
                 "rules": [
                     {
                         "alert": "ApplicationDown",
-                        "expr": (
-                            'up{job="{{ include '
-                            '"universal-chart.fullname" . }}"} == 0'
-                        ),
+                        "expr": 'up{job="universal-chart"} == 0',
                         "for": "2m",
                         "labels": {"severity": "warning"},
                         "annotations": {
-                            "summary": 'App {{ "{{ $labels.job }}" }} down',
+                            "summary": "App {{ $labels.job }} down",
                             "description": (
-                                'App {{ "{{ $labels.job }}" }} '
-                                "has no healthy targets"
+                                "App {{ $labels.job }} has no healthy targets"
                             ),
                         },
                     }
@@ -106,6 +102,51 @@ def test_prometheus_rule_renders_and_templates_rule_strings(
     rule = prom_rule["spec"]["groups"][0]["rules"][0]
     assert rule["expr"] == 'up{job="universal-chart"} == 0'
     assert rule["annotations"]["summary"] == "App {{ $labels.job }} down"
+
+
+def test_prometheus_rule_supports_explicit_groups(helm_runner) -> None:
+    """Ensure explicit rule groups render before simple fallback rules."""
+
+    rendered = render_chart(
+        helm_runner,
+        CHART,
+        values={
+            "prometheusRule": {
+                "enabled": True,
+                "groups": [
+                    {
+                        "name": "eol-api.rules",
+                        "interval": "1m",
+                        "rules": [
+                            {
+                                "alert": "ApplicationDown",
+                                "expr": 'up{job="eol-api"} == 0',
+                                "for": "5m",
+                                "labels": {"severity": "warning"},
+                                "annotations": {
+                                    "summary": "eol-api is down",
+                                },
+                            }
+                        ],
+                    }
+                ],
+                "rules": [
+                    {
+                        "alert": "IgnoredFallbackRule",
+                        "expr": "vector(1)",
+                    }
+                ],
+            }
+        },
+    )
+    manifests = load_manifests(rendered)
+    prom_rule = get_manifest(manifests, "PrometheusRule")
+
+    group = prom_rule["spec"]["groups"][0]
+    assert group["name"] == "eol-api.rules"
+    assert group["interval"] == "1m"
+    assert group["rules"][0]["alert"] == "ApplicationDown"
+    assert group["rules"][0]["expr"] == 'up{job="eol-api"} == 0'
 
 
 def test_resources_include_requests_for_cpu_and_memory(helm_runner) -> None:
@@ -477,6 +518,69 @@ def test_service_monitor_interval_rejects_zero(helm_runner) -> None:
             helm_runner,
             CHART,
             values={"serviceMonitor": {"enabled": True, "interval": 0}},
+        )
+
+
+def test_prometheus_rule_rejects_missing_expr(helm_runner) -> None:
+    """Ensure alert rules require an expr string."""
+
+    with pytest.raises(HelmTemplateError):
+        render_chart(
+            helm_runner,
+            CHART,
+            values={
+                "prometheusRule": {
+                    "enabled": True,
+                    "rules": [{"alert": "ApplicationDown"}],
+                }
+            },
+        )
+
+
+def test_prometheus_rule_rejects_non_string_label_values(helm_runner) -> None:
+    """Ensure alert labels are string maps rather than arbitrary objects."""
+
+    with pytest.raises(HelmTemplateError):
+        render_chart(
+            helm_runner,
+            CHART,
+            values={
+                "prometheusRule": {
+                    "enabled": True,
+                    "rules": [
+                        {
+                            "alert": "ApplicationDown",
+                            "expr": 'up{job="universal-chart"} == 0',
+                            "labels": {"severity": 1},
+                        }
+                    ],
+                }
+            },
+        )
+
+
+def test_prometheus_rule_groups_require_name(helm_runner) -> None:
+    """Ensure explicit groups include a name."""
+
+    with pytest.raises(HelmTemplateError):
+        render_chart(
+            helm_runner,
+            CHART,
+            values={
+                "prometheusRule": {
+                    "enabled": True,
+                    "groups": [
+                        {
+                            "rules": [
+                                {
+                                    "alert": "ApplicationDown",
+                                    "expr": 'up{job="universal-chart"} == 0',
+                                }
+                            ]
+                        }
+                    ],
+                }
+            },
         )
 
 

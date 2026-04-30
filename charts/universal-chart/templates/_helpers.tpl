@@ -60,10 +60,3 @@ Create the name of the service account to use
 {{- default "default" .Values.serviceAccount.name }}
 {{- end }}
 {{- end }}
-
-{{/*
-Render user-supplied values as templates.
-*/}}
-{{- define "universal-chart.tplvalues.render" -}}
-{{- tpl (toYaml .value) .context -}}
-{{- end -}}

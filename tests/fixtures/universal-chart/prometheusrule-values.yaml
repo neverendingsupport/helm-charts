@@ -9,10 +9,10 @@ prometheusRule:
     team: example
   rules:
     - alert: ApplicationDown
-      expr: up{job="{{ include "universal-chart.fullname" . }}"} == 0
+      expr: up{job="universal-chart"} == 0
       for: 2m
       labels:
         severity: warning
       annotations:
-        summary: App {{ "{{ $labels.job }}" }} down
-        description: App {{ "{{ $labels.job }}" }} has no healthy targets
+        summary: App {{ $labels.job }} down
+        description: App {{ $labels.job }} has no healthy targets
