@@ -33,5 +33,6 @@ spec:
     - ./charts/universal-chart/catalog-info.yaml
     - ./charts/nes-node-web/catalog-info.yaml
     - ./charts/ack-documentdb-provider/catalog-info.yaml
+    - ./charts/ack-elasticache-provider/catalog-info.yaml
     - ./charts/ack-opensearch-provider/catalog-info.yaml
     - ./charts/ingress-nginx/catalog-info.yaml

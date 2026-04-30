@@ -255,7 +255,7 @@ def test_sequenced_connection_renders_hook_jobs(helm_runner) -> None:
 def test_sequenced_connection_clears_removed_reflector_annotations(
     helm_runner,
 ) -> None:
-    """Ensure sequenced mode nulls reflector annotations that should be removed."""
+    """Ensure sequenced mode nulls removed reflector annotations."""
 
     rendered = render_chart(
         helm_runner,
