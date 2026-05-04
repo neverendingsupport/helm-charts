@@ -297,7 +297,7 @@ metadata:
 spec:
   type: LoadBalancer
   ipFamilyPolicy: SingleStack
-  ipFamilies: 
+  ipFamilies:
     - IPv4
   ports:
     - name: http
@@ -354,12 +354,12 @@ spec:
         - name: controller
           image: registry.nes.herodevs.com/neverendingsupport/ingress-nginx-controller:v1.15.1-nes-1.15.3
           imagePullPolicy: IfNotPresent
-          lifecycle: 
+          lifecycle:
             preStop:
               exec:
                 command:
                 - /wait-shutdown
-          args: 
+          args:
             - /nginx-ingress-controller
             - --publish-service=$(POD_NAMESPACE)/ingress-nginx-controller
             - --election-id=ingress-nginx-leader
@@ -369,12 +369,12 @@ spec:
             - --validating-webhook=:8443
             - --validating-webhook-certificate=/usr/local/certificates/cert
             - --validating-webhook-key=/usr/local/certificates/key
-          securityContext: 
+          securityContext:
             runAsNonRoot: true
             runAsUser: 101
             runAsGroup: 82
             allowPrivilegeEscalation: false
-            seccompProfile: 
+            seccompProfile:
               type: RuntimeDefault
             capabilities:
               drop:
@@ -393,7 +393,7 @@ spec:
                   fieldPath: metadata.namespace
             - name: LD_PRELOAD
               value: /usr/local/lib/libmimalloc.so
-          livenessProbe: 
+          livenessProbe:
             failureThreshold: 5
             httpGet:
               path: /healthz
@@ -403,7 +403,7 @@ spec:
             periodSeconds: 10
             successThreshold: 1
             timeoutSeconds: 1
-          readinessProbe: 
+          readinessProbe:
             failureThreshold: 3
             httpGet:
               path: /healthz
@@ -427,11 +427,11 @@ spec:
             - name: webhook-cert
               mountPath: /usr/local/certificates/
               readOnly: true
-          resources: 
+          resources:
             requests:
               cpu: 100m
               memory: 90Mi
-      nodeSelector: 
+      nodeSelector:
         kubernetes.io/os: linux
       serviceAccountName: ingress-nginx
       automountServiceAccountToken: true
@@ -667,7 +667,7 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.namespace
-          securityContext: 
+          securityContext:
             allowPrivilegeEscalation: false
             capabilities:
               drop:
@@ -681,7 +681,7 @@ spec:
       restartPolicy: OnFailure
       serviceAccountName: ingress-nginx-admission
       automountServiceAccountToken: true
-      nodeSelector: 
+      nodeSelector:
         kubernetes.io/os: linux
 ---
 # Source: ingress-nginx/templates/admission-webhooks/job-patch/job-patchWebhook.yaml
@@ -731,7 +731,7 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.namespace
-          securityContext: 
+          securityContext:
             allowPrivilegeEscalation: false
             capabilities:
               drop:
@@ -745,5 +745,5 @@ spec:
       restartPolicy: OnFailure
       serviceAccountName: ingress-nginx-admission
       automountServiceAccountToken: true
-      nodeSelector: 
+      nodeSelector:
         kubernetes.io/os: linux
