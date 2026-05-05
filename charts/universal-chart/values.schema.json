@@ -121,6 +121,12 @@
             "type": "string"
           }
         },
+        "defaultRuleLabels": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
         "groups": {
           "type": "array",
           "items": {

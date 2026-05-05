@@ -14,11 +14,38 @@ metadata:
   {{- end }}
 spec:
   groups:
+    {{- $defaultRuleLabels := .Values.prometheusRule.defaultRuleLabels | default dict }}
     {{- if .Values.prometheusRule.groups }}
-    {{- toYaml .Values.prometheusRule.groups | nindent 4 }}
+    {{- range .Values.prometheusRule.groups }}
+    {{- $group := deepCopy . }}
+    {{- $renderedRules := list }}
+    {{- range .rules }}
+    {{- $rule := deepCopy . }}
+    {{- $mergedLabels := mergeOverwrite (deepCopy $defaultRuleLabels) (default dict .labels) }}
+    {{- if gt (len $mergedLabels) 0 }}
+    {{- $_ := set $rule "labels" $mergedLabels }}
+    {{- else }}
+    {{- $_ := unset $rule "labels" }}
+    {{- end }}
+    {{- $renderedRules = append $renderedRules $rule }}
+    {{- end }}
+    {{- $_ := set $group "rules" $renderedRules }}
+    {{- toYaml (list $group) | nindent 4 }}
+    {{- end }}
     {{- else }}
     - name: {{ include "universal-chart.fullname" . }}
       rules:
-        {{- toYaml .Values.prometheusRule.rules | nindent 8 }}
+        {{- $renderedRules := list }}
+        {{- range .Values.prometheusRule.rules }}
+        {{- $rule := deepCopy . }}
+        {{- $mergedLabels := mergeOverwrite (deepCopy $defaultRuleLabels) (default dict .labels) }}
+        {{- if gt (len $mergedLabels) 0 }}
+        {{- $_ := set $rule "labels" $mergedLabels }}
+        {{- else }}
+        {{- $_ := unset $rule "labels" }}
+        {{- end }}
+        {{- $renderedRules = append $renderedRules $rule }}
+        {{- end }}
+        {{- toYaml $renderedRules | nindent 8 }}
     {{- end }}
 {{- end }}

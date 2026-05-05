@@ -76,6 +76,10 @@ def test_prometheus_rule_renders_rule_strings_verbatim(
                 "enabled": True,
                 "annotations": {"example.com/source": "chart"},
                 "additionalLabels": {"team": "example"},
+                "defaultRuleLabels": {
+                    "slack_channel": "#alert-example",
+                    "team": "example",
+                },
                 "rules": [
                     {
                         "alert": "ApplicationDown",
@@ -101,6 +105,9 @@ def test_prometheus_rule_renders_rule_strings_verbatim(
     assert prom_rule["metadata"]["annotations"]["example.com/source"] == "chart"
     rule = prom_rule["spec"]["groups"][0]["rules"][0]
     assert rule["expr"] == 'up{job="universal-chart"} == 0'
+    assert rule["labels"]["severity"] == "warning"
+    assert rule["labels"]["slack_channel"] == "#alert-example"
+    assert rule["labels"]["team"] == "example"
     assert rule["annotations"]["summary"] == "App {{ $labels.job }} down"
 
 
@@ -147,6 +154,51 @@ def test_prometheus_rule_supports_explicit_groups(helm_runner) -> None:
     assert group["interval"] == "1m"
     assert group["rules"][0]["alert"] == "ApplicationDown"
     assert group["rules"][0]["expr"] == 'up{job="eol-api"} == 0'
+
+
+def test_prometheus_rule_merges_default_labels_into_groups(helm_runner) -> None:
+    """Validate defaultRuleLabels applied to groups and per-rule labels win."""
+
+    rendered = render_chart(
+        helm_runner,
+        CHART,
+        values={
+            "prometheusRule": {
+                "enabled": True,
+                "defaultRuleLabels": {
+                    "application": "eol-api",
+                    "group": "eol",
+                    "slack_channel": "#alert-eol",
+                    "team": "data-integrations",
+                },
+                "groups": [
+                    {
+                        "name": "eol-api.rules",
+                        "rules": [
+                            {
+                                "alert": "ApplicationDown",
+                                "expr": 'up{job="eol-api"} == 0',
+                                "labels": {
+                                    "severity": "warning",
+                                    "slack_channel": "#alert-special",
+                                },
+                            }
+                        ],
+                    }
+                ],
+            }
+        },
+    )
+    manifests = load_manifests(rendered)
+    rule = get_manifest(manifests, "PrometheusRule")["spec"]["groups"][0][
+        "rules"
+    ][0]
+
+    assert rule["labels"]["application"] == "eol-api"
+    assert rule["labels"]["group"] == "eol"
+    assert rule["labels"]["team"] == "data-integrations"
+    assert rule["labels"]["severity"] == "warning"
+    assert rule["labels"]["slack_channel"] == "#alert-special"
 
 
 def test_resources_include_requests_for_cpu_and_memory(helm_runner) -> None:

@@ -284,6 +284,10 @@ serviceMonitor:
 #     type: object
 #     additionalProperties:
 #       type: string
+#   defaultRuleLabels:
+#     type: object
+#     additionalProperties:
+#       type: string
 #   groups:
 #     type: array
 #     items:
@@ -364,6 +368,12 @@ prometheusRule:
   # @schema
   # -- Additional annotations to add to the PrometheusRule metadata.
   annotations: {}
+  # @schema
+  # additionalProperties:
+  #   type: string
+  # @schema
+  # -- Default labels to add to every alert rule. Per-rule labels override these defaults on conflicts.
+  defaultRuleLabels: {}
   # -- Advanced path: full Prometheus rule groups. When set, this takes precedence over prometheusRule.rules.
   groups: []
   # -- Simple path: list of alerting rules rendered into a single default group.
