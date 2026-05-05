@@ -94,7 +94,8 @@ elsewhere (TODO: add link here)
 | Key | Type | Default | Description |
 |-----|------|---------|-------------|
 | affinity | object | `{}` | Select roughly specific nodes to run upon. This is similar to node selectors, but allows a bit more fuzziness and flexibility. More info at https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity |
-| autoscaling | object | `{"enabled":false,"maxReplicas":10,"minReplicas":1,"targetCPUUtilizationPercentage":80,"targetMemoryUtilizationPercentage":null}` | section for configuring autoscaling. More information can be found here: https://kubernetes.io/docs/concepts/workloads/autoscaling/ |
+| autoscaling | object | `{"annotations":{},"enabled":false,"maxReplicas":10,"minReplicas":1,"targetCPUUtilizationPercentage":80,"targetMemoryUtilizationPercentage":null}` | section for configuring autoscaling. More information can be found here: https://kubernetes.io/docs/concepts/workloads/autoscaling/ |
+| autoscaling.annotations | object | `{}` | Additional annotations to add to the HorizontalPodAutoscaler metadata. |
 | autoscaling.enabled | bool | `false` | enable autoscaling |
 | autoscaling.maxReplicas | int | `10` | maximum number of replicas to run |
 | autoscaling.minReplicas | int | `1` | miminum number of replicas to run |
@@ -132,9 +133,10 @@ elsewhere (TODO: add link here)
 | podAnnotations | object | `{}` | Add additional annotations to the pod. Annotations are generally for "people" uses and interoperability. For more information check out: https://kubernetes.io/docs/concepts/overview/working-with-objects/annotations/ |
 | podLabels | object | `{}` | Add additional labels to the pods. Labels are generally for k8s internal use (pod selectors, etc) For more information check out: https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/ |
 | podSecurityContext | object | `{}` |  |
-| prometheusRule | object | `{"additionalLabels":{},"annotations":{},"enabled":false,"groups":[],"rules":[]}` | Configure a PrometheusRule for evaluating alerting rules against scraped metrics. |
+| prometheusRule | object | `{"additionalLabels":{},"annotations":{},"defaultRuleLabels":{},"enabled":false,"groups":[],"rules":[]}` | Configure a PrometheusRule for evaluating alerting rules against scraped metrics. |
 | prometheusRule.additionalLabels | object | `{}` | Additional labels to add to the PrometheusRule metadata. |
 | prometheusRule.annotations | object | `{}` | Additional annotations to add to the PrometheusRule metadata. |
+| prometheusRule.defaultRuleLabels | object | `{}` | Default labels to add to every alert rule. Per-rule labels override these defaults on conflicts. |
 | prometheusRule.enabled | bool | `false` | Whether to create a PrometheusRule resource. |
 | prometheusRule.groups | list | `[]` | Advanced path: full Prometheus rule groups. When set, this takes precedence over prometheusRule.rules. |
 | prometheusRule.rules | list | `[]` | Simple path: list of alerting rules rendered into a single default group. |

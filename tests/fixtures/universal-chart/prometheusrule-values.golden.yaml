@@ -104,3 +104,5 @@ spec:
           for: 2m
           labels:
             severity: warning
+            slack_channel: '#alert-example'
+            team: example

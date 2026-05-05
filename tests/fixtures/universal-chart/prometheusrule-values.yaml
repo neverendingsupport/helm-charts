@@ -7,6 +7,9 @@ prometheusRule:
     example.com/source: chart
   additionalLabels:
     team: example
+  defaultRuleLabels:
+    slack_channel: "#alert-example"
+    team: example
   rules:
     - alert: ApplicationDown
       expr: up{job="universal-chart"} == 0
