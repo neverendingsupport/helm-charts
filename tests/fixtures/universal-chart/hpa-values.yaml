@@ -1,0 +1,11 @@
+image:
+  repository: ghcr.io/example/app
+  tag: "1.2.3"
+
+autoscaling:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 4
+  targetCPUUtilizationPercentage: 75
+  annotations:
+    argocd.argoproj.io/sync-wave: "10"

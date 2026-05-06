@@ -272,6 +272,103 @@ serviceMonitor:
   # When null, the ServiceMonitor targets the main service as before.
   alternatePort: null
 
+# @schema
+# properties:
+#   enabled:
+#     type: boolean
+#   additionalLabels:
+#     type: object
+#     additionalProperties:
+#       type: string
+#   annotations:
+#     type: object
+#     additionalProperties:
+#       type: string
+#   groups:
+#     type: array
+#     items:
+#       type: object
+#       required:
+#         - name
+#         - rules
+#       properties:
+#         name:
+#           type: string
+#         interval:
+#           type: string
+#         rules:
+#           type: array
+#           items:
+#             type: object
+#             required:
+#               - alert
+#               - expr
+#             properties:
+#               alert:
+#                 type: string
+#               expr:
+#                 type: string
+#               for:
+#                 type: string
+#               keep_firing_for:
+#                 type: string
+#               labels:
+#                 type: object
+#                 additionalProperties:
+#                   type: string
+#               annotations:
+#                 type: object
+#                 additionalProperties:
+#                   type: string
+#             additionalProperties: true
+#       additionalProperties: true
+#   rules:
+#     type: array
+#     items:
+#       type: object
+#       required:
+#         - alert
+#         - expr
+#       properties:
+#         alert:
+#           type: string
+#         expr:
+#           type: string
+#         for:
+#           type: string
+#         keep_firing_for:
+#           type: string
+#         labels:
+#           type: object
+#           additionalProperties:
+#             type: string
+#         annotations:
+#           type: object
+#           additionalProperties:
+#             type: string
+#       additionalProperties: true
+# @schema
+# -- Configure a PrometheusRule for evaluating alerting rules against scraped metrics.
+prometheusRule:
+  # -- Whether to create a PrometheusRule resource.
+  enabled: false
+  # @schema
+  # additionalProperties:
+  #   type: string
+  # @schema
+  # -- Additional labels to add to the PrometheusRule metadata.
+  additionalLabels: {}
+  # @schema
+  # additionalProperties:
+  #   type: string
+  # @schema
+  # -- Additional annotations to add to the PrometheusRule metadata.
+  annotations: {}
+  # -- Advanced path: full Prometheus rule groups. When set, this takes precedence over prometheusRule.rules.
+  groups: []
+  # -- Simple path: list of alerting rules rendered into a single default group.
+  rules: []
+
 # -- This block is for setting up the ingress.
 # More information can be found here: https://kubernetes.io/docs/concepts/services-networking/ingress/
 ingress:
@@ -439,6 +536,31 @@ terminationGracePeriodSeconds: null
 # -- number of old ReplicaSets to retain for rollback
 revisionHistoryLimit: 3
 
+# @schema
+# type: object
+# properties:
+#   enabled:
+#     type: boolean
+#   minReplicas:
+#     type: integer
+#     minimum: 1
+#   maxReplicas:
+#     type: integer
+#     minimum: 1
+#   targetCPUUtilizationPercentage:
+#     anyof:
+#       - type: integer
+#         minimum: 1
+#       - type: "null"
+#   targetMemoryUtilizationPercentage:
+#     anyof:
+#       - type: integer
+#         minimum: 1
+#       - type: "null"
+#   annotations:
+#     type: object
+#     additionalProperties: true
+# @schema
 # -- section for configuring autoscaling.
 # More information can be found here: https://kubernetes.io/docs/concepts/workloads/autoscaling/
 autoscaling:
@@ -452,6 +574,8 @@ autoscaling:
   targetCPUUtilizationPercentage: 80
   # -- If Memory utilization of replicas exceeds this percentage of requested Memory, start a new replica
   targetMemoryUtilizationPercentage: null
+  # -- Additional annotations to add to the HorizontalPodAutoscaler metadata.
+  annotations: {}
 
 # -- Additional volumes to create
 volumes: []

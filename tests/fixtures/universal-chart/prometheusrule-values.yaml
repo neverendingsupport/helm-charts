@@ -1,0 +1,18 @@
+image:
+  repository: ghcr.io/example/app
+  tag: "1.2.3"
+prometheusRule:
+  enabled: true
+  annotations:
+    example.com/source: chart
+  additionalLabels:
+    team: example
+  rules:
+    - alert: ApplicationDown
+      expr: up{job="universal-chart"} == 0
+      for: 2m
+      labels:
+        severity: warning
+      annotations:
+        summary: App {{ $labels.job }} down
+        description: App {{ $labels.job }} has no healthy targets

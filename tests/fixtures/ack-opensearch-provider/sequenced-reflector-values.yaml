@@ -1,0 +1,20 @@
+name: sample-domain
+engineVersion: OpenSearch_2.11
+connectionSecret:
+  name: domain-connection
+  annotations:
+    example.com/managed-by: fixture
+auth:
+  mode: password
+  password:
+    key: OPENSEARCH_PASSWORD
+sequencedConnection:
+  enabled: true
+reflector:
+  enabled: true
+  allowedNamespaces:
+    - source-a
+    - source-b
+  pushNamespaces:
+    - target-a
+    - target-b

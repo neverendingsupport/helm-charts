@@ -103,6 +103,118 @@
     "revisionHistoryLimit": {
       "type": "integer",
       "minimum": 0
+    },
+    "prometheusRule": {
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        },
+        "additionalLabels": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "annotations": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "groups": {
+          "type": "array",
+          "items": {
+            "required": [
+              "name",
+              "rules"
+            ],
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "interval": {
+                "type": "string"
+              },
+              "rules": {
+                "type": "array",
+                "items": {
+                  "required": [
+                    "alert",
+                    "expr"
+                  ],
+                  "properties": {
+                    "alert": {
+                      "type": "string"
+                    },
+                    "expr": {
+                      "type": "string"
+                    },
+                    "for": {
+                      "type": "string"
+                    },
+                    "keep_firing_for": {
+                      "type": "string"
+                    },
+                    "labels": {
+                      "type": "object",
+                      "additionalProperties": {
+                        "type": "string"
+                      }
+                    },
+                    "annotations": {
+                      "type": "object",
+                      "additionalProperties": {
+                        "type": "string"
+                      }
+                    }
+                  },
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              }
+            },
+            "type": "object",
+            "additionalProperties": true
+          }
+        },
+        "rules": {
+          "type": "array",
+          "items": {
+            "required": [
+              "alert",
+              "expr"
+            ],
+            "properties": {
+              "alert": {
+                "type": "string"
+              },
+              "expr": {
+                "type": "string"
+              },
+              "for": {
+                "type": "string"
+              },
+              "keep_firing_for": {
+                "type": "string"
+              },
+              "labels": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "string"
+                }
+              },
+              "annotations": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "string"
+                }
+              }
+            },
+            "type": "object",
+            "additionalProperties": true
+          }
+        }
+      }
     }
   },
   "title": "Values",
