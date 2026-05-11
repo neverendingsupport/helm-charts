@@ -1,0 +1,500 @@
+---
+# Source: ack-opensearch-provider/templates/security-bootstrap.yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: ack-opensearch-provider-security-bootstrap
+  labels:
+    helm.sh/chart: ack-opensearch-provider-0.0.0-a.placeholder
+    app.kubernetes.io/name: ack-opensearch-provider
+    app.kubernetes.io/instance: ack-opensearch-provider
+    app.kubernetes.io/managed-by: Helm
+  annotations:
+    argocd.argoproj.io/hook: Sync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation,HookSucceeded
+    argocd.argoproj.io/sync-wave: "30"
+---
+# Source: ack-opensearch-provider/templates/sequenced-bootstrap-jobs.yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: ack-opensearch-provider-bootstrap
+  labels:
+    helm.sh/chart: ack-opensearch-provider-0.0.0-a.placeholder
+    app.kubernetes.io/name: ack-opensearch-provider
+    app.kubernetes.io/instance: ack-opensearch-provider
+    app.kubernetes.io/managed-by: Helm
+  annotations:
+    argocd.argoproj.io/hook: PreSync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
+    argocd.argoproj.io/sync-wave: "-2"
+---
+# Source: ack-opensearch-provider/templates/security-bootstrap.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: ack-opensearch-provider-security-bootstrap
+  labels:
+    helm.sh/chart: ack-opensearch-provider-0.0.0-a.placeholder
+    app.kubernetes.io/name: ack-opensearch-provider
+    app.kubernetes.io/instance: ack-opensearch-provider
+    app.kubernetes.io/managed-by: Helm
+  annotations:
+    argocd.argoproj.io/hook: Sync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation,HookSucceeded
+    argocd.argoproj.io/sync-wave: "30"
+rules:
+  - apiGroups:
+      - ""
+    resources:
+      - secrets
+    verbs:
+      - get
+      - create
+      - update
+      - patch
+  - apiGroups:
+      - opensearchservice.services.k8s.aws
+    resources:
+      - domains
+    verbs:
+      - get
+      - list
+      - watch
+---
+# Source: ack-opensearch-provider/templates/sequenced-bootstrap-jobs.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: ack-opensearch-provider-bootstrap
+  labels:
+    helm.sh/chart: ack-opensearch-provider-0.0.0-a.placeholder
+    app.kubernetes.io/name: ack-opensearch-provider
+    app.kubernetes.io/instance: ack-opensearch-provider
+    app.kubernetes.io/managed-by: Helm
+  annotations:
+    argocd.argoproj.io/hook: PreSync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
+    argocd.argoproj.io/sync-wave: "-2"
+rules:
+  - apiGroups:
+      - ""
+    resources:
+      - secrets
+    verbs:
+      - get
+      - create
+      - update
+      - patch
+  - apiGroups:
+      - opensearchservice.services.k8s.aws
+    resources:
+      - domains
+    verbs:
+      - get
+      - list
+      - watch
+---
+# Source: ack-opensearch-provider/templates/security-bootstrap.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: ack-opensearch-provider-security-bootstrap
+  labels:
+    helm.sh/chart: ack-opensearch-provider-0.0.0-a.placeholder
+    app.kubernetes.io/name: ack-opensearch-provider
+    app.kubernetes.io/instance: ack-opensearch-provider
+    app.kubernetes.io/managed-by: Helm
+  annotations:
+    argocd.argoproj.io/hook: Sync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation,HookSucceeded
+    argocd.argoproj.io/sync-wave: "30"
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: ack-opensearch-provider-security-bootstrap
+subjects:
+  - kind: ServiceAccount
+    name: ack-opensearch-provider-security-bootstrap
+---
+# Source: ack-opensearch-provider/templates/sequenced-bootstrap-jobs.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: ack-opensearch-provider-bootstrap
+  labels:
+    helm.sh/chart: ack-opensearch-provider-0.0.0-a.placeholder
+    app.kubernetes.io/name: ack-opensearch-provider
+    app.kubernetes.io/instance: ack-opensearch-provider
+    app.kubernetes.io/managed-by: Helm
+  annotations:
+    argocd.argoproj.io/hook: PreSync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
+    argocd.argoproj.io/sync-wave: "-2"
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: ack-opensearch-provider-bootstrap
+subjects:
+  - kind: ServiceAccount
+    name: ack-opensearch-provider-bootstrap
+---
+# Source: ack-opensearch-provider/templates/security-bootstrap.yaml
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: ack-opensearch-provider-security-bootstrap
+  labels:
+    helm.sh/chart: ack-opensearch-provider-0.0.0-a.placeholder
+    app.kubernetes.io/name: ack-opensearch-provider
+    app.kubernetes.io/instance: ack-opensearch-provider
+    app.kubernetes.io/managed-by: Helm
+  annotations:
+    argocd.argoproj.io/hook: Sync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation,HookSucceeded
+    argocd.argoproj.io/sync-wave: "30"
+spec:
+  backoffLimit: 3
+  activeDeadlineSeconds: 600
+  ttlSecondsAfterFinished: 3600
+  template:
+    metadata:
+      labels:
+        helm.sh/chart: ack-opensearch-provider-0.0.0-a.placeholder
+        app.kubernetes.io/name: ack-opensearch-provider
+        app.kubernetes.io/instance: ack-opensearch-provider
+        app.kubernetes.io/managed-by: Helm
+    spec:
+      restartPolicy: OnFailure
+      serviceAccountName: ack-opensearch-provider-security-bootstrap
+      volumes:
+        - name: security-bootstrap-workdir
+          emptyDir: {}
+      initContainers:
+        - name: wait-for-connection
+          image: "523530333233.dkr.ecr.us-west-2.amazonaws.com/docker-hub/bitnami/kubectl:latest"
+          command:
+            - /bin/sh
+            - -ec
+          volumeMounts:
+            - name: security-bootstrap-workdir
+              mountPath: /work
+          args:
+            - |
+              domain_name="ack-opensearch-provider"
+              secret_name="ack-opensearch-provider-connection"
+              username_key="OPENSEARCH_USERNAME"
+              password_key="OPENSEARCH_PASSWORD"
+              endpoint_scheme="https"
+              endpoint_port="443"
+              elapsed=0
+              poll_interval=10
+              max_wait=600
+
+              while [ "$elapsed" -lt "$max_wait" ]; do
+                endpoint="$(kubectl get domains.opensearchservice.services.k8s.aws "$domain_name" -o jsonpath='{.status.endpoint}' 2>/dev/null || true)"
+                domain_arn="$(kubectl get domains.opensearchservice.services.k8s.aws "$domain_name" -o jsonpath='{.status.ackResourceMetadata.arn}' 2>/dev/null || true)"
+                username_template='{{ index .data "'$username_key'" | base64decode }}'
+                password_template='{{ index .data "'$password_key'" | base64decode }}'
+                username="$(kubectl get secret "$secret_name" -o go-template="$username_template" 2>/dev/null || true)"
+                password="$(kubectl get secret "$secret_name" -o go-template="$password_template" 2>/dev/null || true)"
+                passwords_ready=true
+
+                if [ -n "$endpoint" ] && [ -n "$username" ] && [ -n "$password" ]; then
+                  if [ "$passwords_ready" = true ]; then
+                    printf '%s' "${endpoint_scheme}://${endpoint}:${endpoint_port}" >/work/opensearch-endpoint
+                    printf '%s' "$username" >/work/opensearch-username
+                    printf '%s' "$password" >/work/opensearch-password
+                    exit 0
+                  fi
+                fi
+
+                sleep "$poll_interval"
+                elapsed=$((elapsed + poll_interval))
+              done
+
+              echo "Timed out waiting for domain endpoint, admin credentials, and application user passwords"
+              exit 1
+      containers:
+        - name: bootstrap-security
+          image: "523530333233.dkr.ecr.us-west-2.amazonaws.com/docker-hub/curlimages/curl:8.12.1"
+          command:
+            - /bin/sh
+            - -ec
+          volumeMounts:
+            - name: security-bootstrap-workdir
+              mountPath: /work
+          args:
+            - |
+              OPENSEARCH_ENDPOINT="$(cat /work/opensearch-endpoint)"
+              OPENSEARCH_USERNAME="$(cat /work/opensearch-username)"
+              OPENSEARCH_ADMIN_PASSWORD="$(cat /work/opensearch-password)"
+
+              json_escape() {
+                printf '%s' "$1" | sed \
+                  -e 's/\\/\\\\/g' \
+                  -e 's/"/\\"/g' \
+                  -e 's/\r/\\r/g' \
+                  -e ':a;N;$!ba;s/\n/\\n/g' \
+                  -e 's/\t/\\t/g'
+              }
+
+              put_security_resource() {
+                resource_path="$1"
+                payload_file="$2"
+
+                status_code="$(
+                  curl -sS \
+                    -o /tmp/security-api-response.json \
+                    -w '%{http_code}' \
+                    -u "${OPENSEARCH_USERNAME}:${OPENSEARCH_ADMIN_PASSWORD}" \
+                    -H 'Content-Type: application/json' \
+                    -X PUT \
+                    "${OPENSEARCH_ENDPOINT}/${resource_path}" \
+                    --data-binary @"${payload_file}"
+                )"
+
+                if [ "$status_code" -lt 200 ] || [ "$status_code" -ge 300 ]; then
+                  echo "Failed to apply ${resource_path}: HTTP ${status_code}"
+                  cat /tmp/security-api-response.json
+                  exit 1
+                fi
+              }
+
+              apply_role() {
+                role_name="$1"
+                payload_b64="$2"
+                printf '%s' "$payload_b64" | base64 -d >/tmp/security-role.json
+                put_security_resource "_plugins/_security/api/roles/${role_name}" /tmp/security-role.json
+              }
+
+              apply_role_mapping() {
+                role_name="$1"
+                payload_b64="$2"
+                printf '%s' "$payload_b64" | base64 -d >/tmp/security-role-mapping.json
+                put_security_resource "_plugins/_security/api/rolesmapping/${role_name}" /tmp/security-role-mapping.json
+              }
+
+              apply_application_user() {
+                username="$1"
+                password_file="$2"
+                roles_b64="$3"
+                roles_json="$(printf '%s' "$roles_b64" | base64 -d)"
+                password="$(cat "$password_file")"
+                escaped_password="$(json_escape "$password")"
+                cat > /tmp/security-internal-user.json <<EOF
+              {"password":"${escaped_password}","opendistro_security_roles":${roles_json}}
+              EOF
+                put_security_resource "_plugins/_security/api/internalusers/${username}" /tmp/security-internal-user.json
+              }
+
+              apply_role \
+                "developer_debug_readonly" \
+                'eyJjbHVzdGVyX3Blcm1pc3Npb25zIjpbImNsdXN0ZXJfY29tcG9zaXRlX29wc19ybyIsImNsdXN0ZXJfbW9uaXRvciJdLCJpbmRleF9wZXJtaXNzaW9ucyI6W3siYWxsb3dlZF9hY3Rpb25zIjpbInJlYWQiLCJpbmRpY2VzX21vbml0b3IiLCJ2aWV3X2luZGV4X21ldGFkYXRhIl0sImluZGV4X3BhdHRlcm5zIjpbImVvbC1lbmdpbmUtKiJdfV19'
+
+              apply_role_mapping \
+                "developer_debug_readonly" \
+                'eyJiYWNrZW5kX3JvbGVzIjpbImFybjphd3M6aWFtOjo1MjM1MzAzMzMyMzM6cm9sZS9wbGF0Zm9ybS1kZXYiXX0='
+---
+# Source: ack-opensearch-provider/templates/sequenced-bootstrap-jobs.yaml
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: ack-opensearch-provider-bootstrap-secret
+  labels:
+    helm.sh/chart: ack-opensearch-provider-0.0.0-a.placeholder
+    app.kubernetes.io/name: ack-opensearch-provider
+    app.kubernetes.io/instance: ack-opensearch-provider
+    app.kubernetes.io/managed-by: Helm
+  annotations:
+    argocd.argoproj.io/hook: PreSync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation,HookSucceeded
+    argocd.argoproj.io/sync-wave: "-1"
+spec:
+  ttlSecondsAfterFinished: 3600
+  template:
+    metadata:
+      labels:
+        helm.sh/chart: ack-opensearch-provider-0.0.0-a.placeholder
+        app.kubernetes.io/name: ack-opensearch-provider
+        app.kubernetes.io/instance: ack-opensearch-provider
+        app.kubernetes.io/managed-by: Helm
+    spec:
+      restartPolicy: OnFailure
+      serviceAccountName: ack-opensearch-provider-bootstrap
+      containers:
+        - name: bootstrap-secret
+          image: "523530333233.dkr.ecr.us-west-2.amazonaws.com/docker-hub/bitnami/kubectl:latest"
+          command:
+            - /bin/sh
+            - -ec
+          args:
+            - |
+              secret_name="ack-opensearch-provider-connection"
+              username="admin"
+              username_key="OPENSEARCH_USERNAME"
+              password_key="OPENSEARCH_PASSWORD"
+              host_key="OPENSEARCH_HOST"
+              port_key="OPENSEARCH_PORT"
+              url_key="OPENSEARCH_URL"
+              auth_url_key="OPENSEARCH_AUTH_URL"
+              arn_key="OPENSEARCH_ARN"
+              tmp_secret_manifest=/tmp/secret.yaml
+              tmp_secret_patch=/tmp/secret-patch.json
+
+              random_chars() {
+                count="$1"
+                charset="$2"
+                if [ "$count" -le 0 ]; then
+                  return 0
+                fi
+                output=""
+                while [ "${#output}" -lt "$count" ]; do
+                  output="${output}$(tr -dc "$charset" </dev/urandom | head -c "$((count - ${#output}))")"
+                done
+                printf '%s' "$output"
+              }
+
+              secret_exists=false
+              if kubectl get secret "$secret_name" >/dev/null 2>&1; then
+                secret_exists=true
+              fi
+
+              password=""
+              if [ "$secret_exists" = true ]; then
+                existing_password="$(kubectl get secret "$secret_name" -o jsonpath="{.data.${password_key}}" 2>/dev/null | base64 --decode || true)"
+                if [ -n "$existing_password" ]; then
+                  echo 'eyJtZXRhZGF0YSI6eyJhbm5vdGF0aW9ucyI6eyJyZWZsZWN0b3IudjEuazhzLmVtYmVyc3RhY2suY29tL3JlZmxlY3Rpb24tYWxsb3dlZCI6bnVsbCwicmVmbGVjdG9yLnYxLms4cy5lbWJlcnN0YWNrLmNvbS9yZWZsZWN0aW9uLWFsbG93ZWQtbmFtZXNwYWNlcyI6bnVsbCwicmVmbGVjdG9yLnYxLms4cy5lbWJlcnN0YWNrLmNvbS9yZWZsZWN0aW9uLWF1dG8tZW5hYmxlZCI6bnVsbCwicmVmbGVjdG9yLnYxLms4cy5lbWJlcnN0YWNrLmNvbS9yZWZsZWN0aW9uLWF1dG8tbmFtZXNwYWNlcyI6bnVsbH19fQ==' | base64 -d > /tmp/secret-metadata-patch.json
+                  kubectl patch secret "$secret_name" --type merge --patch-file /tmp/secret-metadata-patch.json
+                  exit 0
+                fi
+              fi
+
+              digits_part="$(random_chars 8 '0-9')"
+              symbols_part="$(random_chars 4 '!@#%^*_+=')"
+              base_charset='a-z0-9!@#%^*_+='
+              base_charset='A-Za-z0-9!@#%^*_+='
+              remaining_part="$(random_chars 20 "$base_charset")"
+              password="${digits_part}${symbols_part}${remaining_part}"
+
+              cat > "$tmp_secret_manifest" <<EOF
+              apiVersion: v1
+              kind: Secret
+              metadata:
+                name: ack-opensearch-provider-connection
+                labels:
+                  helm.sh/chart: ack-opensearch-provider-0.0.0-a.placeholder
+                  app.kubernetes.io/name: ack-opensearch-provider
+                  app.kubernetes.io/instance: ack-opensearch-provider
+                  app.kubernetes.io/managed-by: Helm
+              type: Opaque
+              stringData:
+                OPENSEARCH_USERNAME: "admin"
+                OPENSEARCH_HOST: ""
+                OPENSEARCH_PORT: "443"
+                OPENSEARCH_URL: ""
+                OPENSEARCH_AUTH_URL: ""
+                OPENSEARCH_ARN: ""
+                OPENSEARCH_PASSWORD: "${password}"
+              EOF
+
+              if [ "$secret_exists" = true ]; then
+                cat > "$tmp_secret_patch" <<EOF
+              {"stringData":{"${username_key}":"${username}","${host_key}":"","${port_key}":"443","${url_key}":"","${auth_url_key}":"","${arn_key}":"","${password_key}":"${password}"}}
+              EOF
+                kubectl patch secret "$secret_name" --type merge --patch-file "$tmp_secret_patch"
+                echo 'eyJtZXRhZGF0YSI6eyJhbm5vdGF0aW9ucyI6eyJyZWZsZWN0b3IudjEuazhzLmVtYmVyc3RhY2suY29tL3JlZmxlY3Rpb24tYWxsb3dlZCI6bnVsbCwicmVmbGVjdG9yLnYxLms4cy5lbWJlcnN0YWNrLmNvbS9yZWZsZWN0aW9uLWFsbG93ZWQtbmFtZXNwYWNlcyI6bnVsbCwicmVmbGVjdG9yLnYxLms4cy5lbWJlcnN0YWNrLmNvbS9yZWZsZWN0aW9uLWF1dG8tZW5hYmxlZCI6bnVsbCwicmVmbGVjdG9yLnYxLms4cy5lbWJlcnN0YWNrLmNvbS9yZWZsZWN0aW9uLWF1dG8tbmFtZXNwYWNlcyI6bnVsbH19fQ==' | base64 -d > /tmp/secret-metadata-patch.json
+                kubectl patch secret "$secret_name" --type merge --patch-file /tmp/secret-metadata-patch.json
+              else
+                kubectl create -f "$tmp_secret_manifest"
+              fi
+---
+# Source: ack-opensearch-provider/templates/sequenced-bootstrap-jobs.yaml
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: ack-opensearch-provider-sync-connection
+  labels:
+    helm.sh/chart: ack-opensearch-provider-0.0.0-a.placeholder
+    app.kubernetes.io/name: ack-opensearch-provider
+    app.kubernetes.io/instance: ack-opensearch-provider
+    app.kubernetes.io/managed-by: Helm
+  annotations:
+    argocd.argoproj.io/hook: Sync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation,HookSucceeded
+    argocd.argoproj.io/sync-wave: "20"
+spec:
+  ttlSecondsAfterFinished: 3600
+  template:
+    metadata:
+      labels:
+        helm.sh/chart: ack-opensearch-provider-0.0.0-a.placeholder
+        app.kubernetes.io/name: ack-opensearch-provider
+        app.kubernetes.io/instance: ack-opensearch-provider
+        app.kubernetes.io/managed-by: Helm
+    spec:
+      restartPolicy: OnFailure
+      serviceAccountName: ack-opensearch-provider-bootstrap
+      containers:
+        - name: sync-connection
+          image: "523530333233.dkr.ecr.us-west-2.amazonaws.com/docker-hub/bitnami/kubectl:latest"
+          command:
+            - /bin/sh
+            - -ec
+          args:
+            - |
+              domain_name="ack-opensearch-provider"
+              secret_name="ack-opensearch-provider-connection"
+              username_key="OPENSEARCH_USERNAME"
+              password_key="OPENSEARCH_PASSWORD"
+              host_key="OPENSEARCH_HOST"
+              port_key="OPENSEARCH_PORT"
+              url_key="OPENSEARCH_URL"
+              auth_url_key="OPENSEARCH_AUTH_URL"
+              arn_key="OPENSEARCH_ARN"
+              scheme="https"
+              port="443"
+              elapsed=0
+              poll_interval=15
+              max_wait=3600
+              tmp_patch=/tmp/secret-patch.json
+
+              while [ "$elapsed" -lt "$max_wait" ]; do
+                endpoint="$(kubectl get domains.opensearchservice.services.k8s.aws "$domain_name" -o jsonpath='{.status.endpoint}' 2>/dev/null || true)"
+                arn="$(kubectl get domains.opensearchservice.services.k8s.aws "$domain_name" -o jsonpath='{.status.ackResourceMetadata.arn}' 2>/dev/null || true)"
+
+                if [ -n "$endpoint" ]; then
+                  url="${scheme}://${endpoint}:${port}"
+                  auth_url="$url"
+                  username="$(kubectl get secret "$secret_name" -o jsonpath="{.data.${username_key}}" 2>/dev/null | base64 --decode || true)"
+                  password="$(kubectl get secret "$secret_name" -o jsonpath="{.data.${password_key}}" 2>/dev/null | base64 --decode || true)"
+                  if [ "password" = "password" ] && [ -n "$username" ] && [ -n "$password" ]; then
+                    auth_url="${scheme}://${username}:${password}@${endpoint}:${port}"
+                  fi
+                  cat > "$tmp_patch" <<EOF
+              {"stringData":{"${host_key}":"${endpoint}","${port_key}":"${port}","${url_key}":"${url}","${auth_url_key}":"${auth_url}","${arn_key}":"${arn}"}}
+              EOF
+                  kubectl patch secret "$secret_name" --type merge --patch-file "$tmp_patch"
+                  exit 0
+                fi
+
+                sleep "$poll_interval"
+                elapsed=$((elapsed + poll_interval))
+              done
+
+              echo "Timed out waiting for Domain endpoint"
+              exit 1
+---
+# Source: ack-opensearch-provider/templates/domain.yaml
+apiVersion: opensearchservice.services.k8s.aws/v1alpha1
+kind: Domain
+metadata:
+  name: ack-opensearch-provider
+  labels:
+    helm.sh/chart: ack-opensearch-provider-0.0.0-a.placeholder
+    app.kubernetes.io/name: ack-opensearch-provider
+    app.kubernetes.io/instance: ack-opensearch-provider
+    app.kubernetes.io/managed-by: Helm
+spec:
+  engineVersion: OpenSearch_2.11
+  name: sample-domain
