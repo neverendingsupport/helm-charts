@@ -96,7 +96,7 @@ spec:
       serviceAccountName: {{ include "ack-opensearch-provider.bootstrapServiceAccountName" . }}
       containers:
         - name: bootstrap-secret
-          image: {{ .Values.sequencedConnection.kubectlImage | quote }}
+          image: {{ include "ack-opensearch-provider.imageRef" (dict "root" . "image" .Values.sequencedConnection.kubectlImage) | quote }}
           command:
             - /bin/sh
             - -ec
@@ -226,7 +226,7 @@ spec:
       serviceAccountName: {{ include "ack-opensearch-provider.bootstrapServiceAccountName" . }}
       containers:
         - name: sync-connection
-          image: {{ .Values.sequencedConnection.kubectlImage | quote }}
+          image: {{ include "ack-opensearch-provider.imageRef" (dict "root" . "image" .Values.sequencedConnection.kubectlImage) | quote }}
           command:
             - /bin/sh
             - -ec
