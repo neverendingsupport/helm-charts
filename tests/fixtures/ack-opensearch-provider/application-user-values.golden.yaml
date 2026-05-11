@@ -147,7 +147,28 @@ spec:
                 password="$(kubectl get secret "$secret_name" -o go-template="$password_template" 2>/dev/null || true)"
                 passwords_ready=true
 
-                if [ -n "$endpoint" ] && [ -n "$username" ] && [ -n "$password" ]; then
+                if [ -n "$endpoint" ] && [ -n "$username" ] && [ -n "$password" ] && [ -n "$domain_arn" ]; then
+
+                  application_user_password_gorny_app="$(kubectl get secret "gorny-opensearch-app-auth" -o go-template="{{ index .data \"OPENSEARCH_PASSWORD\" | base64decode }}" 2>/dev/null || true)"
+                  if [ -z "$application_user_password_gorny_app" ]; then
+                    passwords_ready=false
+                  else
+                    printf '%s' "$application_user_password_gorny_app" >/work/application-user-password-gorny-app
+                  fi
+
+                  if [ -n "$application_user_password_gorny_app" ]; then
+                    kubectl create secret generic "gorny-opensearch-app-conninfo" \
+                      --from-literal=OPENSEARCH_USERNAME="gorny_app" \
+                      --from-literal=OPENSEARCH_PASSWORD="${application_user_password_gorny_app}" \
+                      --from-literal=OPENSEARCH_HOST="${endpoint}" \
+                      --from-literal=OPENSEARCH_PORT="${endpoint_port}" \
+                      --from-literal=OPENSEARCH_URL="${endpoint_scheme}://${endpoint}:${endpoint_port}" \
+                      --from-literal=OPENSEARCH_AUTH_URL="${endpoint_scheme}://gorny_app:${application_user_password_gorny_app}@${endpoint}:${endpoint_port}" \
+                      --from-literal=OPENSEARCH_ARN="${domain_arn}" \
+                      --dry-run=client -o yaml | kubectl apply -f - >/dev/null
+                    echo 'eyJtZXRhZGF0YSI6eyJhbm5vdGF0aW9ucyI6eyJyZWZsZWN0b3IudjEuazhzLmVtYmVyc3RhY2suY29tL3JlZmxlY3Rpb24tYWxsb3dlZCI6InRydWUiLCJyZWZsZWN0b3IudjEuazhzLmVtYmVyc3RhY2suY29tL3JlZmxlY3Rpb24tYWxsb3dlZC1uYW1lc3BhY2VzIjoiZ29ybnktYXBpLGdvcm55LXdvcmtlciIsInJlZmxlY3Rvci52MS5rOHMuZW1iZXJzdGFjay5jb20vcmVmbGVjdGlvbi1hdXRvLWVuYWJsZWQiOiJ0cnVlIiwicmVmbGVjdG9yLnYxLms4cy5lbWJlcnN0YWNrLmNvbS9yZWZsZWN0aW9uLWF1dG8tbmFtZXNwYWNlcyI6Imdvcm55LWFwaSxnb3JueS13b3JrZXIifSwibGFiZWxzIjp7ImFwcC5rdWJlcm5ldGVzLmlvL2luc3RhbmNlIjoiYWNrLW9wZW5zZWFyY2gtcHJvdmlkZXIiLCJhcHAua3ViZXJuZXRlcy5pby9tYW5hZ2VkLWJ5IjoiSGVsbSIsImFwcC5rdWJlcm5ldGVzLmlvL25hbWUiOiJhY2stb3BlbnNlYXJjaC1wcm92aWRlciIsImhlbG0uc2gvY2hhcnQiOiJhY2stb3BlbnNlYXJjaC1wcm92aWRlci0wLjAuMC1hLnBsYWNlaG9sZGVyIn19fQ==' | base64 -d > /tmp/application-user-connection-gorny-app-metadata.json
+                    kubectl patch secret "gorny-opensearch-app-conninfo" --type merge --patch-file /tmp/application-user-connection-gorny-app-metadata.json >/dev/null
+                  fi
                   if [ "$passwords_ready" = true ]; then
                     printf '%s' "${endpoint_scheme}://${endpoint}:${endpoint_port}" >/work/opensearch-endpoint
                     printf '%s' "$username" >/work/opensearch-username
@@ -236,12 +257,13 @@ spec:
               }
 
               apply_role \
-                "developer_debug_readonly" \
-                'eyJjbHVzdGVyX3Blcm1pc3Npb25zIjpbImNsdXN0ZXJfY29tcG9zaXRlX29wc19ybyIsImNsdXN0ZXJfbW9uaXRvciJdLCJpbmRleF9wZXJtaXNzaW9ucyI6W3siYWxsb3dlZF9hY3Rpb25zIjpbInJlYWQiLCJpbmRpY2VzX21vbml0b3IiLCJ2aWV3X2luZGV4X21ldGFkYXRhIl0sImluZGV4X3BhdHRlcm5zIjpbImVvbC1lbmdpbmUtKiJdfV19'
+                "gorny_app_readwrite" \
+                'eyJjbHVzdGVyX3Blcm1pc3Npb25zIjpbImNsdXN0ZXJfY29tcG9zaXRlX29wcyIsImNsdXN0ZXJfbW9uaXRvciJdLCJpbmRleF9wZXJtaXNzaW9ucyI6W3siYWxsb3dlZF9hY3Rpb25zIjpbImNydWQiLCJjcmVhdGVfaW5kZXgiLCJtYW5hZ2UiXSwiaW5kZXhfcGF0dGVybnMiOlsiZ29ybnktKiJdfV19'
 
-              apply_role_mapping \
-                "developer_debug_readonly" \
-                'eyJiYWNrZW5kX3JvbGVzIjpbImFybjphd3M6aWFtOjo1MjM1MzAzMzMyMzM6cm9sZS9wbGF0Zm9ybS1kZXYiXX0='
+              apply_application_user \
+                "gorny_app" \
+                /work/application-user-password-gorny-app \
+                'WyJnb3JueV9hcHBfcmVhZHdyaXRlIl0='
 ---
 # Source: ack-opensearch-provider/templates/domain.yaml
 apiVersion: opensearchservice.services.k8s.aws/v1alpha1
@@ -254,8 +276,33 @@ metadata:
     app.kubernetes.io/instance: ack-opensearch-provider
     app.kubernetes.io/managed-by: Helm
 spec:
-  engineVersion: OpenSearch_2.11
-  name: sample-domain
+  {}
+---
+# Source: ack-opensearch-provider/templates/application-user-passwords.yaml
+apiVersion: external-secrets.io/v1beta1
+kind: ExternalSecret
+metadata:
+  name: ack-opensearch-provider-gorny-app-auth
+  labels:
+    helm.sh/chart: ack-opensearch-provider-0.0.0-a.placeholder
+    app.kubernetes.io/name: ack-opensearch-provider
+    app.kubernetes.io/instance: ack-opensearch-provider
+    app.kubernetes.io/managed-by: Helm
+spec:
+  refreshInterval: 1h
+  target:
+    name: gorny-opensearch-app-auth
+    creationPolicy: Owner
+    template:
+      type: Opaque
+      data:
+        OPENSEARCH_PASSWORD: "{{ .password }}"
+  dataFrom:
+    - sourceRef:
+        generatorRef:
+          apiVersion: generators.external-secrets.io/v1alpha1
+          kind: Password
+          name: ack-opensearch-provider-gorny-app-password
 ---
 # Source: ack-opensearch-provider/templates/password-generator.yaml
 apiVersion: external-secrets.io/v1beta1
@@ -330,6 +377,23 @@ spec:
     kind: secret
     name: ack-opensearch-provider-connection
     key: OPENSEARCH_ARN
+---
+# Source: ack-opensearch-provider/templates/application-user-passwords.yaml
+apiVersion: generators.external-secrets.io/v1alpha1
+kind: Password
+metadata:
+  name: ack-opensearch-provider-gorny-app-password
+  labels:
+    helm.sh/chart: ack-opensearch-provider-0.0.0-a.placeholder
+    app.kubernetes.io/name: ack-opensearch-provider
+    app.kubernetes.io/instance: ack-opensearch-provider
+    app.kubernetes.io/managed-by: Helm
+spec:
+  length: 40
+  digits: 10
+  symbols: 2
+  noUpper: false
+  allowRepeat: true
 ---
 # Source: ack-opensearch-provider/templates/password-generator.yaml
 apiVersion: generators.external-secrets.io/v1alpha1

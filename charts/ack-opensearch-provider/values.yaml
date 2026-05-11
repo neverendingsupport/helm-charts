@@ -461,6 +461,97 @@ securityRoles: []
 securityRoleMappings: []
 
 # @schema
+# type: array
+# items:
+#   type: object
+#   required:
+#     - name
+#     - username
+#     - roleName
+#   properties:
+#     name:
+#       type: string
+#       minLength: 1
+#     username:
+#       type: string
+#       minLength: 1
+#     roleName:
+#       type: string
+#       minLength: 1
+#     password:
+#       type: object
+#       properties:
+#         generate:
+#           type: boolean
+#         secretName:
+#           type: string
+#         secretKey:
+#           type: string
+#         length:
+#           type: integer
+#           minimum: 1
+#         digits:
+#           type: integer
+#           minimum: 0
+#         symbols:
+#           type: integer
+#           minimum: 0
+#         noUpper:
+#           type: boolean
+#         allowRepeat:
+#           type: boolean
+#         existingSecretRef:
+#           type: object
+#           properties:
+#             name:
+#               type: string
+#             key:
+#               type: string
+#     connectionSecret:
+#       type: object
+#       properties:
+#         create:
+#           type: boolean
+#         name:
+#           type: string
+#         annotations:
+#           type: object
+#           additionalProperties: true
+#         reflector:
+#           type: object
+#           properties:
+#             enabled:
+#               type: boolean
+#             pushNamespaces:
+#               type: array
+#               items:
+#                 type: string
+#             allowedNamespaces:
+#               type: array
+#               items:
+#                 type: string
+#         keys:
+#           type: object
+#           properties:
+#             username:
+#               type: string
+#             host:
+#               type: string
+#             port:
+#               type: string
+#             url:
+#               type: string
+#             authURL:
+#               type: string
+#             arn:
+#               type: string
+#             password:
+#               type: string
+# @schema
+# -- Internal OpenSearch users and per-app conninfo secrets for clients that cannot use SigV4.
+applicationUsers: []
+
+# @schema
 # type: object
 # properties:
 #   enabled:
