@@ -9,6 +9,8 @@ connection secret that other workloads can consume.
 - exporting endpoint and auth data into a secret
 - optional reflector integration for cross-namespace secret use
 - optional `PushSecret` integration for external secret publishing
+- optional OpenSearch security role and IAM backend-role bootstrap for local
+  API access
 
 This chart is commonly paired with an application `ApplicationSet` when search
 infrastructure should be managed as part of the same deployment.

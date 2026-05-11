@@ -1,0 +1,220 @@
+{{- $bootstrap := .Values.securityBootstrap | default dict -}}
+{{- $roles := default (list) .Values.securityRoles -}}
+{{- $roleMappings := default (list) .Values.securityRoleMappings -}}
+{{- if $bootstrap.enabled }}
+{{- if ne .Values.auth.mode "password" }}
+{{- fail "securityBootstrap requires auth.mode=password so the bootstrap job can authenticate to the security API" }}
+{{- end }}
+{{- if and (eq (len $roles) 0) (eq (len $roleMappings) 0) }}
+{{- fail "securityBootstrap.enabled=true requires at least one securityRoles or securityRoleMappings entry" }}
+{{- end }}
+{{- $definedRoles := dict -}}
+{{- range $idx, $role := $roles }}
+{{- if not $role.name }}
+{{- fail (printf "securityRoles[%d].name must be set" $idx) }}
+{{- end }}
+{{- if hasKey $definedRoles $role.name }}
+{{- fail (printf "securityRoles[%d].name (%s) must be unique" $idx $role.name) }}
+{{- end }}
+{{- $_ := set $definedRoles $role.name true -}}
+{{- end }}
+{{- range $idx, $mapping := $roleMappings }}
+{{- if not $mapping.roleName }}
+{{- fail (printf "securityRoleMappings[%d].roleName must be set" $idx) }}
+{{- end }}
+{{- if not (hasKey $definedRoles $mapping.roleName) }}
+{{- fail (printf "securityRoleMappings[%d].roleName (%s) must match a defined securityRoles entry" $idx $mapping.roleName) }}
+{{- end }}
+{{- if eq (len (default (list) $mapping.backendRoles)) 0 }}
+{{- fail (printf "securityRoleMappings[%d].backendRoles must contain at least one ARN" $idx) }}
+{{- end }}
+{{- end }}
+{{- $legacy := .Values.domain | default dict -}}
+{{- $domainName := coalesce .Values.resourceName $legacy.name (include "ack-opensearch-provider.fullname" .) -}}
+{{- $secretName := include "ack-opensearch-provider.connectionSecretName" . -}}
+{{- $scheme := ternary "https" "http" (.Values.domainEndpointOptions.enforceHTTPS | default true) -}}
+{{- $port := ternary 443 80 (.Values.domainEndpointOptions.enforceHTTPS | default true) -}}
+{{- $securityCommands := list -}}
+{{- range $role := $roles }}
+{{- $indexPermissions := list -}}
+{{- range $permission := default (list) $role.indexPermissions }}
+{{- $indexPermissions = append $indexPermissions (dict "index_patterns" (default (list) $permission.indexPatterns) "allowed_actions" (default (list) $permission.allowedActions)) -}}
+{{- end }}
+{{- $rolePayload := dict "cluster_permissions" (default (list) $role.clusterPermissions) "index_permissions" $indexPermissions -}}
+{{- $securityCommands = append $securityCommands (printf "apply_role \\\n  %q \\\n  '%s'" $role.name ($rolePayload | toJson | b64enc)) -}}
+{{- end }}
+{{- range $mapping := $roleMappings }}
+{{- $securityCommands = append $securityCommands (printf "apply_role_mapping \\\n  %q \\\n  '%s'" $mapping.roleName ((dict "backend_roles" (default (list) $mapping.backendRoles)) | toJson | b64enc)) -}}
+{{- end }}
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: {{ include "ack-opensearch-provider.securityBootstrapServiceAccountName" . }}
+  labels:
+    {{- include "ack-opensearch-provider.labels" . | nindent 4 }}
+  annotations:
+    argocd.argoproj.io/hook: Sync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation,HookSucceeded
+    argocd.argoproj.io/sync-wave: "30"
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: {{ include "ack-opensearch-provider.securityBootstrapRoleName" . }}
+  labels:
+    {{- include "ack-opensearch-provider.labels" . | nindent 4 }}
+  annotations:
+    argocd.argoproj.io/hook: Sync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation,HookSucceeded
+    argocd.argoproj.io/sync-wave: "30"
+rules:
+  - apiGroups:
+      - ""
+    resources:
+      - secrets
+    verbs:
+      - get
+  - apiGroups:
+      - opensearchservice.services.k8s.aws
+    resources:
+      - domains
+    verbs:
+      - get
+      - list
+      - watch
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: {{ include "ack-opensearch-provider.securityBootstrapRoleBindingName" . }}
+  labels:
+    {{- include "ack-opensearch-provider.labels" . | nindent 4 }}
+  annotations:
+    argocd.argoproj.io/hook: Sync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation,HookSucceeded
+    argocd.argoproj.io/sync-wave: "30"
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: {{ include "ack-opensearch-provider.securityBootstrapRoleName" . }}
+subjects:
+  - kind: ServiceAccount
+    name: {{ include "ack-opensearch-provider.securityBootstrapServiceAccountName" . }}
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "ack-opensearch-provider.securityBootstrapJobName" . }}
+  labels:
+    {{- include "ack-opensearch-provider.labels" . | nindent 4 }}
+  annotations:
+    argocd.argoproj.io/hook: Sync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation,HookSucceeded
+    argocd.argoproj.io/sync-wave: "30"
+spec:
+  backoffLimit: {{ $bootstrap.backoffLimit }}
+  activeDeadlineSeconds: {{ $bootstrap.activeDeadlineSeconds }}
+  ttlSecondsAfterFinished: {{ $bootstrap.ttlSecondsAfterFinished }}
+  template:
+    metadata:
+      labels:
+        {{- include "ack-opensearch-provider.labels" . | nindent 8 }}
+    spec:
+      restartPolicy: OnFailure
+      serviceAccountName: {{ include "ack-opensearch-provider.securityBootstrapServiceAccountName" . }}
+      volumes:
+        - name: security-bootstrap-workdir
+          emptyDir: {}
+      initContainers:
+        - name: wait-for-connection
+          image: {{ $bootstrap.kubectlImage | quote }}
+          command:
+            - /bin/sh
+            - -ec
+          volumeMounts:
+            - name: security-bootstrap-workdir
+              mountPath: /work
+          args:
+            - |
+              domain_name={{ $domainName | quote }}
+              secret_name={{ $secretName | quote }}
+              username_key={{ .Values.connectionSecret.keys.username | quote }}
+              password_key={{ .Values.auth.password.key | quote }}
+              endpoint_scheme={{ $scheme | quote }}
+              endpoint_port={{ $port | quote }}
+              elapsed=0
+              poll_interval=10
+              max_wait={{ $bootstrap.activeDeadlineSeconds }}
+
+              while [ "$elapsed" -lt "$max_wait" ]; do
+                endpoint="$(kubectl get domains.opensearchservice.services.k8s.aws "$domain_name" -o jsonpath='{.status.endpoint}' 2>/dev/null || true)"
+                username="$(kubectl get secret "$secret_name" -o jsonpath="{.data.${username_key}}" 2>/dev/null | base64 --decode || true)"
+                password="$(kubectl get secret "$secret_name" -o jsonpath="{.data.${password_key}}" 2>/dev/null | base64 --decode || true)"
+                if [ -n "$endpoint" ] && [ -n "$username" ] && [ -n "$password" ]; then
+                  printf '%s' "${endpoint_scheme}://${endpoint}:${endpoint_port}" >/work/opensearch-endpoint
+                  printf '%s' "$username" >/work/opensearch-username
+                  printf '%s' "$password" >/work/opensearch-password
+                  exit 0
+                fi
+
+                sleep "$poll_interval"
+                elapsed=$((elapsed + poll_interval))
+              done
+
+              echo "Timed out waiting for domain endpoint and admin credentials"
+              exit 1
+      containers:
+        - name: bootstrap-security
+          image: {{ $bootstrap.image | quote }}
+          command:
+            - /bin/sh
+            - -ec
+          volumeMounts:
+            - name: security-bootstrap-workdir
+              mountPath: /work
+          args:
+            - |
+              OPENSEARCH_ENDPOINT="$(cat /work/opensearch-endpoint)"
+              OPENSEARCH_USERNAME="$(cat /work/opensearch-username)"
+              OPENSEARCH_ADMIN_PASSWORD="$(cat /work/opensearch-password)"
+
+              put_security_resource() {
+                resource_path="$1"
+                payload_file="$2"
+
+                status_code="$(
+                  curl -sS \
+                    -o /tmp/security-api-response.json \
+                    -w '%{http_code}' \
+                    -u "${OPENSEARCH_USERNAME}:${OPENSEARCH_ADMIN_PASSWORD}" \
+                    -H 'Content-Type: application/json' \
+                    -X PUT \
+                    "${OPENSEARCH_ENDPOINT}/${resource_path}" \
+                    --data-binary @"${payload_file}"
+                )"
+
+                if [ "$status_code" -lt 200 ] || [ "$status_code" -ge 300 ]; then
+                  echo "Failed to apply ${resource_path}: HTTP ${status_code}"
+                  cat /tmp/security-api-response.json
+                  exit 1
+                fi
+              }
+
+              apply_role() {
+                role_name="$1"
+                payload_b64="$2"
+                printf '%s' "$payload_b64" | base64 -d >/tmp/security-role.json
+                put_security_resource "_plugins/_security/api/roles/${role_name}" /tmp/security-role.json
+              }
+
+              apply_role_mapping() {
+                role_name="$1"
+                payload_b64="$2"
+                printf '%s' "$payload_b64" | base64 -d >/tmp/security-role-mapping.json
+                put_security_resource "_plugins/_security/api/rolesmapping/${role_name}" /tmp/security-role-mapping.json
+              }
+{{- range $command := $securityCommands }}
+{{ $command | nindent 14 }}
+{{- end }}
+{{- end }}

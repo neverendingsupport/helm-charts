@@ -6,12 +6,15 @@ import base64
 import json
 import re
 
+import pytest
+
 from .chart_test_utils import (
     ChartContext,
     get_manifest,
     load_manifests,
     render_chart,
 )
+from .conftest import HelmTemplateError
 
 CHART = ChartContext("ack-opensearch-provider")
 
@@ -167,6 +170,142 @@ def test_irsa_auth_uses_empty_password(helm_runner) -> None:
         == "arn:aws:iam::123456789012:role/opensearch"
     )
     assert secret["stringData"]["OPENSEARCH_PASSWORD"] == ""
+
+
+def test_security_bootstrap_renders_role_and_mapping_payloads(
+    helm_runner,
+) -> None:
+    """Ensure security bootstrap renders the expected role payloads."""
+
+    rendered = render_chart(
+        helm_runner,
+        CHART,
+        values={
+            "securityBootstrap.enabled": True,
+            "securityRoles": [
+                {
+                    "name": "developer_debug_readonly",
+                    "clusterPermissions": [
+                        "cluster_composite_ops_ro",
+                        "cluster_monitor",
+                    ],
+                    "indexPermissions": [
+                        {
+                            "indexPatterns": ["eol-engine-*"],
+                            "allowedActions": [
+                                "read",
+                                "indices_monitor",
+                                "view_index_metadata",
+                            ],
+                        }
+                    ],
+                }
+            ],
+            "securityRoleMappings": [
+                {
+                    "roleName": "developer_debug_readonly",
+                    "backendRoles": [
+                        "arn:aws:iam::523530333233:role/platform-dev"
+                    ],
+                }
+            ],
+        },
+    )
+
+    manifests = load_manifests(rendered)
+    service_account = get_manifest(manifests, "ServiceAccount")
+    role = get_manifest(manifests, "Role")
+    role_binding = get_manifest(manifests, "RoleBinding")
+    job = get_manifest(manifests, "Job")
+
+    assert service_account["metadata"]["name"].endswith("security-bootstrap")
+    assert role["rules"][0]["verbs"] == ["get"]
+    assert (
+        role_binding["subjects"][0]["name"]
+        == service_account["metadata"]["name"]
+    )
+
+    pod_spec = job["spec"]["template"]["spec"]
+    assert pod_spec["initContainers"][0]["image"] == "bitnami/kubectl:latest"
+    assert pod_spec["containers"][0]["image"] == "curlimages/curl:8.12.1"
+
+    script = pod_spec["containers"][0]["args"][0]
+    role_match = re.search(
+        r'apply_role \\\n\s+"developer_debug_readonly" \\\n\s+\'([^\']+)\'',
+        script,
+    )
+    assert role_match is not None
+    role_payload = json.loads(
+        base64.b64decode(role_match.group(1)).decode("utf-8")
+    )
+    assert role_payload == {
+        "cluster_permissions": [
+            "cluster_composite_ops_ro",
+            "cluster_monitor",
+        ],
+        "index_permissions": [
+            {
+                "index_patterns": ["eol-engine-*"],
+                "allowed_actions": [
+                    "read",
+                    "indices_monitor",
+                    "view_index_metadata",
+                ],
+            }
+        ],
+    }
+
+    mapping_match = re.search(
+        (
+            r'apply_role_mapping \\\n\s+"developer_debug_readonly"'
+            r" \\\n\s+\'([^\']+)\'"
+        ),
+        script,
+    )
+    assert mapping_match is not None
+    mapping_payload = json.loads(
+        base64.b64decode(mapping_match.group(1)).decode("utf-8")
+    )
+    assert mapping_payload == {
+        "backend_roles": ["arn:aws:iam::523530333233:role/platform-dev"]
+    }
+
+
+def test_security_bootstrap_requires_password_auth(helm_runner) -> None:
+    """Reject security bootstrap when auth.mode is not password."""
+
+    with pytest.raises(HelmTemplateError):
+        render_chart(
+            helm_runner,
+            CHART,
+            values={
+                "auth.mode": "irsa",
+                "securityBootstrap.enabled": True,
+                "securityRoles": [{"name": "developer_debug_readonly"}],
+            },
+        )
+
+
+def test_security_bootstrap_rejects_unknown_mapping_role(helm_runner) -> None:
+    """Reject role mappings that point to an undefined role."""
+
+    with pytest.raises(HelmTemplateError):
+        render_chart(
+            helm_runner,
+            CHART,
+            values={
+                "securityBootstrap.enabled": True,
+                "securityRoles": [{"name": "developer_debug_readonly"}],
+                "securityRoleMappings": [
+                    {
+                        "roleName": "missing-role",
+                        "backendRoles": [
+                            "arn:aws:iam::523530333233:role/platform-dev"
+                        ],
+                    }
+                ],
+            },
+        )
 
 
 def test_sequenced_connection_renders_hook_jobs(helm_runner) -> None:

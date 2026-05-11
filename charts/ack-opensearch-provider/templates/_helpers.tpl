@@ -108,3 +108,19 @@ app.kubernetes.io/managed-by: {{ .Release.Service }}
 {{- define "ack-opensearch-provider.endpointSyncJobName" -}}
 {{- printf "%s-sync-connection" (include "ack-opensearch-provider.fullname" .) -}}
 {{- end -}}
+
+{{- define "ack-opensearch-provider.securityBootstrapServiceAccountName" -}}
+{{- printf "%s-security-bootstrap" (include "ack-opensearch-provider.fullname" .) -}}
+{{- end -}}
+
+{{- define "ack-opensearch-provider.securityBootstrapRoleName" -}}
+{{- printf "%s-security-bootstrap" (include "ack-opensearch-provider.fullname" .) -}}
+{{- end -}}
+
+{{- define "ack-opensearch-provider.securityBootstrapRoleBindingName" -}}
+{{- printf "%s-security-bootstrap" (include "ack-opensearch-provider.fullname" .) -}}
+{{- end -}}
+
+{{- define "ack-opensearch-provider.securityBootstrapJobName" -}}
+{{- printf "%s-security-bootstrap" (include "ack-opensearch-provider.fullname" .) -}}
+{{- end -}}
