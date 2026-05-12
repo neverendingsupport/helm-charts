@@ -194,7 +194,7 @@ tests:
     asserts:
       - equal:
           path: spec.template.spec.containers[0].image
-          value: custom.registry.io/neverendingsupport/ingress-nginx-controller:v1.0.0-dev@sha256:faa2d18687f734994b6bd9e309e7a73852a81c30e1b8f63165fcd4f0a087e3cd
+          value: custom.registry.io/nes/ingress-nginx:v1.0.0-dev@sha256:faa2d18687f734994b6bd9e309e7a73852a81c30e1b8f63165fcd4f0a087e3cd
 
   - it: should create a Deployment with a custom registry if `controller.image.registry` is set
     set:
@@ -204,7 +204,7 @@ tests:
     asserts:
       - equal:
           path: spec.template.spec.containers[0].image
-          value: custom.registry.io/neverendingsupport/ingress-nginx-controller:v1.0.0-dev@sha256:faa2d18687f734994b6bd9e309e7a73852a81c30e1b8f63165fcd4f0a087e3cd
+          value: custom.registry.io/nes/ingress-nginx:v1.0.0-dev@sha256:faa2d18687f734994b6bd9e309e7a73852a81c30e1b8f63165fcd4f0a087e3cd
 
   - it: should create a Deployment with a custom image if `controller.image.image` is set
     set:
@@ -223,7 +223,7 @@ tests:
     asserts:
       - equal:
           path: spec.template.spec.containers[0].image
-          value: registry.nes.herodevs.com/neverendingsupport/ingress-nginx-controller:custom-tag@sha256:faa2d18687f734994b6bd9e309e7a73852a81c30e1b8f63165fcd4f0a087e3cd
+          value: registry.nes.herodevs.com/nes/ingress-nginx:custom-tag@sha256:faa2d18687f734994b6bd9e309e7a73852a81c30e1b8f63165fcd4f0a087e3cd
 
   - it: should create a Deployment with `progressDeadlineSeconds` if `controller.progressDeadlineSeconds` is set
     set:
