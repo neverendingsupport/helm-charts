@@ -27,7 +27,7 @@ helm install [RELEASE_NAME] oci://ghcr.io/neverendingsupport/charts/ingress-ngin
 ```
 
 The command deploys ingress-nginx on the Kubernetes cluster in the default configuration.
-By default, the chart installs `registry.nes.herodevs.com/neverendingsupport/ingress-nginx-controller:v1.15.1-ingress-nginx-1.15.2`.
+By default, the chart installs `registry.nes.herodevs.com/nes/ingress-nginx:v1.15.1-ingress-nginx-1.15.2`.
 
 _See [configuration](#configuration) below._
 
@@ -351,7 +351,7 @@ metadata:
 | controller.image.chroot | bool | `false` |  |
 | controller.image.digest | string | `""` |  |
 | controller.image.digestChroot | string | `""` |  |
-| controller.image.image | string | `"neverendingsupport/ingress-nginx-controller"` |  |
+| controller.image.image | string | `"nes/ingress-nginx"` |  |
 | controller.image.pullPolicy | string | `"IfNotPresent"` |  |
 | controller.image.readOnlyRootFilesystem | bool | `false` |  |
 | controller.image.runAsGroup | int | `82` | This value must not be changed using the official image. uid=101(www-data) gid=82(www-data) groups=82(www-data) |
