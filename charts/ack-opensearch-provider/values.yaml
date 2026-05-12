@@ -457,7 +457,7 @@ securityRoles: []
 #         type: string
 #         minLength: 1
 # @schema
-# -- OpenSearch security role mappings that bind backend IAM role ARNs.
+# -- OpenSearch security role mappings that bind backend identities to OpenSearch roles, including built-in roles.
 securityRoleMappings: []
 
 # @schema

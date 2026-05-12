@@ -417,26 +417,37 @@ def test_security_bootstrap_requires_password_auth(helm_runner) -> None:
         )
 
 
-def test_security_bootstrap_rejects_unknown_mapping_role(helm_runner) -> None:
-    """Reject role mappings that point to an undefined role."""
+def test_security_bootstrap_allows_builtin_role_mappings(helm_runner) -> None:
+    """Allow role mappings that target built-in OpenSearch roles."""
 
-    with pytest.raises(HelmTemplateError):
-        render_chart(
-            helm_runner,
-            CHART,
-            values={
-                "securityBootstrap.enabled": True,
-                "securityRoles": [{"name": "developer_debug_readonly"}],
-                "securityRoleMappings": [
-                    {
-                        "roleName": "missing-role",
-                        "backendRoles": [
-                            "arn:aws:iam::523530333233:role/platform-dev"
-                        ],
-                    }
-                ],
-            },
-        )
+    rendered = render_chart(
+        helm_runner,
+        CHART,
+        values={
+            "securityBootstrap.enabled": True,
+            "securityRoleMappings": [
+                {
+                    "roleName": "opensearch_dashboards_user",
+                    "backendRoles": ["infrastructure"],
+                }
+            ],
+        },
+    )
+
+    job = get_manifest(load_manifests(rendered), "Job")
+    script = job["spec"]["template"]["spec"]["containers"][0]["args"][0]
+    mapping_match = re.search(
+        (
+            r'apply_role_mapping \\\n\s+"opensearch_dashboards_user"'
+            r" \\\n\s+\'([^\']+)\'"
+        ),
+        script,
+    )
+    assert mapping_match is not None
+    mapping_payload = json.loads(
+        base64.b64decode(mapping_match.group(1)).decode("utf-8")
+    )
+    assert mapping_payload == {"backend_roles": ["infrastructure"]}
 
 
 def test_application_users_require_existing_secret_name(helm_runner) -> None:

@@ -25,9 +25,6 @@
 {{- if not $mapping.roleName }}
 {{- fail (printf "securityRoleMappings[%d].roleName must be set" $idx) }}
 {{- end }}
-{{- if not (hasKey $definedRoles $mapping.roleName) }}
-{{- fail (printf "securityRoleMappings[%d].roleName (%s) must match a defined securityRoles entry" $idx $mapping.roleName) }}
-{{- end }}
 {{- if eq (len (default (list) $mapping.backendRoles)) 0 }}
 {{- fail (printf "securityRoleMappings[%d].backendRoles must contain at least one ARN" $idx) }}
 {{- end }}
