@@ -29,22 +29,27 @@ app.kubernetes.io/managed-by: {{ .Release.Service }}
 {{- default (printf "%s-connection" (include "ack-opensearch-provider.fullname" .)) .Values.connectionSecret.name -}}
 {{- end -}}
 
-{{- define "ack-opensearch-provider.connectionSecretAnnotationsJSON" -}}
+{{- define "ack-opensearch-provider.reflectorAnnotationsJSON" -}}
 {{- $annotations := dict -}}
-{{- if .Values.reflector.enabled -}}
+{{- $reflector := .reflector | default dict -}}
+{{- if $reflector.enabled -}}
 {{- $_ := set $annotations "reflector.v1.k8s.emberstack.com/reflection-allowed" "true" -}}
 {{- $_ := set $annotations "reflector.v1.k8s.emberstack.com/reflection-auto-enabled" "true" -}}
-{{- if .Values.reflector.allowedNamespaces -}}
-{{- $_ := set $annotations "reflector.v1.k8s.emberstack.com/reflection-allowed-namespaces" (join "," .Values.reflector.allowedNamespaces) -}}
+{{- if $reflector.allowedNamespaces -}}
+{{- $_ := set $annotations "reflector.v1.k8s.emberstack.com/reflection-allowed-namespaces" (join "," $reflector.allowedNamespaces) -}}
 {{- end -}}
-{{- if .Values.reflector.pushNamespaces -}}
-{{- $_ := set $annotations "reflector.v1.k8s.emberstack.com/reflection-auto-namespaces" (join "," .Values.reflector.pushNamespaces) -}}
+{{- if $reflector.pushNamespaces -}}
+{{- $_ := set $annotations "reflector.v1.k8s.emberstack.com/reflection-auto-namespaces" (join "," $reflector.pushNamespaces) -}}
 {{- end -}}
 {{- end -}}
-{{- range $key, $value := .Values.connectionSecret.annotations }}
+{{- range $key, $value := (.annotations | default dict) }}
 {{- $_ := set $annotations $key $value -}}
 {{- end -}}
 {{- $annotations | toJson -}}
+{{- end -}}
+
+{{- define "ack-opensearch-provider.connectionSecretAnnotationsJSON" -}}
+{{- include "ack-opensearch-provider.reflectorAnnotationsJSON" (dict "reflector" .Values.reflector "annotations" .Values.connectionSecret.annotations) -}}
 {{- end -}}
 
 {{- define "ack-opensearch-provider.connectionSecretAnnotations" -}}
@@ -107,4 +112,63 @@ app.kubernetes.io/managed-by: {{ .Release.Service }}
 
 {{- define "ack-opensearch-provider.endpointSyncJobName" -}}
 {{- printf "%s-sync-connection" (include "ack-opensearch-provider.fullname" .) -}}
+{{- end -}}
+
+{{- define "ack-opensearch-provider.securityBootstrapServiceAccountName" -}}
+{{- printf "%s-security-bootstrap" (include "ack-opensearch-provider.fullname" .) -}}
+{{- end -}}
+
+{{- define "ack-opensearch-provider.securityBootstrapRoleName" -}}
+{{- printf "%s-security-bootstrap" (include "ack-opensearch-provider.fullname" .) -}}
+{{- end -}}
+
+{{- define "ack-opensearch-provider.securityBootstrapRoleBindingName" -}}
+{{- printf "%s-security-bootstrap" (include "ack-opensearch-provider.fullname" .) -}}
+{{- end -}}
+
+{{- define "ack-opensearch-provider.securityBootstrapJobName" -}}
+{{- printf "%s-security-bootstrap" (include "ack-opensearch-provider.fullname" .) -}}
+{{- end -}}
+
+{{- define "ack-opensearch-provider.applicationUserNameSegment" -}}
+{{- $name := .user.name | lower | replace "_" "-" -}}
+{{- $name | trunc 40 | trimSuffix "-" -}}
+{{- end -}}
+
+{{- define "ack-opensearch-provider.applicationUserShellNameSegment" -}}
+{{- $name := .user.name | lower | replace "-" "_" | replace "." "_" | replace "/" "_" | replace " " "_" -}}
+{{- $name | trunc 40 | trimSuffix "_" -}}
+{{- end -}}
+
+{{- define "ack-opensearch-provider.applicationUserPasswordGeneratorName" -}}
+{{- printf "%s-%s-password" (include "ack-opensearch-provider.fullname" .root) (include "ack-opensearch-provider.applicationUserNameSegment" .) -}}
+{{- end -}}
+
+{{- define "ack-opensearch-provider.applicationUserPasswordExternalSecretName" -}}
+{{- printf "%s-%s-auth" (include "ack-opensearch-provider.fullname" .root) (include "ack-opensearch-provider.applicationUserNameSegment" .) -}}
+{{- end -}}
+
+{{- define "ack-opensearch-provider.applicationUserPasswordSecretName" -}}
+{{- $defaultName := printf "%s-%s-password" (include "ack-opensearch-provider.fullname" .root) (include "ack-opensearch-provider.applicationUserNameSegment" .) -}}
+{{- default $defaultName .user.password.secretName -}}
+{{- end -}}
+
+{{- define "ack-opensearch-provider.applicationUserConnectionSecretName" -}}
+{{- $defaultName := printf "%s-%s-connection" (include "ack-opensearch-provider.fullname" .root) (include "ack-opensearch-provider.applicationUserNameSegment" .) -}}
+{{- default $defaultName .user.connectionSecret.name -}}
+{{- end -}}
+
+{{- define "ack-opensearch-provider.applicationUserConnectionSecretAnnotationsJSON" -}}
+{{- $connection := .user.connectionSecret | default dict -}}
+{{- include "ack-opensearch-provider.reflectorAnnotationsJSON" (dict "reflector" ($connection.reflector | default dict) "annotations" ($connection.annotations | default dict)) -}}
+{{- end -}}
+
+{{- define "ack-opensearch-provider.applicationUserConnectionSecretAnnotations" -}}
+{{- $json := include "ack-opensearch-provider.applicationUserConnectionSecretAnnotationsJSON" . | trim -}}
+{{- if and $json (ne $json "{}") -}}
+{{- $annotations := fromJson $json -}}
+{{- if gt (len $annotations) 0 -}}
+{{- toYaml $annotations -}}
+{{- end -}}
+{{- end -}}
 {{- end -}}

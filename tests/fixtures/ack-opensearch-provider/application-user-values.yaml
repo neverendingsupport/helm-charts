@@ -1,0 +1,35 @@
+securityBootstrap:
+  enabled: true
+securityRoles:
+  - name: gorny_app_readwrite
+    clusterPermissions:
+      - cluster_composite_ops
+      - cluster_monitor
+    indexPermissions:
+      - indexPatterns:
+          - gorny-*
+        allowedActions:
+          - crud
+          - create_index
+          - manage
+applicationUsers:
+  - name: gorny-app
+    username: gorny_app
+    roleName: gorny_app_readwrite
+    password:
+      generate: true
+      secretName: gorny-opensearch-app-auth
+      secretKey: OPENSEARCH_PASSWORD
+      length: 40
+      digits: 10
+      symbols: 2
+    connectionSecret:
+      name: gorny-opensearch-app-conninfo
+      reflector:
+        enabled: true
+        pushNamespaces:
+          - gorny-api
+          - gorny-worker
+        allowedNamespaces:
+          - gorny-api
+          - gorny-worker

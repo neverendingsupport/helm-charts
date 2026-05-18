@@ -31,7 +31,7 @@ spec:
   name: sample-domain
 ---
 # Source: ack-opensearch-provider/templates/password-generator.yaml
-apiVersion: external-secrets.io/v1
+apiVersion: external-secrets.io/v1beta1
 kind: ExternalSecret
 metadata:
   name: ack-opensearch-provider-auth
@@ -49,12 +49,12 @@ spec:
       type: Opaque
       data:
         OPENSEARCH_USERNAME: "admin"
+        OPENSEARCH_PASSWORD: "{{ .password }}"
         OPENSEARCH_PORT: "443"
         OPENSEARCH_URL: ""
         OPENSEARCH_AUTH_URL: ""
-  data:
-    - secretKey: OPENSEARCH_PASSWORD
-      sourceRef:
+  dataFrom:
+    - sourceRef:
         generatorRef:
           apiVersion: generators.external-secrets.io/v1alpha1
           kind: Password

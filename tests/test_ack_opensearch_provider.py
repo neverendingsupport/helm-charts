@@ -6,12 +6,15 @@ import base64
 import json
 import re
 
+import pytest
+
 from .chart_test_utils import (
     ChartContext,
     get_manifest,
     load_manifests,
     render_chart,
 )
+from .conftest import HelmTemplateError
 
 CHART = ChartContext("ack-opensearch-provider")
 
@@ -167,6 +170,333 @@ def test_irsa_auth_uses_empty_password(helm_runner) -> None:
         == "arn:aws:iam::123456789012:role/opensearch"
     )
     assert secret["stringData"]["OPENSEARCH_PASSWORD"] == ""
+
+
+def test_security_bootstrap_renders_role_and_mapping_payloads(
+    helm_runner,
+) -> None:
+    """Ensure security bootstrap renders the expected role payloads."""
+
+    rendered = render_chart(
+        helm_runner,
+        CHART,
+        values={
+            "securityBootstrap.enabled": True,
+            "securityRoles": [
+                {
+                    "name": "developer_debug_readonly",
+                    "clusterPermissions": [
+                        "cluster_composite_ops_ro",
+                        "cluster_monitor",
+                    ],
+                    "indexPermissions": [
+                        {
+                            "indexPatterns": ["eol-engine-*"],
+                            "allowedActions": [
+                                "read",
+                                "indices_monitor",
+                                "view_index_metadata",
+                            ],
+                        }
+                    ],
+                }
+            ],
+            "securityRoleMappings": [
+                {
+                    "roleName": "developer_debug_readonly",
+                    "backendRoles": [
+                        "arn:aws:iam::523530333233:role/platform-dev"
+                    ],
+                }
+            ],
+        },
+    )
+
+    manifests = load_manifests(rendered)
+    service_account = get_manifest(manifests, "ServiceAccount")
+    role = get_manifest(manifests, "Role")
+    role_binding = get_manifest(manifests, "RoleBinding")
+    job = get_manifest(manifests, "Job")
+
+    assert service_account["metadata"]["name"].endswith("security-bootstrap")
+    assert role["rules"][0]["verbs"] == [
+        "get",
+        "create",
+        "update",
+        "patch",
+    ]
+    assert (
+        role_binding["subjects"][0]["name"]
+        == service_account["metadata"]["name"]
+    )
+
+    pod_spec = job["spec"]["template"]["spec"]
+    assert pod_spec["initContainers"][0]["image"] == "bitnami/kubectl:latest"
+    assert pod_spec["containers"][0]["image"] == "curlimages/curl:8.12.1"
+
+    script = pod_spec["containers"][0]["args"][0]
+    role_match = re.search(
+        r'apply_role \\\n\s+"developer_debug_readonly" \\\n\s+\'([^\']+)\'',
+        script,
+    )
+    assert role_match is not None
+    role_payload = json.loads(
+        base64.b64decode(role_match.group(1)).decode("utf-8")
+    )
+    assert role_payload == {
+        "cluster_permissions": [
+            "cluster_composite_ops_ro",
+            "cluster_monitor",
+        ],
+        "index_permissions": [
+            {
+                "index_patterns": ["eol-engine-*"],
+                "allowed_actions": [
+                    "read",
+                    "indices_monitor",
+                    "view_index_metadata",
+                ],
+            }
+        ],
+    }
+
+    mapping_match = re.search(
+        (
+            r'apply_role_mapping \\\n\s+"developer_debug_readonly"'
+            r" \\\n\s+\'([^\']+)\'"
+        ),
+        script,
+    )
+    assert mapping_match is not None
+    mapping_payload = json.loads(
+        base64.b64decode(mapping_match.group(1)).decode("utf-8")
+    )
+    assert mapping_payload == {
+        "backend_roles": ["arn:aws:iam::523530333233:role/platform-dev"]
+    }
+
+
+def test_application_users_render_bootstrap_and_password_resources(
+    helm_runner,
+) -> None:
+    """Ensure application users render password resources and bootstrap."""
+
+    rendered = render_chart(
+        helm_runner,
+        CHART,
+        values={
+            "securityBootstrap.enabled": True,
+            "securityRoles": [
+                {
+                    "name": "gorny_app_readwrite",
+                    "clusterPermissions": [
+                        "cluster_composite_ops",
+                        "cluster_monitor",
+                    ],
+                    "indexPermissions": [
+                        {
+                            "indexPatterns": ["gorny-*"],
+                            "allowedActions": [
+                                "crud",
+                                "create_index",
+                                "manage",
+                            ],
+                        }
+                    ],
+                }
+            ],
+            "applicationUsers": [
+                {
+                    "name": "gorny-app",
+                    "username": "gorny_app",
+                    "roleName": "gorny_app_readwrite",
+                    "password": {
+                        "generate": True,
+                        "secretName": "gorny-opensearch-app-auth",
+                        "secretKey": "OPENSEARCH_PASSWORD",
+                        "length": 40,
+                        "digits": 10,
+                        "symbols": 2,
+                    },
+                    "connectionSecret": {
+                        "name": "gorny-opensearch-app-conninfo",
+                        "reflector": {
+                            "enabled": True,
+                            "pushNamespaces": ["gorny-api", "gorny-worker"],
+                            "allowedNamespaces": [
+                                "gorny-api",
+                                "gorny-worker",
+                            ],
+                        },
+                    },
+                }
+            ],
+        },
+    )
+
+    manifests = load_manifests(rendered)
+    passwords = [m for m in manifests if m.get("kind") == "Password"]
+    external_secrets = [
+        m for m in manifests if m.get("kind") == "ExternalSecret"
+    ]
+    job = get_manifest(manifests, "Job")
+
+    assert len(passwords) == 2
+    assert any(
+        password["spec"]
+        == {
+            "length": 40,
+            "digits": 10,
+            "symbols": 2,
+            "noUpper": False,
+            "allowRepeat": True,
+        }
+        for password in passwords
+    )
+    assert any(
+        external_secret["spec"]["target"]["name"] == "gorny-opensearch-app-auth"
+        for external_secret in external_secrets
+    )
+
+    pod_spec = job["spec"]["template"]["spec"]
+    init_script = pod_spec["initContainers"][0]["args"][0]
+    main_script = pod_spec["containers"][0]["args"][0]
+
+    assert "gorny-opensearch-app-auth" in init_script
+    assert "gorny-opensearch-app-conninfo" in init_script
+    assert "application_user_password_gorny_app" in init_script
+    assert 'kubectl patch secret "gorny-opensearch-app-conninfo"' in init_script
+    assert "apply_application_user" in main_script
+    assert '"gorny_app"' in main_script
+
+    metadata_patch_match = re.search(
+        r"echo '([^']+)' \| base64 -d > "
+        r"/tmp/application-user-connection-gorny-app-metadata\.json",
+        init_script,
+    )
+    assert metadata_patch_match is not None
+    metadata_patch = json.loads(
+        base64.b64decode(metadata_patch_match.group(1)).decode("utf-8")
+    )
+    assert metadata_patch["metadata"]["annotations"] == {
+        "reflector.v1.k8s.emberstack.com/reflection-allowed": "true",
+        (
+            "reflector.v1.k8s.emberstack.com/" "reflection-allowed-namespaces"
+        ): "gorny-api,gorny-worker",
+        "reflector.v1.k8s.emberstack.com/reflection-auto-enabled": "true",
+        (
+            "reflector.v1.k8s.emberstack.com/" "reflection-auto-namespaces"
+        ): "gorny-api,gorny-worker",
+    }
+
+    user_match = re.search(
+        r'apply_application_user \\\n\s+"gorny_app" \\\n'
+        r"\s+/work/application-user-password-gorny-app \\\n"
+        r"\s+'([^']+)'",
+        main_script,
+    )
+    assert user_match is not None
+    role_names = json.loads(
+        base64.b64decode(user_match.group(1)).decode("utf-8")
+    )
+    assert role_names == ["gorny_app_readwrite"]
+
+
+def test_security_bootstrap_requires_password_auth(helm_runner) -> None:
+    """Reject security bootstrap when auth.mode is not password."""
+
+    with pytest.raises(HelmTemplateError):
+        render_chart(
+            helm_runner,
+            CHART,
+            values={
+                "auth.mode": "irsa",
+                "securityBootstrap.enabled": True,
+                "securityRoles": [{"name": "developer_debug_readonly"}],
+            },
+        )
+
+
+def test_security_bootstrap_allows_builtin_role_mappings(helm_runner) -> None:
+    """Allow role mappings that target built-in OpenSearch roles."""
+
+    rendered = render_chart(
+        helm_runner,
+        CHART,
+        values={
+            "securityBootstrap.enabled": True,
+            "securityRoleMappings": [
+                {
+                    "roleName": "opensearch_dashboards_user",
+                    "backendRoles": ["infrastructure"],
+                }
+            ],
+        },
+    )
+
+    job = get_manifest(load_manifests(rendered), "Job")
+    script = job["spec"]["template"]["spec"]["containers"][0]["args"][0]
+    mapping_match = re.search(
+        (
+            r'apply_role_mapping \\\n\s+"opensearch_dashboards_user"'
+            r" \\\n\s+\'([^\']+)\'"
+        ),
+        script,
+    )
+    assert mapping_match is not None
+    mapping_payload = json.loads(
+        base64.b64decode(mapping_match.group(1)).decode("utf-8")
+    )
+    assert mapping_payload == {"backend_roles": ["infrastructure"]}
+
+
+def test_application_users_require_existing_secret_name(helm_runner) -> None:
+    """Reject non-generated application user passwords without a secret."""
+
+    with pytest.raises(HelmTemplateError):
+        render_chart(
+            helm_runner,
+            CHART,
+            values={
+                "securityBootstrap.enabled": True,
+                "securityRoles": [{"name": "gorny_app_readwrite"}],
+                "applicationUsers": [
+                    {
+                        "name": "gorny-app",
+                        "username": "gorny_app",
+                        "roleName": "gorny_app_readwrite",
+                        "password": {"generate": False},
+                    }
+                ],
+            },
+        )
+
+
+def test_application_users_reject_unknown_role_name(helm_runner) -> None:
+    """Reject application users that point at an undefined role."""
+
+    with pytest.raises(HelmTemplateError):
+        render_chart(
+            helm_runner,
+            CHART,
+            values={
+                "securityBootstrap.enabled": True,
+                "securityRoles": [{"name": "gorny_app_readwrite"}],
+                "applicationUsers": [
+                    {
+                        "name": "gorny-app",
+                        "username": "gorny_app",
+                        "roleName": "missing-role",
+                        "password": {
+                            "generate": False,
+                            "existingSecretRef": {
+                                "name": "gorny-opensearch-app-auth"
+                            },
+                        },
+                    }
+                ],
+            },
+        )
 
 
 def test_sequenced_connection_renders_hook_jobs(helm_runner) -> None:

@@ -1,0 +1,331 @@
+{{- $bootstrap := .Values.securityBootstrap | default dict -}}
+{{- $roles := default (list) .Values.securityRoles -}}
+{{- $roleMappings := default (list) .Values.securityRoleMappings -}}
+{{- $applicationUsers := default (list) .Values.applicationUsers -}}
+{{- if $bootstrap.enabled }}
+{{- if ne .Values.auth.mode "password" }}
+{{- fail "securityBootstrap requires auth.mode=password so the bootstrap job can authenticate to the security API" }}
+{{- end }}
+{{- if and (eq (len $roles) 0) (eq (len $roleMappings) 0) (eq (len $applicationUsers) 0) }}
+{{- fail "securityBootstrap.enabled=true requires at least one securityRoles, securityRoleMappings, or applicationUsers entry" }}
+{{- end }}
+{{- $definedRoles := dict -}}
+{{- $applicationUserNames := dict -}}
+{{- $appConnectionSecretUsers := dict -}}
+{{- range $idx, $role := $roles }}
+{{- if not $role.name }}
+{{- fail (printf "securityRoles[%d].name must be set" $idx) }}
+{{- end }}
+{{- if hasKey $definedRoles $role.name }}
+{{- fail (printf "securityRoles[%d].name (%s) must be unique" $idx $role.name) }}
+{{- end }}
+{{- $_ := set $definedRoles $role.name true -}}
+{{- end }}
+{{- range $idx, $mapping := $roleMappings }}
+{{- if not $mapping.roleName }}
+{{- fail (printf "securityRoleMappings[%d].roleName must be set" $idx) }}
+{{- end }}
+{{- if eq (len (default (list) $mapping.backendRoles)) 0 }}
+{{- fail (printf "securityRoleMappings[%d].backendRoles must contain at least one ARN" $idx) }}
+{{- end }}
+{{- end }}
+{{- range $idx, $user := $applicationUsers }}
+{{- if not $user.name }}
+{{- fail (printf "applicationUsers[%d].name must be set" $idx) }}
+{{- end }}
+{{- if hasKey $applicationUserNames $user.name }}
+{{- fail (printf "applicationUsers[%d].name (%s) must be unique" $idx $user.name) }}
+{{- end }}
+{{- $_ := set $applicationUserNames $user.name true -}}
+{{- if not $user.username }}
+{{- fail (printf "applicationUsers[%d].username must be set" $idx) }}
+{{- end }}
+{{- if not $user.roleName }}
+{{- fail (printf "applicationUsers[%d].roleName must be set" $idx) }}
+{{- end }}
+{{- if not (hasKey $definedRoles $user.roleName) }}
+{{- fail (printf "applicationUsers[%d].roleName (%s) must match a defined securityRoles entry" $idx $user.roleName) }}
+{{- end }}
+{{- $password := $user.password | default dict -}}
+{{- if not ($password.generate | default false) }}
+{{- $existing := $password.existingSecretRef | default dict -}}
+{{- if not $existing.name }}
+{{- fail (printf "applicationUsers[%d].password.existingSecretRef.name must be set when password.generate=false" $idx) }}
+{{- end }}
+{{- end }}
+{{- $connection := $user.connectionSecret | default dict -}}
+{{- $createConnectionSecret := true -}}
+{{- if hasKey $connection "create" }}
+{{- $createConnectionSecret = $connection.create -}}
+{{- end }}
+{{- if $createConnectionSecret }}
+{{- $_ := set $appConnectionSecretUsers $user.name true -}}
+{{- end }}
+{{- end }}
+{{- $needsDomainArn := gt (len $appConnectionSecretUsers) 0 -}}
+{{- $legacy := .Values.domain | default dict -}}
+{{- $domainName := coalesce .Values.resourceName $legacy.name (include "ack-opensearch-provider.fullname" .) -}}
+{{- $secretName := include "ack-opensearch-provider.connectionSecretName" . -}}
+{{- $scheme := ternary "https" "http" (.Values.domainEndpointOptions.enforceHTTPS | default true) -}}
+{{- $port := ternary 443 80 (.Values.domainEndpointOptions.enforceHTTPS | default true) -}}
+{{- $securityCommands := list -}}
+{{- $applicationUserInitCommands := list -}}
+{{- range $role := $roles }}
+{{- $indexPermissions := list -}}
+{{- range $permission := default (list) $role.indexPermissions }}
+{{- $indexPermissions = append $indexPermissions (dict "index_patterns" (default (list) $permission.indexPatterns) "allowed_actions" (default (list) $permission.allowedActions)) -}}
+{{- end }}
+{{- $rolePayload := dict "cluster_permissions" (default (list) $role.clusterPermissions) "index_permissions" $indexPermissions -}}
+{{- $securityCommands = append $securityCommands (printf "apply_role \\\n  %q \\\n  '%s'" $role.name ($rolePayload | toJson | b64enc)) -}}
+{{- end }}
+{{- range $mapping := $roleMappings }}
+{{- $securityCommands = append $securityCommands (printf "apply_role_mapping \\\n  %q \\\n  '%s'" $mapping.roleName ((dict "backend_roles" (default (list) $mapping.backendRoles)) | toJson | b64enc)) -}}
+{{- end }}
+{{- range $user := $applicationUsers }}
+{{- $password := $user.password | default dict -}}
+{{- $passwordGenerate := $password.generate | default false -}}
+{{- $passwordSecretKey := default "OPENSEARCH_PASSWORD" $password.secretKey -}}
+{{- $passwordSecretName := "" -}}
+{{- if $passwordGenerate }}
+{{- $passwordSecretName = include "ack-opensearch-provider.applicationUserPasswordSecretName" (dict "root" $ "user" $user) -}}
+{{- else }}
+{{- $existing := $password.existingSecretRef | default dict -}}
+{{- $passwordSecretName = $existing.name -}}
+{{- $passwordSecretKey = default "OPENSEARCH_PASSWORD" $existing.key -}}
+{{- end }}
+{{- $segment := include "ack-opensearch-provider.applicationUserNameSegment" (dict "root" $ "user" $user) -}}
+{{- $shellSegment := include "ack-opensearch-provider.applicationUserShellNameSegment" (dict "root" $ "user" $user) -}}
+{{- $connection := $user.connectionSecret | default dict -}}
+{{- $createConnectionSecret := true -}}
+{{- if hasKey $connection "create" }}
+{{- $createConnectionSecret = $connection.create -}}
+{{- end }}
+{{- $connectionKeys := $connection.keys | default dict -}}
+{{- $connectionSecretName := include "ack-opensearch-provider.applicationUserConnectionSecretName" (dict "root" $ "user" $user) -}}
+{{- $usernameKey := default $.Values.connectionSecret.keys.username $connectionKeys.username -}}
+{{- $hostKey := default $.Values.connectionSecret.keys.host $connectionKeys.host -}}
+{{- $portKey := default $.Values.connectionSecret.keys.port $connectionKeys.port -}}
+{{- $urlKey := default $.Values.connectionSecret.keys.url $connectionKeys.url -}}
+{{- $authURLKey := default $.Values.connectionSecret.keys.authURL $connectionKeys.authURL -}}
+{{- $arnKey := default $.Values.connectionSecret.keys.arn $connectionKeys.arn -}}
+{{- $connPasswordKey := default $passwordSecretKey $connectionKeys.password -}}
+{{- $connectionAnnotations := include "ack-opensearch-provider.applicationUserConnectionSecretAnnotations" (dict "root" $ "user" $user) | trim -}}
+{{- $connectionMetadata := dict "labels" ((include "ack-opensearch-provider.labels" $) | fromYaml) -}}
+{{- if $connectionAnnotations }}
+{{- $_ := set $connectionMetadata "annotations" ($connectionAnnotations | fromYaml) -}}
+{{- end }}
+{{- $connectionMetadataPatch := dict "metadata" $connectionMetadata | toJson | b64enc -}}
+{{- $applicationUserPasswordTemplate := printf "{{ index .data %q | base64decode }}" $passwordSecretKey -}}
+{{- $applicationUserInitCommands = append $applicationUserInitCommands (printf "application_user_password_%s=\"$(kubectl get secret %q -o go-template=%q 2>/dev/null || true)\"\nif [ -z \"$application_user_password_%s\" ]; then\n  passwords_ready=false\nelse\n  printf '%%s' \"$application_user_password_%s\" >/work/application-user-password-%s\nfi" $shellSegment $passwordSecretName $applicationUserPasswordTemplate $shellSegment $shellSegment $segment) -}}
+{{- if $createConnectionSecret }}
+{{- $applicationUserInitCommands = append $applicationUserInitCommands (printf "if [ -n \"$application_user_password_%s\" ]; then\n  kubectl create secret generic %q \\\n    --from-literal=%s=%q \\\n    --from-literal=%s=\"${application_user_password_%s}\" \\\n    --from-literal=%s=\"${endpoint}\" \\\n    --from-literal=%s=\"${endpoint_port}\" \\\n    --from-literal=%s=\"${endpoint_scheme}://${endpoint}:${endpoint_port}\" \\\n    --from-literal=%s=\"${endpoint_scheme}://%s:${application_user_password_%s}@${endpoint}:${endpoint_port}\" \\\n    --from-literal=%s=\"${domain_arn}\" \\\n    --dry-run=client -o yaml | kubectl apply -f - >/dev/null\n  echo '%s' | base64 -d > /tmp/application-user-connection-%s-metadata.json\n  kubectl patch secret %q --type merge --patch-file /tmp/application-user-connection-%s-metadata.json >/dev/null\nfi" $shellSegment $connectionSecretName $usernameKey $user.username $connPasswordKey $shellSegment $hostKey $portKey $urlKey $authURLKey $user.username $shellSegment $arnKey $connectionMetadataPatch $segment $connectionSecretName $segment) -}}
+{{- end }}
+{{- $securityCommands = append $securityCommands (printf "apply_application_user \\\n  %q \\\n  /work/application-user-password-%s \\\n  '%s'" $user.username $segment ((list $user.roleName) | toJson | b64enc)) -}}
+{{- end }}
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: {{ include "ack-opensearch-provider.securityBootstrapServiceAccountName" . }}
+  labels:
+    {{- include "ack-opensearch-provider.labels" . | nindent 4 }}
+  annotations:
+    argocd.argoproj.io/hook: Sync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation,HookSucceeded
+    argocd.argoproj.io/sync-wave: "30"
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: {{ include "ack-opensearch-provider.securityBootstrapRoleName" . }}
+  labels:
+    {{- include "ack-opensearch-provider.labels" . | nindent 4 }}
+  annotations:
+    argocd.argoproj.io/hook: Sync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation,HookSucceeded
+    argocd.argoproj.io/sync-wave: "30"
+rules:
+  - apiGroups:
+      - ""
+    resources:
+      - secrets
+    verbs:
+      - get
+      - create
+      - update
+      - patch
+  - apiGroups:
+      - opensearchservice.services.k8s.aws
+    resources:
+      - domains
+    verbs:
+      - get
+      - list
+      - watch
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: {{ include "ack-opensearch-provider.securityBootstrapRoleBindingName" . }}
+  labels:
+    {{- include "ack-opensearch-provider.labels" . | nindent 4 }}
+  annotations:
+    argocd.argoproj.io/hook: Sync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation,HookSucceeded
+    argocd.argoproj.io/sync-wave: "30"
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: {{ include "ack-opensearch-provider.securityBootstrapRoleName" . }}
+subjects:
+  - kind: ServiceAccount
+    name: {{ include "ack-opensearch-provider.securityBootstrapServiceAccountName" . }}
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "ack-opensearch-provider.securityBootstrapJobName" . }}
+  labels:
+    {{- include "ack-opensearch-provider.labels" . | nindent 4 }}
+  annotations:
+    argocd.argoproj.io/hook: Sync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation,HookSucceeded
+    argocd.argoproj.io/sync-wave: "30"
+spec:
+  backoffLimit: {{ $bootstrap.backoffLimit }}
+  activeDeadlineSeconds: {{ $bootstrap.activeDeadlineSeconds }}
+  ttlSecondsAfterFinished: {{ $bootstrap.ttlSecondsAfterFinished }}
+  template:
+    metadata:
+      labels:
+        {{- include "ack-opensearch-provider.labels" . | nindent 8 }}
+    spec:
+      restartPolicy: OnFailure
+      serviceAccountName: {{ include "ack-opensearch-provider.securityBootstrapServiceAccountName" . }}
+      volumes:
+        - name: security-bootstrap-workdir
+          emptyDir: {}
+      initContainers:
+        - name: wait-for-connection
+          image: {{ $bootstrap.kubectlImage | quote }}
+          command:
+            - /bin/sh
+            - -ec
+          volumeMounts:
+            - name: security-bootstrap-workdir
+              mountPath: /work
+          args:
+            - |
+              domain_name={{ $domainName | quote }}
+              secret_name={{ $secretName | quote }}
+              username_key={{ .Values.connectionSecret.keys.username | quote }}
+              password_key={{ .Values.auth.password.key | quote }}
+              endpoint_scheme={{ $scheme | quote }}
+              endpoint_port={{ $port | quote }}
+              elapsed=0
+              poll_interval=10
+              max_wait={{ $bootstrap.activeDeadlineSeconds }}
+
+              while [ "$elapsed" -lt "$max_wait" ]; do
+                endpoint="$(kubectl get domains.opensearchservice.services.k8s.aws "$domain_name" -o jsonpath='{.status.endpoint}' 2>/dev/null || true)"
+                domain_arn="$(kubectl get domains.opensearchservice.services.k8s.aws "$domain_name" -o jsonpath='{.status.ackResourceMetadata.arn}' 2>/dev/null || true)"
+                username_template='{{ "{{" }} index .data "'$username_key'" | base64decode {{ "}}" }}'
+                password_template='{{ "{{" }} index .data "'$password_key'" | base64decode {{ "}}" }}'
+                username="$(kubectl get secret "$secret_name" -o go-template="$username_template" 2>/dev/null || true)"
+                password="$(kubectl get secret "$secret_name" -o go-template="$password_template" 2>/dev/null || true)"
+                passwords_ready=true
+
+                if [ -n "$endpoint" ] && [ -n "$username" ] && [ -n "$password" ]{{- if $needsDomainArn }} && [ -n "$domain_arn" ]{{- end }}; then
+{{- range $command := $applicationUserInitCommands }}
+{{ $command | nindent 18 }}
+{{- end }}
+                  if [ "$passwords_ready" = true ]; then
+                    printf '%s' "${endpoint_scheme}://${endpoint}:${endpoint_port}" >/work/opensearch-endpoint
+                    printf '%s' "$username" >/work/opensearch-username
+                    printf '%s' "$password" >/work/opensearch-password
+                    exit 0
+                  fi
+                fi
+
+                sleep "$poll_interval"
+                elapsed=$((elapsed + poll_interval))
+              done
+
+              echo "Timed out waiting for domain endpoint, admin credentials, and application user passwords"
+              exit 1
+      containers:
+        - name: bootstrap-security
+          image: {{ $bootstrap.image | quote }}
+          command:
+            - /bin/sh
+            - -ec
+          volumeMounts:
+            - name: security-bootstrap-workdir
+              mountPath: /work
+          args:
+            - |
+              OPENSEARCH_ENDPOINT="$(cat /work/opensearch-endpoint)"
+              OPENSEARCH_USERNAME="$(cat /work/opensearch-username)"
+              OPENSEARCH_ADMIN_PASSWORD="$(cat /work/opensearch-password)"
+
+              json_escape() {
+                printf '%s' "$1" | sed \
+                  -e 's/\\/\\\\/g' \
+                  -e 's/"/\\"/g' \
+                  -e 's/\r/\\r/g' \
+                  -e ':a;N;$!ba;s/\n/\\n/g' \
+                  -e 's/\t/\\t/g'
+              }
+
+              put_security_resource() {
+                resource_path="$1"
+                payload_file="$2"
+
+                status_code="$(
+                  curl -sS \
+                    -o /tmp/security-api-response.json \
+                    -w '%{http_code}' \
+                    -u "${OPENSEARCH_USERNAME}:${OPENSEARCH_ADMIN_PASSWORD}" \
+                    -H 'Content-Type: application/json' \
+                    -X PUT \
+                    "${OPENSEARCH_ENDPOINT}/${resource_path}" \
+                    --data-binary @"${payload_file}"
+                )"
+
+                if [ "$status_code" -lt 200 ] || [ "$status_code" -ge 300 ]; then
+                  echo "Failed to apply ${resource_path}: HTTP ${status_code}"
+                  cat /tmp/security-api-response.json
+                  exit 1
+                fi
+              }
+
+              apply_role() {
+                role_name="$1"
+                payload_b64="$2"
+                printf '%s' "$payload_b64" | base64 -d >/tmp/security-role.json
+                put_security_resource "_plugins/_security/api/roles/${role_name}" /tmp/security-role.json
+              }
+
+              apply_role_mapping() {
+                role_name="$1"
+                payload_b64="$2"
+                printf '%s' "$payload_b64" | base64 -d >/tmp/security-role-mapping.json
+                put_security_resource "_plugins/_security/api/rolesmapping/${role_name}" /tmp/security-role-mapping.json
+              }
+
+              apply_application_user() {
+                username="$1"
+                password_file="$2"
+                roles_b64="$3"
+                roles_json="$(printf '%s' "$roles_b64" | base64 -d)"
+                password="$(cat "$password_file")"
+                escaped_password="$(json_escape "$password")"
+                cat > /tmp/security-internal-user.json <<EOF
+              {"password":"${escaped_password}","opendistro_security_roles":${roles_json}}
+              EOF
+                put_security_resource "_plugins/_security/api/internalusers/${username}" /tmp/security-internal-user.json
+              }
+{{- range $command := $securityCommands }}
+{{ $command | nindent 14 }}
+{{- end }}
+{{- end }}
