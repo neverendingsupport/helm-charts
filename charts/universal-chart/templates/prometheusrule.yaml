@@ -1,4 +1,7 @@
-{{- if and .Values.prometheusRule.enabled (or .Values.prometheusRule.groups .Values.prometheusRule.rules) }}
+{{- $hpaScalingRules := default list .Values.autoscaling.hpaScalingRules }}
+{{- $hasHpaScalingRules := and .Values.autoscaling.enabled (gt (len $hpaScalingRules) 0) }}
+{{- $hasConfiguredRules := and .Values.prometheusRule.enabled (or .Values.prometheusRule.groups .Values.prometheusRule.rules) }}
+{{- if or $hasConfiguredRules $hasHpaScalingRules }}
 apiVersion: monitoring.coreos.com/v1
 kind: PrometheusRule
 metadata:
@@ -15,6 +18,7 @@ metadata:
 spec:
   groups:
     {{- $defaultRuleLabels := .Values.prometheusRule.defaultRuleLabels | default dict }}
+    {{- if $hasConfiguredRules }}
     {{- if .Values.prometheusRule.groups }}
     {{- range .Values.prometheusRule.groups }}
     {{- $group := deepCopy . }}
@@ -32,7 +36,7 @@ spec:
     {{- $_ := set $group "rules" $renderedRules }}
     {{- toYaml (list $group) | nindent 4 }}
     {{- end }}
-    {{- else }}
+    {{- else if .Values.prometheusRule.rules }}
     - name: {{ include "universal-chart.fullname" . }}
       rules:
         {{- $renderedRules := list }}
@@ -47,5 +51,32 @@ spec:
         {{- $renderedRules = append $renderedRules $rule }}
         {{- end }}
         {{- toYaml $renderedRules | nindent 8 }}
+    {{- end }}
+    {{- end }}
+    {{- if $hasHpaScalingRules }}
+    {{- $scalingGroups := dict }}
+    {{- $scalingGroupOrder := list }}
+    {{- $defaultScalingGroupName := printf "%s.hpa-scaling" (include "universal-chart.fullname" .) }}
+    {{- range $index, $rule := $hpaScalingRules }}
+    {{- $groupName := default $defaultScalingGroupName $rule.groupName }}
+    {{- $interval := default "" $rule.interval }}
+    {{- $groupKey := printf "%s|%s" $groupName $interval }}
+    {{- if not (hasKey $scalingGroups $groupKey) }}
+    {{- $_ := set $scalingGroups $groupKey (dict "name" $groupName "interval" $interval "rules" (list)) }}
+    {{- $scalingGroupOrder = append $scalingGroupOrder $groupKey }}
+    {{- end }}
+    {{- $labels := mergeOverwrite (deepCopy (default dict $rule.labels)) (dict "hpa_metric" "true") }}
+    {{- $recordingRule := dict "record" (required (printf "autoscaling.hpaScalingRules[%d].name is required" $index) $rule.name) "expr" (required (printf "autoscaling.hpaScalingRules[%d].expr is required" $index) $rule.expr) "labels" $labels }}
+    {{- $group := get $scalingGroups $groupKey }}
+    {{- $_ := set $group "rules" (append (get $group "rules") $recordingRule) }}
+    {{- end }}
+    {{- range $groupKey := $scalingGroupOrder }}
+    {{- $group := get $scalingGroups $groupKey }}
+    {{- $renderedGroup := dict "name" (get $group "name") "rules" (get $group "rules") }}
+    {{- if get $group "interval" }}
+    {{- $_ := set $renderedGroup "interval" (get $group "interval") }}
+    {{- end }}
+    {{- toYaml (list $renderedGroup) | nindent 4 }}
+    {{- end }}
     {{- end }}
 {{- end }}

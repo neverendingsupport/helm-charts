@@ -20,6 +20,8 @@ Kubernetes primitives plus a small number of opinionated platform integrations.
 - `extraManifests` for app-adjacent resources such as `ExternalSecret`,
   `Database`, `DbUser`, or one-off Jobs
 - optional `ServiceMonitor`
+- first-class HPA scaling from Prometheus-backed external metrics through
+  `autoscaling.hpaScalingRules`
 - optional Redis support
 - optional S3 bucket creation via ACK-backed resources
 - extra volumes and mounts
@@ -50,6 +52,35 @@ When the chart is used from Argo multi-source applications:
 
 Treat it as the final deploy-time override so nothing later in the stack can
 silently replace image tags or release pins.
+
+## Scaling From Prometheus Metrics
+
+Use `autoscaling.hpaScalingRules` when a workload should scale from an
+application metric exposed through Prometheus and `prometheus-adapter`. Each
+entry creates a Prometheus recording rule labeled `hpa_metric: "true"` and adds
+an External metric to the chart-managed `HorizontalPodAutoscaler`.
+
+```yaml
+prometheusRule:
+  additionalLabels:
+    release: kube-prometheus-stack
+
+autoscaling:
+  enabled: true
+  targetCPUUtilizationPercentage: null
+  hpaScalingRules:
+    - name: myapp_queue_depth
+      expr: |
+        sum(
+          myapp_queue_messages_ready{namespace="myapp"}
+        )
+      target:
+        type: AverageValue
+        averageValue: "100"
+```
+
+Keep CPU or memory targets enabled to combine them with the external metric, or
+set both target fields to `null` for external-only scaling.
 
 ## Generated Values Reference
 
