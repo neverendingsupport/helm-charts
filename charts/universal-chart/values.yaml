@@ -353,6 +353,9 @@ serviceMonitor:
 #       additionalProperties: true
 # @schema
 # -- Configure a PrometheusRule for evaluating alerting rules against scraped metrics.
+# Recording rules generated from `autoscaling.hpaScalingRules` use this
+# resource's metadata labels and annotations even when `prometheusRule.enabled`
+# is false.
 prometheusRule:
   # -- Whether to create a PrometheusRule resource.
   enabled: false
@@ -570,6 +573,49 @@ revisionHistoryLimit: 3
 #   annotations:
 #     type: object
 #     additionalProperties: true
+#   behavior:
+#     type: object
+#     additionalProperties: true
+#   hpaScalingRules:
+#     type: array
+#     items:
+#       type: object
+#       required:
+#         - name
+#         - expr
+#         - target
+#       properties:
+#         name:
+#           type: string
+#           pattern: ^[a-zA-Z_:][a-zA-Z0-9_:]*$
+#         expr:
+#           type: string
+#         labels:
+#           type: object
+#           additionalProperties:
+#             type: string
+#         selector:
+#           type: object
+#           additionalProperties:
+#             type: string
+#         target:
+#           type: object
+#           properties:
+#             type:
+#               type: string
+#               enum:
+#                 - Value
+#                 - AverageValue
+#             value:
+#               type: string
+#             averageValue:
+#               type: string
+#           additionalProperties: false
+#         groupName:
+#           type: string
+#         interval:
+#           type: string
+#       additionalProperties: false
 # @schema
 # -- section for configuring autoscaling.
 # More information can be found here: https://kubernetes.io/docs/concepts/workloads/autoscaling/
@@ -586,6 +632,21 @@ autoscaling:
   targetMemoryUtilizationPercentage: null
   # -- Additional annotations to add to the HorizontalPodAutoscaler metadata.
   annotations: {}
+  # -- Optional HorizontalPodAutoscaler behavior defaults.
+  behavior: {}
+  # -- Prometheus-backed external metric scaling rules. Each rule generates a
+  # Prometheus recording rule labeled `hpa_metric: "true"` and adds an External
+  # metric to the chart-managed HPA. Set `targetCPUUtilizationPercentage: null`
+  # and `targetMemoryUtilizationPercentage: null` for external-only scaling.
+  hpaScalingRules: []
+  # - name: myapp_queue_depth
+  #   expr: |
+  #     sum(
+  #       myapp_queue_messages_ready{namespace="myapp"}
+  #     )
+  #   target:
+  #     type: AverageValue
+  #     averageValue: "100"
 
 # -- Additional volumes to create
 volumes: []
