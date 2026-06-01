@@ -1,0 +1,23 @@
+image:
+  repository: ghcr.io/example/app
+  tag: "1.2.3"
+ingress:
+  enabled: true
+  className: nginx
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: "/$1"
+    nginx.ingress.kubernetes.io/use-regex: "true"
+  hosts:
+    - host: app.example.com
+      paths:
+        - path: /(app)(/|$)(.*)
+          pathType: ImplementationSpecific
+  tls:
+    - secretName: app-example-com
+      hosts:
+        - app.example.com
+serviceMonitor:
+  enabled: true
+  path: /app/metrics
+  blockExternalIngress:
+    enabled: false

@@ -83,6 +83,66 @@ Of note: the ingress configuration always goes in the Argo Application, not in
 your values YAML. An explanation of how Argo Applications work is documented
 elsewhere (TODO: add link here)
 
+## Public Metrics Blocking
+
+When both `ingress.enabled` and `serviceMonitor.enabled` are true, this chart
+creates an additional ingress-nginx Ingress that denies public access to the
+metrics path. The default block path is `serviceMonitor.path`; if that value is
+null, the block path defaults to `/metrics` to match Prometheus' default scrape
+path.
+
+The blocking Ingress renders only for ingress classes listed in
+`serviceMonitor.blockExternalIngress.ingressClassNames`, which defaults to
+`["", "nginx"]`. Include `""` for classless Ingresses handled by a default
+ingress-nginx controller. If your ingress-nginx controller uses another class
+name, add it explicitly:
+
+```yaml
+serviceMonitor:
+  blockExternalIngress:
+    ingressClassNames:
+      - ""
+      - nginx
+      - nginx-internal
+```
+
+The chart fails to render instead of silently leaving metrics public when the
+configured Ingress class is not known to be ingress-nginx, when the primary
+Ingress uses nginx regex or rewrite annotations, or when the primary Ingress
+already declares the metrics path or a metrics subpath. Fix the Ingress shape,
+or disable the block only when public metrics exposure is intentional:
+
+```yaml
+serviceMonitor:
+  blockExternalIngress:
+    enabled: false
+```
+
+If the public route differs from the in-cluster scrape path, set
+`serviceMonitor.blockExternalIngress.path`:
+
+```yaml
+serviceMonitor:
+  path: /internal/metrics
+  blockExternalIngress:
+    path: /app/metrics
+```
+
+From this chart directory, verify the rendered blocking Ingress before rollout:
+
+```bash
+helm template my-release . \
+  --set image.repository=example.com/app \
+  --set image.tag=latest \
+  --set ingress.enabled=true \
+  --set ingress.className=nginx \
+  --set ingress.hosts[0].host=app.example.com \
+  --set ingress.hosts[0].paths[0].path=/ \
+  --set ingress.hosts[0].paths[0].pathType=Prefix \
+  --set serviceMonitor.enabled=true \
+  --show-only templates/metrics-block-ingress.yaml
+```
+
 ## Requirements
 
 | Repository | Name | Version |
@@ -176,11 +236,16 @@ elsewhere (TODO: add link here)
 | serviceAccount.automount | bool | `true` |  |
 | serviceAccount.create | bool | `true` |  |
 | serviceAccount.name | string | `""` |  |
-| serviceMonitor | object | `{"alternatePort":null,"enabled":false,"interval":null,"path":"/metrics"}` | Configure a ServiceMonitor for scraping metrics from the service. |
+| serviceMonitor | object | `{"alternatePort":null,"blockExternalIngress":{"denylistSourceRange":"0.0.0.0/0,::/0","enabled":true,"ingressClassNames":["","nginx"],"path":null},"enabled":false,"interval":null,"path":"/metrics"}` | Configure a ServiceMonitor for scraping metrics from the service. |
 | serviceMonitor.alternatePort | string | `nil` | Optional alternate port to scrape via a dedicated "<release>-metrics" Service. When null, the ServiceMonitor targets the main service as before. |
+| serviceMonitor.blockExternalIngress | object | `{"denylistSourceRange":"0.0.0.0/0,::/0","enabled":true,"ingressClassNames":["","nginx"],"path":null}` | Block public nginx ingress access to the metrics path while allowing Prometheus to continue scraping through the in-cluster ServiceMonitor. This is enabled by default because public metrics endpoints can expose sensitive service internals. Disable only when the metrics endpoint must be publicly reachable. |
+| serviceMonitor.blockExternalIngress.denylistSourceRange | string | `"0.0.0.0/0,::/0"` | Comma-separated CIDR source ranges denied by the generated metrics-blocking Ingress. |
+| serviceMonitor.blockExternalIngress.enabled | bool | `true` | Whether to create the additional nginx Ingress when ingress.enabled, serviceMonitor.enabled, an allowed ingress class, and a block path are all present. |
+| serviceMonitor.blockExternalIngress.ingressClassNames | list | `["","nginx"]` | Ingress class names known to be served by ingress-nginx. Include "" for classless Ingresses handled by a default ingress-nginx controller. |
+| serviceMonitor.blockExternalIngress.path | string | `nil` | Public ingress path to deny. When null, serviceMonitor.path is used. When both values are null, "/metrics" is used to match Prometheus' default scrape path. Set this when the public route differs from the in-cluster scrape path. |
 | serviceMonitor.enabled | bool | `false` | Whether to create a ServiceMonitor resource. |
 | serviceMonitor.interval | string | `nil` | Optional scrape interval (in seconds). When null, the operator default is used. |
-| serviceMonitor.path | string | `"/metrics"` | HTTP path to scrape for metrics. |
+| serviceMonitor.path | string | `"/metrics"` | HTTP path to scrape for metrics. Must start with "/". |
 | spread_azs | boolean | `false` | Add a topology spread rule across Karpenter availability zones. |
 | spread_spot | boolean | `false` | Add a topology spread rule across Karpenter capacity types (spot vs on-demand). |
 | startupProbe | string | `nil` | Configure a startup probe to check if the application has started successfully. The startup probe is used to give the application more time to start up before the liveness probe takes over. This is especially useful for applications that take a long time to initialize. Once the startup probe succeeds once, Kubernetes will stop using it and switch to the liveness probe for ongoing health checks. More information can be found here: https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/ Example configuration:   startupProbe:     httpGet:       path: /diagnostics/health       port: http     periodSeconds: 5     failureThreshold: 60 |

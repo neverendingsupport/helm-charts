@@ -690,6 +690,17 @@ def test_service_monitor_rejects_invalid_enabled_value(helm_runner) -> None:
         )
 
 
+def test_service_monitor_rejects_invalid_path_value(helm_runner) -> None:
+    """Reject scrape paths that cannot also be used as ingress paths."""
+
+    with pytest.raises(HelmTemplateError):
+        render_chart(
+            helm_runner,
+            CHART,
+            values={"serviceMonitor": {"enabled": True, "path": "metrics"}},
+        )
+
+
 def test_service_monitor_interval_rejects_negative_values(helm_runner) -> None:
     """Ensure the schema rejects negative interval values."""
 

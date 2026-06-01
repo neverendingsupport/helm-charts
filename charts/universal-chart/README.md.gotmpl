@@ -27,6 +27,66 @@ Of note: the ingress configuration always goes in the Argo Application, not in
 your values YAML. An explanation of how Argo Applications work is documented
 elsewhere (TODO: add link here)
 
+## Public Metrics Blocking
+
+When both `ingress.enabled` and `serviceMonitor.enabled` are true, this chart
+creates an additional ingress-nginx Ingress that denies public access to the
+metrics path. The default block path is `serviceMonitor.path`; if that value is
+null, the block path defaults to `/metrics` to match Prometheus' default scrape
+path.
+
+The blocking Ingress renders only for ingress classes listed in
+`serviceMonitor.blockExternalIngress.ingressClassNames`, which defaults to
+`["", "nginx"]`. Include `""` for classless Ingresses handled by a default
+ingress-nginx controller. If your ingress-nginx controller uses another class
+name, add it explicitly:
+
+```yaml
+serviceMonitor:
+  blockExternalIngress:
+    ingressClassNames:
+      - ""
+      - nginx
+      - nginx-internal
+```
+
+The chart fails to render instead of silently leaving metrics public when the
+configured Ingress class is not known to be ingress-nginx, when the primary
+Ingress uses nginx regex or rewrite annotations, or when the primary Ingress
+already declares the metrics path or a metrics subpath. Fix the Ingress shape,
+or disable the block only when public metrics exposure is intentional:
+
+```yaml
+serviceMonitor:
+  blockExternalIngress:
+    enabled: false
+```
+
+If the public route differs from the in-cluster scrape path, set
+`serviceMonitor.blockExternalIngress.path`:
+
+```yaml
+serviceMonitor:
+  path: /internal/metrics
+  blockExternalIngress:
+    path: /app/metrics
+```
+
+From this chart directory, verify the rendered blocking Ingress before rollout:
+
+```bash
+helm template my-release . \
+  --set image.repository=example.com/app \
+  --set image.tag=latest \
+  --set ingress.enabled=true \
+  --set ingress.className=nginx \
+  --set ingress.hosts[0].host=app.example.com \
+  --set ingress.hosts[0].paths[0].path=/ \
+  --set ingress.hosts[0].paths[0].pathType=Prefix \
+  --set serviceMonitor.enabled=true \
+  --show-only templates/metrics-block-ingress.yaml
+```
+
 
 {{ template "chart.requirementsSection" . }}
 

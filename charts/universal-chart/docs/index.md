@@ -19,7 +19,8 @@ Kubernetes primitives plus a small number of opinionated platform integrations.
 - `extraEnvVars`, `extraEnvSecrets`, and `extraEnvConfigmaps`
 - `extraManifests` for app-adjacent resources such as `ExternalSecret`,
   `Database`, `DbUser`, or one-off Jobs
-- optional `ServiceMonitor`
+- optional `ServiceMonitor`, with public nginx ingress access to the metrics
+  path blocked by default
 - first-class HPA scaling from Prometheus-backed external metrics through
   `autoscaling.hpaScalingRules`
 - optional Redis support
@@ -27,6 +28,37 @@ Kubernetes primitives plus a small number of opinionated platform integrations.
 - extra volumes and mounts
 - spread helpers for AZ and spot-aware scheduling
 - `terminationGracePeriodSeconds` for workloads that need slower shutdown
+
+## Public Metrics Blocking
+
+When `serviceMonitor.enabled` and nginx ingress are both enabled, the chart
+renders a separate metrics-blocking Ingress by default. This also applies to
+classless Ingresses served by the default ingress-nginx controller. The block
+Ingress uses `nginx.ingress.kubernetes.io/denylist-source-range` for the
+ServiceMonitor path, so Prometheus can keep scraping through the in-cluster
+service while external requests to the public metrics route receive `403`.
+If an explicit non-`nginx` ingress class is set, the chart fails to render
+instead of silently leaving metrics public.
+If an ingress-nginx controller uses another class name, add that name to
+`serviceMonitor.blockExternalIngress.ingressClassNames`.
+
+The chart fails to render if the primary Ingress explicitly declares the
+metrics path or a metrics subpath while the block Ingress is active. Redirects
+to the metrics path can stay on other primary Ingress paths; the redirected
+metrics request is then handled by the block Ingress.
+
+The chart fails to render when metrics blocking is enabled and the primary
+Ingress uses nginx regex matching or `rewrite-target`. In that case,
+ingress-nginx path precedence can route around a separate block Ingress. Remove
+the regex/rewrite ingress annotations, or set
+`serviceMonitor.blockExternalIngress.enabled: false` only when public metrics
+are intentional.
+
+Set `serviceMonitor.blockExternalIngress.enabled: false` only for apps that
+intentionally expose metrics publicly. If the public route differs from the
+in-cluster scrape path, set `serviceMonitor.blockExternalIngress.path`. When
+both the block path and `serviceMonitor.path` are null, the block path defaults
+to `/metrics`, matching Prometheus' default scrape path.
 
 ## Recommended Ownership Split
 
