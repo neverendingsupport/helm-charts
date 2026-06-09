@@ -252,13 +252,13 @@ connectionSecret:
   annotations: {}
   # -- Output key names written into the generated connection secret.
   keys:
-    username: REDIS_USERNAME
-    host: REDIS_HOST
-    port: REDIS_PORT
-    tls: REDIS_TLS
-    url: REDIS_URL
-    authURL: REDIS_AUTH_URL
-    arn: REDIS_ARN
+    username: CACHE_USERNAME
+    host: CACHE_HOST
+    port: CACHE_PORT
+    tls: CACHE_TLS
+    url: CACHE_URL
+    authURL: CACHE_AUTH_URL
+    arn: CACHE_ARN
 
 # @schema
 # type: object
@@ -300,7 +300,7 @@ connectionSecret:
 # @schema
 # -- Authentication data written into the generated connection secret and used for `spec.authToken`.
 auth:
-  # -- Disable AUTH by default, or use a generated Redis password or existing secret reference.
+  # -- Disable AUTH by default, or use a generated cache password or existing secret reference.
   mode: disabled
   # -- Username written to the connection secret.
   username: default
@@ -313,7 +313,7 @@ auth:
     namespace: ""
   password:
     # -- Key used for the generated password in the connection secret and `spec.authToken`.
-    key: REDIS_PASSWORD
+    key: CACHE_PASSWORD
     # -- Generated password length.
     length: 32
     # -- Include digits in generated password.
@@ -409,13 +409,13 @@ fieldExport:
   mappings:
     - name: host
       path: ".status.nodeGroups.0.primaryEndpoint.address"
-      key: REDIS_HOST
+      key: CACHE_HOST
     - name: port
       path: ".status.nodeGroups.0.primaryEndpoint.port"
-      key: REDIS_PORT
+      key: CACHE_PORT
     - name: arn
       path: ".status.ackResourceMetadata.arn"
-      key: REDIS_ARN
+      key: CACHE_ARN
 
 # @schema
 # type: object
@@ -448,7 +448,7 @@ pushSecret:
   name: ""
   storeKind: SecretStore
   refreshInterval: 1h
-  sourceKey: REDIS_HOST
+  sourceKey: CACHE_HOST
   target:
     # -- Remote secret name in the target provider.
     name: ""
