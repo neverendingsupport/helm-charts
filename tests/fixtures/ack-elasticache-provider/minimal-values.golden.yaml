@@ -11,12 +11,12 @@ metadata:
     app.kubernetes.io/managed-by: Helm
 type: Opaque
 stringData:
-  REDIS_USERNAME: "default"
-  REDIS_PORT: "6379"
-  REDIS_TLS: "false"
-  REDIS_URL: ""
-  REDIS_AUTH_URL: ""
-  REDIS_PASSWORD: ""
+  CACHE_USERNAME: "default"
+  CACHE_PORT: "6379"
+  CACHE_TLS: "false"
+  CACHE_URL: ""
+  CACHE_AUTH_URL: ""
+  CACHE_PASSWORD: ""
 ---
 # Source: ack-elasticache-provider/templates/field-exports.yaml
 apiVersion: services.k8s.aws/v1alpha1
@@ -38,7 +38,7 @@ spec:
   to:
     kind: secret
     name: ack-elasticache-provider-connection
-    key: REDIS_HOST
+    key: CACHE_HOST
 ---
 # Source: ack-elasticache-provider/templates/field-exports.yaml
 apiVersion: services.k8s.aws/v1alpha1
@@ -60,7 +60,7 @@ spec:
   to:
     kind: secret
     name: ack-elasticache-provider-connection
-    key: REDIS_PORT
+    key: CACHE_PORT
 ---
 # Source: ack-elasticache-provider/templates/field-exports.yaml
 apiVersion: services.k8s.aws/v1alpha1
@@ -82,7 +82,7 @@ spec:
   to:
     kind: secret
     name: ack-elasticache-provider-connection
-    key: REDIS_ARN
+    key: CACHE_ARN
 ---
 # Source: ack-elasticache-provider/templates/replicationgroup.yaml
 apiVersion: elasticache.services.k8s.aws/v1alpha1

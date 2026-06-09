@@ -1,0 +1,7 @@
+replicationGroupID: sample-valkey-cache
+description: Sample Valkey ElastiCache replication group
+engine: valkey
+engineVersion: "7.2"
+cacheNodeType: cache.t4g.micro
+numNodeGroups: 1
+replicasPerNodeGroup: 0
