@@ -8,7 +8,5 @@ connectionSecret:
   name: cache-connection
 auth:
   mode: password
-  password:
-    key: REDIS_PASSWORD
 sequencedConnection:
   enabled: true

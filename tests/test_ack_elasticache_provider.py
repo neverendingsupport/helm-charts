@@ -19,7 +19,7 @@ CHART = ChartContext("ack-elasticache-provider")
 def test_chart_renders_replication_group_with_minimal_values(
     helm_runner,
 ) -> None:
-    """Ensure the default auth mode renders a no-auth Redis setup."""
+    """Ensure the default auth mode renders a no-auth cache setup."""
 
     rendered = render_chart(helm_runner, CHART)
     manifests = load_manifests(rendered)
@@ -29,12 +29,12 @@ def test_chart_renders_replication_group_with_minimal_values(
     assert get_manifest(manifests, "Secret")
     assert all(m.get("kind") != "Password" for m in manifests)
     assert all(m.get("kind") != "ExternalSecret" for m in manifests)
-    assert secret["stringData"]["REDIS_USERNAME"] == "default"
-    assert secret["stringData"]["REDIS_PASSWORD"] == ""
-    assert secret["stringData"]["REDIS_PORT"] == "6379"
-    assert secret["stringData"]["REDIS_TLS"] == "false"
-    assert secret["stringData"]["REDIS_URL"] == ""
-    assert secret["stringData"]["REDIS_AUTH_URL"] == ""
+    assert secret["stringData"]["CACHE_USERNAME"] == "default"
+    assert secret["stringData"]["CACHE_PASSWORD"] == ""
+    assert secret["stringData"]["CACHE_PORT"] == "6379"
+    assert secret["stringData"]["CACHE_TLS"] == "false"
+    assert secret["stringData"]["CACHE_URL"] == ""
+    assert secret["stringData"]["CACHE_AUTH_URL"] == ""
     assert replication_group["spec"]["replicationGroupID"] == "sample-cache"
     assert replication_group["spec"]["replicasPerNodeGroup"] == 0
     assert "authToken" not in replication_group["spec"]
@@ -87,6 +87,96 @@ def test_replication_group_supports_translated_cache_cluster_fields(
     assert replication_group["spec"]["transitEncryptionEnabled"] is True
 
 
+def test_valkey_engine_uses_cache_connection_secret_keys(
+    helm_runner,
+) -> None:
+    """Ensure Valkey renders engine-agnostic connection secret keys."""
+
+    rendered = render_chart(
+        helm_runner,
+        CHART,
+        values={
+            "engine": "valkey",
+            "engineVersion": "7.2",
+            "auth.mode": "password",
+        },
+    )
+    manifests = load_manifests(rendered)
+    replication_group = get_manifest(manifests, "ReplicationGroup")
+    external_secret = get_manifest(manifests, "ExternalSecret")
+    exports = [m for m in manifests if m.get("kind") == "FieldExport"]
+
+    assert replication_group["spec"]["engine"] == "valkey"
+    assert replication_group["spec"]["engineVersion"] == "7.2"
+    assert replication_group["spec"]["authToken"] == {
+        "name": "ack-elasticache-provider-connection",
+        "key": "CACHE_PASSWORD",
+    }
+    assert external_secret["spec"]["data"][0]["secretKey"] == ("CACHE_PASSWORD")
+
+    template_data = external_secret["spec"]["target"]["template"]["data"]
+    assert set(template_data) == {
+        "CACHE_USERNAME",
+        "CACHE_PORT",
+        "CACHE_TLS",
+        "CACHE_URL",
+        "CACHE_AUTH_URL",
+    }
+    assert {item["spec"]["to"]["key"] for item in exports} == {
+        "CACHE_HOST",
+        "CACHE_PORT",
+        "CACHE_ARN",
+    }
+
+
+def test_connection_secret_key_overrides_render_related_resources(
+    helm_runner,
+) -> None:
+    """Ensure explicit key overrides render in related resources."""
+
+    rendered = render_chart(
+        helm_runner,
+        CHART,
+        values={
+            "engine": "valkey",
+            "fieldExport.mappings": [
+                {
+                    "name": "host",
+                    "path": ".status.nodeGroups.0.primaryEndpoint.address",
+                    "key": "CUSTOM_HOST",
+                },
+                {
+                    "name": "port",
+                    "path": ".status.nodeGroups.0.primaryEndpoint.port",
+                    "key": "CUSTOM_PORT",
+                },
+                {
+                    "name": "arn",
+                    "path": ".status.ackResourceMetadata.arn",
+                    "key": "CUSTOM_ARN",
+                },
+            ],
+            "pushSecret.enabled": True,
+            "pushSecret.sourceKey": "CUSTOM_HOST",
+            "pushSecret.target.provider": "aws-secrets-manager",
+            "pushSecret.target.name": "aws/elasticache/valkey",
+            "pushSecret.target.type": "connection",
+        },
+    )
+    manifests = load_manifests(rendered)
+    exports = [m for m in manifests if m.get("kind") == "FieldExport"]
+    push_secret = get_manifest(manifests, "PushSecret")
+
+    assert {item["spec"]["to"]["key"] for item in exports} == {
+        "CUSTOM_HOST",
+        "CUSTOM_PORT",
+        "CUSTOM_ARN",
+    }
+    assert push_secret["spec"]["data"][0]["match"]["secretKey"] == (
+        "CUSTOM_HOST"
+    )
+
+
 def test_resource_name_and_annotations_render(helm_runner) -> None:
     """Ensure metadata overrides are applied to the ReplicationGroup."""
 
@@ -137,7 +227,7 @@ def test_field_export_and_push_secret_options(helm_runner) -> None:
 
 
 def test_generated_password_backs_auth_token_reference(helm_runner) -> None:
-    """Ensure the generated Redis password is also used for spec.authToken."""
+    """Ensure a generated password is also used for spec.authToken."""
 
     rendered = render_chart(
         helm_runner,
@@ -159,11 +249,11 @@ def test_generated_password_backs_auth_token_reference(helm_runner) -> None:
     }
     assert external_secret["spec"]["data"][0]["secretKey"] == "REDIS_PASSWORD"
     template_data = external_secret["spec"]["target"]["template"]["data"]
-    assert template_data["REDIS_USERNAME"] == "default"
-    assert template_data["REDIS_PORT"] == "6379"
-    assert template_data["REDIS_TLS"] == "false"
-    assert template_data["REDIS_URL"] == ""
-    assert template_data["REDIS_AUTH_URL"] == ""
+    assert template_data["CACHE_USERNAME"] == "default"
+    assert template_data["CACHE_PORT"] == "6379"
+    assert template_data["CACHE_TLS"] == "false"
+    assert template_data["CACHE_URL"] == ""
+    assert template_data["CACHE_AUTH_URL"] == ""
 
 
 def test_secret_ref_mode_skips_password_generator(helm_runner) -> None:
@@ -185,7 +275,7 @@ def test_secret_ref_mode_skips_password_generator(helm_runner) -> None:
 
     assert all(m.get("kind") != "Password" for m in manifests)
     assert all(m.get("kind") != "ExternalSecret" for m in manifests)
-    assert secret["stringData"]["REDIS_PASSWORD"] == ""
+    assert secret["stringData"]["CACHE_PASSWORD"] == ""
     assert replication_group["spec"]["authToken"] == {
         "name": "elasticache-auth",
         "key": "token",
@@ -207,7 +297,7 @@ def test_disabled_mode_can_be_set_explicitly(helm_runner) -> None:
 
     assert all(m.get("kind") != "Password" for m in manifests)
     assert all(m.get("kind") != "ExternalSecret" for m in manifests)
-    assert secret["stringData"]["REDIS_PASSWORD"] == ""
+    assert secret["stringData"]["CACHE_PASSWORD"] == ""
     assert "authToken" not in replication_group["spec"]
 
 
@@ -250,7 +340,6 @@ def test_sequenced_connection_renders_hook_jobs(helm_runner) -> None:
             "sequencedConnection.enabled": True,
             "auth.mode": "password",
             "connectionSecret.name": "cache-connection",
-            "auth.password.key": "REDIS_PASSWORD",
             "transitEncryptionEnabled": True,
         },
     )
@@ -283,7 +372,7 @@ def test_sequenced_connection_renders_hook_jobs(helm_runner) -> None:
     )
     assert replication_group["spec"]["authToken"] == {
         "name": "cache-connection",
-        "key": "REDIS_PASSWORD",
+        "key": "CACHE_PASSWORD",
     }
     assert service_account["metadata"]["annotations"][
         "argocd.argoproj.io/hook"
@@ -313,13 +402,13 @@ def test_sequenced_connection_renders_hook_jobs(helm_runner) -> None:
         0
     ]
 
-    assert 'username_key="REDIS_USERNAME"' in bootstrap_script
-    assert 'password_key="REDIS_PASSWORD"' in bootstrap_script
-    assert 'tls_key="REDIS_TLS"' in bootstrap_script
+    assert 'username_key="CACHE_USERNAME"' in bootstrap_script
+    assert 'password_key="CACHE_PASSWORD"' in bootstrap_script
+    assert 'tls_key="CACHE_TLS"' in bootstrap_script
     assert '"${tls_key}":"true"' in bootstrap_script
-    assert 'url_key="REDIS_URL"' in sync_script
-    assert 'auth_url_key="REDIS_AUTH_URL"' in sync_script
-    assert 'tls_key="REDIS_TLS"' in sync_script
+    assert 'url_key="CACHE_URL"' in sync_script
+    assert 'auth_url_key="CACHE_AUTH_URL"' in sync_script
+    assert 'tls_key="CACHE_TLS"' in sync_script
     assert '"${tls_key}":"true"' in sync_script
     assert "kubectl create -f" in bootstrap_script
     assert "replicationgroups.elasticache.services.k8s.aws" in sync_script
@@ -327,6 +416,54 @@ def test_sequenced_connection_renders_hook_jobs(helm_runner) -> None:
         sync_job["metadata"]["annotations"]["argocd.argoproj.io/sync-wave"]
         == "20"
     )
+
+
+def test_sequenced_valkey_connection_uses_cache_keys(helm_runner) -> None:
+    """Ensure sequenced Valkey mode writes engine-agnostic secret keys."""
+
+    rendered = render_chart(
+        helm_runner,
+        CHART,
+        values={
+            "engine": "valkey",
+            "sequencedConnection.enabled": True,
+            "auth.mode": "password",
+            "connectionSecret.name": "cache-connection",
+        },
+    )
+    manifests = load_manifests(rendered)
+    replication_group = get_manifest(manifests, "ReplicationGroup")
+    jobs = [m for m in manifests if m.get("kind") == "Job"]
+
+    assert replication_group["spec"]["authToken"] == {
+        "name": "cache-connection",
+        "key": "CACHE_PASSWORD",
+    }
+
+    bootstrap_job = next(
+        job
+        for job in jobs
+        if job["metadata"]["name"].endswith("bootstrap-secret")
+    )
+    sync_job = next(
+        job
+        for job in jobs
+        if job["metadata"]["name"].endswith("sync-connection")
+    )
+
+    bootstrap_script = bootstrap_job["spec"]["template"]["spec"]["containers"][
+        0
+    ]["args"][0]
+    sync_script = sync_job["spec"]["template"]["spec"]["containers"][0]["args"][
+        0
+    ]
+
+    assert 'username_key="CACHE_USERNAME"' in bootstrap_script
+    assert 'password_key="CACHE_PASSWORD"' in bootstrap_script
+    assert 'host_key="CACHE_HOST"' in bootstrap_script
+    assert 'url_key="CACHE_URL"' in sync_script
+    assert 'auth_url_key="CACHE_AUTH_URL"' in sync_script
+    assert 'arn_key="CACHE_ARN"' in sync_script
 
 
 def test_sequenced_connection_clears_removed_reflector_annotations(
@@ -341,7 +478,6 @@ def test_sequenced_connection_clears_removed_reflector_annotations(
             "sequencedConnection.enabled": True,
             "auth.mode": "password",
             "connectionSecret.name": "cache-connection",
-            "auth.password.key": "REDIS_PASSWORD",
         },
     )
     manifests = load_manifests(rendered)

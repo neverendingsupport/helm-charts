@@ -13,7 +13,7 @@ type: Opaque
 stringData:
   CACHE_USERNAME: "default"
   CACHE_PORT: "6379"
-  CACHE_TLS: "true"
+  CACHE_TLS: "false"
   CACHE_URL: ""
   CACHE_AUTH_URL: ""
   CACHE_PASSWORD: ""
@@ -95,22 +95,10 @@ metadata:
     app.kubernetes.io/instance: ack-elasticache-provider
     app.kubernetes.io/managed-by: Helm
 spec:
-  atRestEncryptionEnabled: true
-  cacheNodeType: cache.t2.micro
-  cacheSubnetGroupName: dev-registry-cache-subnet-group
-  description: Replication group for dev-registry-cache
-  engine: redis
-  engineVersion: 6.2.6
-  ipDiscovery: ipv4
-  networkType: ipv4
+  cacheNodeType: cache.t4g.micro
+  description: Sample Valkey ElastiCache replication group
+  engine: valkey
+  engineVersion: "7.2"
   numNodeGroups: 1
-  preferredCacheClusterAZs:
-  - us-west-2c
-  preferredMaintenanceWindow: sun:05:00-sun:09:00
   replicasPerNodeGroup: 0
-  replicationGroupID: dev-registry-cache
-  securityGroupIDs:
-  - sg-08dd4b4ff0fdf2f99
-  snapshotRetentionLimit: 0
-  snapshotWindow: 09:00-12:00
-  transitEncryptionEnabled: true
+  replicationGroupID: sample-valkey-cache

@@ -105,14 +105,14 @@ spec:
             - |
               secret_name="cache-connection"
               username="default"
-              username_key="REDIS_USERNAME"
-              password_key="REDIS_PASSWORD"
-              host_key="REDIS_HOST"
-              port_key="REDIS_PORT"
-              tls_key="REDIS_TLS"
-              url_key="REDIS_URL"
-              auth_url_key="REDIS_AUTH_URL"
-              arn_key="REDIS_ARN"
+              username_key="CACHE_USERNAME"
+              password_key="CACHE_PASSWORD"
+              host_key="CACHE_HOST"
+              port_key="CACHE_PORT"
+              tls_key="CACHE_TLS"
+              url_key="CACHE_URL"
+              auth_url_key="CACHE_AUTH_URL"
+              arn_key="CACHE_ARN"
               tmp_secret_manifest=/tmp/secret.yaml
               tmp_secret_patch=/tmp/secret-patch.json
 
@@ -165,14 +165,14 @@ spec:
                   app.kubernetes.io/managed-by: Helm
               type: Opaque
               stringData:
-                REDIS_USERNAME: "default"
-                REDIS_HOST: ""
-                REDIS_PORT: "6379"
-                REDIS_TLS: "false"
-                REDIS_URL: ""
-                REDIS_AUTH_URL: ""
-                REDIS_ARN: ""
-                REDIS_PASSWORD: "${password}"
+                CACHE_USERNAME: "default"
+                CACHE_HOST: ""
+                CACHE_PORT: "6379"
+                CACHE_TLS: "false"
+                CACHE_URL: ""
+                CACHE_AUTH_URL: ""
+                CACHE_ARN: ""
+                CACHE_PASSWORD: "${password}"
               EOF
 
               if [ "$secret_exists" = true ]; then
@@ -222,14 +222,14 @@ spec:
             - |
               resource_name="ack-elasticache-provider"
               secret_name="cache-connection"
-              username_key="REDIS_USERNAME"
-              password_key="REDIS_PASSWORD"
-              host_key="REDIS_HOST"
-              port_key="REDIS_PORT"
-              tls_key="REDIS_TLS"
-              url_key="REDIS_URL"
-              auth_url_key="REDIS_AUTH_URL"
-              arn_key="REDIS_ARN"
+              username_key="CACHE_USERNAME"
+              password_key="CACHE_PASSWORD"
+              host_key="CACHE_HOST"
+              port_key="CACHE_PORT"
+              tls_key="CACHE_TLS"
+              url_key="CACHE_URL"
+              auth_url_key="CACHE_AUTH_URL"
+              arn_key="CACHE_ARN"
               scheme="redis"
               elapsed=0
               poll_interval=15
@@ -275,7 +275,7 @@ metadata:
     app.kubernetes.io/managed-by: Helm
 spec:
   authToken:
-    key: REDIS_PASSWORD
+    key: CACHE_PASSWORD
     name: cache-connection
   cacheNodeType: cache.t4g.micro
   description: Sample ElastiCache replication group
