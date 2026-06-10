@@ -23,6 +23,15 @@ entries:
     version: 0.0.1
   ack-elasticache-provider:
   - apiVersion: v2
+    created: "2026-06-10T15:47:58.078846485Z"
+    description: Helm chart to manage ACK ElastiCache replication groups
+    digest: 4f699b82121fe462354e778efc02aa35b8adb24c5e534b9485f75feee395d149
+    name: ack-elasticache-provider
+    type: application
+    urls:
+    - https://github.com/neverendingsupport/helm-charts/releases/download/ack-elasticache-provider-0.0.2/ack-elasticache-provider-0.0.2.tgz
+    version: 0.0.2
+  - apiVersion: v2
     created: "2026-04-30T20:39:31.635855219Z"
     description: Helm chart to manage ACK ElastiCache replication groups
     digest: c2bde0cf7f2cc18f8b033d1e3efceac350e9d1dc67f561ac5451366e438ba09c
@@ -662,4 +671,4 @@ entries:
     urls:
     - https://github.com/neverendingsupport/helm-charts/releases/download/universal-chart-1.0.0/universal-chart-1.0.0.tgz
     version: 1.0.0
-generated: "2026-06-03T18:50:31.872680089Z"
+generated: "2026-06-10T15:47:58.078955588Z"
