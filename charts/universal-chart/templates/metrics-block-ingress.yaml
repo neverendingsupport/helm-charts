@@ -18,8 +18,16 @@
 {{- $blockEnabled := and $blockRequested $nginxClass -}}
 {{- $useRegexValue := lower (toString (index $annotations "nginx.ingress.kubernetes.io/use-regex")) -}}
 {{- $usesRegexIngress := or (eq $useRegexValue "true") (eq $useRegexValue "1") (eq $useRegexValue "t") (hasKey $annotations "nginx.ingress.kubernetes.io/rewrite-target") -}}
-{{- if and $blockEnabled $usesRegexIngress -}}
-{{- fail "serviceMonitor.blockExternalIngress cannot safely block metrics when ingress annotations enable nginx regex matching or rewrite-target; disable serviceMonitor.blockExternalIngress only when public metrics are intentional, or remove the regex/rewrite ingress annotations" -}}
+{{- $allowRegexIngress := $block.allowRegexIngress | default false -}}
+{{- if and $blockEnabled $usesRegexIngress (not $allowRegexIngress) -}}
+{{- fail "serviceMonitor.blockExternalIngress cannot safely block metrics when ingress annotations enable nginx regex matching or rewrite-target unless serviceMonitor.blockExternalIngress.allowRegexIngress is true and serviceMonitor.blockExternalIngress.path is set to a more-specific public metrics regex; disable serviceMonitor.blockExternalIngress only when public metrics are intentional, or remove the regex/rewrite ingress annotations" -}}
+{{- end -}}
+{{- if and $blockEnabled $usesRegexIngress $allowRegexIngress (not $block.path) -}}
+{{- fail "serviceMonitor.blockExternalIngress.allowRegexIngress requires serviceMonitor.blockExternalIngress.path to be set to the public metrics path regex" -}}
+{{- end -}}
+{{- $blockPathType := coalesce $block.pathType "Prefix" -}}
+{{- if and $blockEnabled $usesRegexIngress $allowRegexIngress (ne $blockPathType "ImplementationSpecific") -}}
+{{- fail "serviceMonitor.blockExternalIngress.allowRegexIngress requires serviceMonitor.blockExternalIngress.pathType to be ImplementationSpecific" -}}
 {{- end -}}
 {{- range .Values.ingress.hosts -}}
 {{- range .paths -}}
@@ -65,7 +73,7 @@ spec:
       http:
         paths:
           - path: {{ $blockComparePath }}
-            pathType: Prefix
+            pathType: {{ $blockPathType }}
             backend:
               service:
                 name: {{ include "universal-chart.fullname" $ }}

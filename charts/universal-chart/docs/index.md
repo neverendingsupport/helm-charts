@@ -47,12 +47,14 @@ metrics path or a metrics subpath while the block Ingress is active. Redirects
 to the metrics path can stay on other primary Ingress paths; the redirected
 metrics request is then handled by the block Ingress.
 
-The chart fails to render when metrics blocking is enabled and the primary
+The chart fails by default when metrics blocking is enabled and the primary
 Ingress uses nginx regex matching or `rewrite-target`. In that case,
-ingress-nginx path precedence can route around a separate block Ingress. Remove
-the regex/rewrite ingress annotations, or set
-`serviceMonitor.blockExternalIngress.enabled: false` only when public metrics
-are intentional.
+ingress-nginx path precedence can route around a separate block Ingress. If the
+app needs regex/rewrite ingress, set
+`serviceMonitor.blockExternalIngress.allowRegexIngress: true`, set
+`serviceMonitor.blockExternalIngress.path` to a more-specific public metrics
+regex, and set `serviceMonitor.blockExternalIngress.pathType` to
+`ImplementationSpecific`.
 
 Set `serviceMonitor.blockExternalIngress.enabled: false` only for apps that
 intentionally expose metrics publicly. If the public route differs from the

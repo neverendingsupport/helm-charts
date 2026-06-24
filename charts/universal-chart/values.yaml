@@ -334,6 +334,12 @@ serviceMonitor:
     # default scrape path. Set this when the public route differs from the
     # in-cluster scrape path.
     path: null
+    # -- Path type for the generated metrics-blocking Ingress.
+    pathType: Prefix
+    # -- Allow metrics blocking when the primary Ingress uses nginx regex or
+    # rewrite annotations. Requires blockExternalIngress.path to be set to a
+    # more-specific public metrics regex that wins ingress-nginx path ordering.
+    allowRegexIngress: false
     # -- Comma-separated CIDR source ranges denied by the generated metrics-blocking Ingress.
     denylistSourceRange: "0.0.0.0/0,::/0"
     # -- Ingress class names known to be served by ingress-nginx. Include ""
