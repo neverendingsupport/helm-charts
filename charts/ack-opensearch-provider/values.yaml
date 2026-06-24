@@ -407,7 +407,7 @@ securityBootstrap:
   # -- Enable the security bootstrap job.
   enabled: false
   # -- Image used for the security API calls.
-  image: curlimages/curl:8.12.1
+  image: curlimages/curl:8.21.0
   # -- kubectl image used to wait for the domain endpoint and admin secret data.
   kubectlImage: bitnami/kubectl:latest
   # -- Maximum runtime for the bootstrap job.
