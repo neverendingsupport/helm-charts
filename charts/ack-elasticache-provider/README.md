@@ -81,9 +81,9 @@ This chart follows the same provider pattern as the DocumentDB and OpenSearch ch
 | replicationGroupID | string | `nil` | ElastiCache replication group identifier from `ReplicationGroup.spec.replicationGroupID`. |
 | resourceName | string | `""` | Optional explicit ReplicationGroup metadata.name. Defaults to the chart fullname. |
 | securityGroupIDs | list | `[]` | VPC security group IDs from `ReplicationGroup.spec.securityGroupIDs`. |
-| sequencedConnection | object | `{"enabled":false,"kubectlImage":"bitnami/kubectl:latest","maxWaitSeconds":3600,"pollIntervalSeconds":15,"syncWave":20,"ttlSecondsAfterFinished":3600}` | Use Argo hook jobs to create a stable connection secret before sync and patch endpoint data after the ReplicationGroup becomes ready. |
+| sequencedConnection | object | `{"enabled":false,"kubectlImage":"registry.k8s.io/kubectl:v1.34.1@sha256:59bafa07ff3a6d4b417e7633ddb9d79a9606ca98bf64bac080b3e65748669250","maxWaitSeconds":3600,"pollIntervalSeconds":15,"syncWave":20,"ttlSecondsAfterFinished":3600}` | Use Argo hook jobs to create a stable connection secret before sync and patch endpoint data after the ReplicationGroup becomes ready. |
 | sequencedConnection.enabled | bool | `false` | Enable Argo-hooked secret bootstrapping and connection-data syncing. |
-| sequencedConnection.kubectlImage | string | `"bitnami/kubectl:latest"` | kubectl image used by the sequencing jobs. |
+| sequencedConnection.kubectlImage | string | `"registry.k8s.io/kubectl:v1.34.1@sha256:59bafa07ff3a6d4b417e7633ddb9d79a9606ca98bf64bac080b3e65748669250"` | kubectl image used by the sequencing jobs. |
 | sequencedConnection.maxWaitSeconds | int | `3600` | Maximum time to wait for the ReplicationGroup endpoint to appear. |
 | sequencedConnection.pollIntervalSeconds | int | `15` | Poll interval for waiting on the ReplicationGroup primary endpoint. |
 | sequencedConnection.syncWave | int | `20` | Sync wave used by the post-resource connection sync job. |

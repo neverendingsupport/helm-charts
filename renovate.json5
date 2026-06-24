@@ -6,6 +6,21 @@
     // Enable updates to pre-commit hooks, which are off by default.
     // ":enablePreCommit" // not actually needed, since precommit.ci updates
   ],
+  "customManagers": [
+    {
+      "customType": "regex",
+      "description": "Update digest-pinned ACK helper image references.",
+      "fileMatch": ["^charts/ack-.+/values\\.ya?ml$"],
+      "matchStrings": [
+        "\\S+:\\s+\\S+:(?<currentValue>[^@\\s]+)@(?<currentDigest>sha256:[a-f0-9]+)\\s+# renovate: datasource=(?<datasource>[a-z-]+) depName=(?<depName>\\S+) versioning=(?<versioning>\\S+)"
+      ]
+    }
+  ],
+  "postUpgradeTasks": {
+    "commands": ["python scripts/regenerate_golden_files.py"],
+    "fileFilters": ["tests/fixtures/**/*.golden.yaml"],
+    "executionMode": "branch"
+  },
   // Allow Renovate to merge PRs automatically when policy and checks allow it.
   "automerge": true,
   "automergeType": "pr",

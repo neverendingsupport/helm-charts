@@ -172,7 +172,7 @@ spec:
           emptyDir: {}
       initContainers:
         - name: wait-for-connection
-          image: "523530333233.dkr.ecr.us-west-2.amazonaws.com/docker-hub/bitnami/kubectl:latest"
+          image: "523530333233.dkr.ecr.us-west-2.amazonaws.com/docker-hub/registry.k8s.io/kubectl:v1.34.1@sha256:59bafa07ff3a6d4b417e7633ddb9d79a9606ca98bf64bac080b3e65748669250"
           command:
             - /bin/sh
             - -ec
@@ -217,7 +217,7 @@ spec:
               exit 1
       containers:
         - name: bootstrap-security
-          image: "523530333233.dkr.ecr.us-west-2.amazonaws.com/docker-hub/curlimages/curl:8.12.1"
+          image: "523530333233.dkr.ecr.us-west-2.amazonaws.com/docker-hub/curlimages/curl:8.12.1@sha256:94e9e444bcba979c2ea12e27ae39bee4cd10bc7041a472c4727a558e213744e6"
           command:
             - /bin/sh
             - -ec
@@ -324,7 +324,7 @@ spec:
       serviceAccountName: ack-opensearch-provider-bootstrap
       containers:
         - name: bootstrap-secret
-          image: "523530333233.dkr.ecr.us-west-2.amazonaws.com/docker-hub/bitnami/kubectl:latest"
+          image: "523530333233.dkr.ecr.us-west-2.amazonaws.com/docker-hub/registry.k8s.io/kubectl:v1.34.1@sha256:59bafa07ff3a6d4b417e7633ddb9d79a9606ca98bf64bac080b3e65748669250"
           command:
             - /bin/sh
             - -ec
@@ -437,7 +437,7 @@ spec:
       serviceAccountName: ack-opensearch-provider-bootstrap
       containers:
         - name: sync-connection
-          image: "523530333233.dkr.ecr.us-west-2.amazonaws.com/docker-hub/bitnami/kubectl:latest"
+          image: "523530333233.dkr.ecr.us-west-2.amazonaws.com/docker-hub/registry.k8s.io/kubectl:v1.34.1@sha256:59bafa07ff3a6d4b417e7633ddb9d79a9606ca98bf64bac080b3e65748669250"
           command:
             - /bin/sh
             - -ec

@@ -357,7 +357,7 @@ sequencedConnection:
   # -- TTL for completed sequencing jobs.
   ttlSecondsAfterFinished: 3600
   # -- kubectl image used by the sequencing jobs.
-  kubectlImage: bitnami/kubectl:latest
+  kubectlImage: registry.k8s.io/kubectl:v1.34.1@sha256:59bafa07ff3a6d4b417e7633ddb9d79a9606ca98bf64bac080b3e65748669250 # renovate: datasource=docker depName=registry.k8s.io/kubectl versioning=docker
 
 # @schema
 # type: object
