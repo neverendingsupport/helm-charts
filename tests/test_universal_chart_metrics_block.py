@@ -57,6 +57,33 @@ def _nginx_ingress_values(
     }
 
 
+def _regex_ingress_values(
+    *,
+    block_external_ingress: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Return values for an nginx regex/rewrite ingress with metrics enabled."""
+
+    values = _nginx_ingress_values(
+        paths=[
+            {
+                "path": "/(eol)(/|$)(.*)",
+                "pathType": "ImplementationSpecific",
+            }
+        ],
+        annotations={
+            "nginx.ingress.kubernetes.io/rewrite-target": "/$1/$3",
+            "nginx.ingress.kubernetes.io/use-regex": "true",
+        },
+    )
+    values["serviceMonitor"]["path"] = "/eol/api/metrics"
+    if block_external_ingress is not None:
+        values["serviceMonitor"][
+            "blockExternalIngress"
+        ] = block_external_ingress
+
+    return values
+
+
 def test_metrics_block_ingress_renders_for_nginx_ingress(
     helm_runner,
 ) -> None:
@@ -304,6 +331,65 @@ def test_metrics_block_ingress_rejects_rewrite_ingress(
                     "blockExternalIngress": {"path": "/app/metrics"},
                 },
             },
+        )
+
+
+def test_metrics_block_ingress_renders_for_explicit_regex_ingress(
+    helm_runner,
+) -> None:
+    """Allow regex/rewrite ingress when given a specific block regex."""
+
+    rendered = render_chart(
+        helm_runner,
+        CHART,
+        values=_regex_ingress_values(
+            block_external_ingress={
+                "allowRegexIngress": True,
+                "path": "/eol/api/metrics(/|$)(.*)",
+                "pathType": "ImplementationSpecific",
+            }
+        ),
+    )
+    manifests = load_manifests(rendered)
+    ingresses = _ingresses_by_name(manifests)
+    block_path = ingresses[f"{CHART.release}-metrics-block"]["spec"]["rules"][
+        0
+    ]["http"]["paths"][0]
+
+    assert block_path["path"] == "/eol/api/metrics(/|$)(.*)"
+    assert block_path["pathType"] == "ImplementationSpecific"
+
+
+def test_metrics_block_ingress_regex_mode_requires_explicit_block_path(
+    helm_runner,
+) -> None:
+    """Require callers to specify the public metrics regex in regex mode."""
+
+    with pytest.raises(HelmTemplateError):
+        render_chart(
+            helm_runner,
+            CHART,
+            values=_regex_ingress_values(
+                block_external_ingress={"allowRegexIngress": True},
+            ),
+        )
+
+
+def test_metrics_block_ingress_regex_mode_requires_implementation_specific_path(
+    helm_runner,
+) -> None:
+    """Require ImplementationSpecific for regex metrics-block paths."""
+
+    with pytest.raises(HelmTemplateError):
+        render_chart(
+            helm_runner,
+            CHART,
+            values=_regex_ingress_values(
+                block_external_ingress={
+                    "allowRegexIngress": True,
+                    "path": "/eol/api/metrics(/|$)(.*)",
+                },
+            ),
         )
 
 

@@ -107,15 +107,28 @@ serviceMonitor:
 ```
 
 The chart fails to render instead of silently leaving metrics public when the
-configured Ingress class is not known to be ingress-nginx, when the primary
-Ingress uses nginx regex or rewrite annotations, or when the primary Ingress
-already declares the metrics path or a metrics subpath. Fix the Ingress shape,
-or disable the block only when public metrics exposure is intentional:
+configured Ingress class is not known to be ingress-nginx or when the primary
+Ingress already declares the metrics path or a metrics subpath. Fix the Ingress
+shape, or disable the block only when public metrics exposure is intentional:
 
 ```yaml
 serviceMonitor:
   blockExternalIngress:
     enabled: false
+```
+
+By default, the chart also fails when the primary Ingress uses nginx regex or
+rewrite annotations because ingress-nginx path ordering can route around a
+separate blocking Ingress. If the app needs regex/rewrite ingress, opt in with a
+more-specific public metrics regex and `ImplementationSpecific` path type:
+
+```yaml
+serviceMonitor:
+  path: /eol/api/metrics
+  blockExternalIngress:
+    allowRegexIngress: true
+    path: /eol/api/metrics(/|$)(.*)
+    pathType: ImplementationSpecific
 ```
 
 If the public route differs from the in-cluster scrape path, set
@@ -236,13 +249,15 @@ helm template my-release . \
 | serviceAccount.automount | bool | `true` |  |
 | serviceAccount.create | bool | `true` |  |
 | serviceAccount.name | string | `""` |  |
-| serviceMonitor | object | `{"alternatePort":null,"blockExternalIngress":{"denylistSourceRange":"0.0.0.0/0,::/0","enabled":true,"ingressClassNames":["","nginx"],"path":null},"enabled":false,"interval":null,"path":"/metrics"}` | Configure a ServiceMonitor for scraping metrics from the service. |
+| serviceMonitor | object | `{"alternatePort":null,"blockExternalIngress":{"allowRegexIngress":false,"denylistSourceRange":"0.0.0.0/0,::/0","enabled":true,"ingressClassNames":["","nginx"],"path":null,"pathType":"Prefix"},"enabled":false,"interval":null,"path":"/metrics"}` | Configure a ServiceMonitor for scraping metrics from the service. |
 | serviceMonitor.alternatePort | string | `nil` | Optional alternate port to scrape via a dedicated "<release>-metrics" Service. When null, the ServiceMonitor targets the main service as before. |
-| serviceMonitor.blockExternalIngress | object | `{"denylistSourceRange":"0.0.0.0/0,::/0","enabled":true,"ingressClassNames":["","nginx"],"path":null}` | Block public nginx ingress access to the metrics path while allowing Prometheus to continue scraping through the in-cluster ServiceMonitor. This is enabled by default because public metrics endpoints can expose sensitive service internals. Disable only when the metrics endpoint must be publicly reachable. |
+| serviceMonitor.blockExternalIngress | object | `{"allowRegexIngress":false,"denylistSourceRange":"0.0.0.0/0,::/0","enabled":true,"ingressClassNames":["","nginx"],"path":null,"pathType":"Prefix"}` | Block public nginx ingress access to the metrics path while allowing Prometheus to continue scraping through the in-cluster ServiceMonitor. This is enabled by default because public metrics endpoints can expose sensitive service internals. Disable only when the metrics endpoint must be publicly reachable. |
+| serviceMonitor.blockExternalIngress.allowRegexIngress | bool | `false` | Allow metrics blocking when the primary Ingress uses nginx regex or rewrite annotations. Requires blockExternalIngress.path to be set to a more-specific public metrics regex that wins ingress-nginx path ordering. |
 | serviceMonitor.blockExternalIngress.denylistSourceRange | string | `"0.0.0.0/0,::/0"` | Comma-separated CIDR source ranges denied by the generated metrics-blocking Ingress. |
 | serviceMonitor.blockExternalIngress.enabled | bool | `true` | Whether to create the additional nginx Ingress when ingress.enabled, serviceMonitor.enabled, an allowed ingress class, and a block path are all present. |
 | serviceMonitor.blockExternalIngress.ingressClassNames | list | `["","nginx"]` | Ingress class names known to be served by ingress-nginx. Include "" for classless Ingresses handled by a default ingress-nginx controller. |
 | serviceMonitor.blockExternalIngress.path | string | `nil` | Public ingress path to deny. When null, serviceMonitor.path is used. When both values are null, "/metrics" is used to match Prometheus' default scrape path. Set this when the public route differs from the in-cluster scrape path. |
+| serviceMonitor.blockExternalIngress.pathType | string | `"Prefix"` | Path type for the generated metrics-blocking Ingress. |
 | serviceMonitor.enabled | bool | `false` | Whether to create a ServiceMonitor resource. |
 | serviceMonitor.interval | string | `nil` | Optional scrape interval (in seconds). When null, the operator default is used. |
 | serviceMonitor.path | string | `"/metrics"` | HTTP path to scrape for metrics. Must start with "/". |

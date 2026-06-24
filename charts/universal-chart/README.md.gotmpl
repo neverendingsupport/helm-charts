@@ -51,15 +51,28 @@ serviceMonitor:
 ```
 
 The chart fails to render instead of silently leaving metrics public when the
-configured Ingress class is not known to be ingress-nginx, when the primary
-Ingress uses nginx regex or rewrite annotations, or when the primary Ingress
-already declares the metrics path or a metrics subpath. Fix the Ingress shape,
-or disable the block only when public metrics exposure is intentional:
+configured Ingress class is not known to be ingress-nginx or when the primary
+Ingress already declares the metrics path or a metrics subpath. Fix the Ingress
+shape, or disable the block only when public metrics exposure is intentional:
 
 ```yaml
 serviceMonitor:
   blockExternalIngress:
     enabled: false
+```
+
+By default, the chart also fails when the primary Ingress uses nginx regex or
+rewrite annotations because ingress-nginx path ordering can route around a
+separate blocking Ingress. If the app needs regex/rewrite ingress, opt in with a
+more-specific public metrics regex and `ImplementationSpecific` path type:
+
+```yaml
+serviceMonitor:
+  path: /eol/api/metrics
+  blockExternalIngress:
+    allowRegexIngress: true
+    path: /eol/api/metrics(/|$)(.*)
+    pathType: ImplementationSpecific
 ```
 
 If the public route differs from the in-cluster scrape path, set
