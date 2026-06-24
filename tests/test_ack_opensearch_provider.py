@@ -12,6 +12,7 @@ from .chart_test_utils import (
     ChartContext,
     get_manifest,
     load_manifests,
+    manifests_by_name,
     render_chart,
 )
 from .conftest import HelmTemplateError
@@ -624,7 +625,7 @@ def test_sequenced_connection_renders_hook_jobs(helm_runner) -> None:
     service_account = get_manifest(manifests, "ServiceAccount")
     role = get_manifest(manifests, "Role")
     role_binding = get_manifest(manifests, "RoleBinding")
-    jobs = [m for m in manifests if m.get("kind") == "Job"]
+    jobs = manifests_by_name(manifests, "Job")
 
     assert domain["spec"]["name"] == "sample-domain"
     assert all(m.get("kind") != "Secret" for m in manifests)
@@ -657,16 +658,8 @@ def test_sequenced_connection_renders_hook_jobs(helm_runner) -> None:
     )
     assert len(jobs) == 2
 
-    bootstrap_job = next(
-        job
-        for job in jobs
-        if job["metadata"]["name"].endswith("bootstrap-secret")
-    )
-    sync_job = next(
-        job
-        for job in jobs
-        if job["metadata"]["name"].endswith("sync-connection")
-    )
+    bootstrap_job = jobs[f"{CHART.release}-bootstrap-secret"]
+    sync_job = jobs[f"{CHART.release}-sync-connection"]
 
     bootstrap_script = bootstrap_job["spec"]["template"]["spec"]["containers"][
         0
@@ -705,11 +698,8 @@ def test_sequenced_connection_clears_removed_reflector_annotations(
     )
 
     manifests = load_manifests(rendered)
-    bootstrap_job = next(
-        job
-        for job in manifests
-        if job.get("kind") == "Job"
-        and job["metadata"]["name"].endswith("bootstrap-secret")
+    bootstrap_job = get_manifest(
+        manifests, "Job", name=f"{CHART.release}-bootstrap-secret"
     )
     bootstrap_script = bootstrap_job["spec"]["template"]["spec"]["containers"][
         0
