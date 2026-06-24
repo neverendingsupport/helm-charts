@@ -97,7 +97,7 @@ spec:
       serviceAccountName: ack-opensearch-provider-bootstrap
       containers:
         - name: bootstrap-secret
-          image: "bitnami/kubectl:latest"
+          image: "registry.k8s.io/kubectl:v1.34.1@sha256:59bafa07ff3a6d4b417e7633ddb9d79a9606ca98bf64bac080b3e65748669250"
           command:
             - /bin/sh
             - -ec
@@ -216,7 +216,7 @@ spec:
       serviceAccountName: ack-opensearch-provider-bootstrap
       containers:
         - name: sync-connection
-          image: "bitnami/kubectl:latest"
+          image: "registry.k8s.io/kubectl:v1.34.1@sha256:59bafa07ff3a6d4b417e7633ddb9d79a9606ca98bf64bac080b3e65748669250"
           command:
             - /bin/sh
             - -ec
