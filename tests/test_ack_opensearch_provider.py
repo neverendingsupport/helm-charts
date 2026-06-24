@@ -17,6 +17,14 @@ from .chart_test_utils import (
 from .conftest import HelmTemplateError
 
 CHART = ChartContext("ack-opensearch-provider")
+CURL_IMAGE = (
+    "curlimages/curl:8.12.1@"
+    "sha256:94e9e444bcba979c2ea12e27ae39bee4cd10bc7041a472c4727a558e213744e6"
+)
+KUBECTL_IMAGE = (
+    "registry.k8s.io/kubectl:v1.34.1@"
+    "sha256:59bafa07ff3a6d4b417e7633ddb9d79a9606ca98bf64bac080b3e65748669250"
+)
 
 
 def test_chart_renders_domain_with_defaults(helm_runner) -> None:
@@ -231,8 +239,8 @@ def test_security_bootstrap_renders_role_and_mapping_payloads(
     )
 
     pod_spec = job["spec"]["template"]["spec"]
-    assert pod_spec["initContainers"][0]["image"] == "bitnami/kubectl:latest"
-    assert pod_spec["containers"][0]["image"] == "curlimages/curl:8.12.1"
+    assert pod_spec["initContainers"][0]["image"] == KUBECTL_IMAGE
+    assert pod_spec["containers"][0]["image"] == CURL_IMAGE
 
     script = pod_spec["containers"][0]["args"][0]
     role_match = re.search(
@@ -309,11 +317,11 @@ def test_global_image_repository_prefixes_bootstrap_images(
 
     assert (
         "523530333233.dkr.ecr.us-west-2.amazonaws.com/docker-hub/"
-        "curlimages/curl:8.12.1"
+        f"{CURL_IMAGE}"
     ) in job_images
     assert (
         "523530333233.dkr.ecr.us-west-2.amazonaws.com/docker-hub/"
-        "bitnami/kubectl:latest"
+        f"{KUBECTL_IMAGE}"
     ) in job_images
 
 

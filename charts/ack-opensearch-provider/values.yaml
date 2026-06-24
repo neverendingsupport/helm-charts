@@ -407,9 +407,9 @@ securityBootstrap:
   # -- Enable the security bootstrap job.
   enabled: false
   # -- Image used for the security API calls.
-  image: curlimages/curl:8.12.1
+  image: curlimages/curl:8.12.1@sha256:94e9e444bcba979c2ea12e27ae39bee4cd10bc7041a472c4727a558e213744e6 # renovate: datasource=docker depName=curlimages/curl versioning=docker
   # -- kubectl image used to wait for the domain endpoint and admin secret data.
-  kubectlImage: bitnami/kubectl:latest
+  kubectlImage: registry.k8s.io/kubectl:v1.34.1@sha256:59bafa07ff3a6d4b417e7633ddb9d79a9606ca98bf64bac080b3e65748669250 # renovate: datasource=docker depName=registry.k8s.io/kubectl versioning=docker
   # -- Maximum runtime for the bootstrap job.
   activeDeadlineSeconds: 600
   # -- Retry count for the bootstrap job.
@@ -626,7 +626,7 @@ sequencedConnection:
   # -- TTL for completed sequencing jobs.
   ttlSecondsAfterFinished: 3600
   # -- kubectl image used by the sequencing jobs.
-  kubectlImage: bitnami/kubectl:latest
+  kubectlImage: registry.k8s.io/kubectl:v1.34.1@sha256:59bafa07ff3a6d4b417e7633ddb9d79a9606ca98bf64bac080b3e65748669250 # renovate: datasource=docker depName=registry.k8s.io/kubectl versioning=docker
 
 # @schema
 # type: object

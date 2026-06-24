@@ -60,9 +60,12 @@ This chart follows the same provider pattern as the DocumentDB and ElastiCache c
 | reflector.allowedNamespaces | list | `[]` | Namespaces allowed to pull/reflect this secret. |
 | reflector.pushNamespaces | list | `[]` | Namespaces to push reflected secrets into. |
 | resourceName | string | `""` | Optional explicit Domain metadata.name. Defaults to the chart fullname. |
-| sequencedConnection | object | `{"enabled":false,"kubectlImage":"bitnami/kubectl:latest","maxWaitSeconds":3600,"pollIntervalSeconds":15,"syncWave":20,"ttlSecondsAfterFinished":3600}` | Use Argo hook jobs to create a stable connection secret before sync and patch endpoint data after the Domain becomes ready. |
+| securityBootstrap | object | `{"activeDeadlineSeconds":600,"backoffLimit":3,"enabled":false,"image":"curlimages/curl:8.12.1@sha256:94e9e444bcba979c2ea12e27ae39bee4cd10bc7041a472c4727a558e213744e6","kubectlImage":"registry.k8s.io/kubectl:v1.34.1@sha256:59bafa07ff3a6d4b417e7633ddb9d79a9606ca98bf64bac080b3e65748669250","ttlSecondsAfterFinished":3600}` | Bootstrap OpenSearch security roles and role mappings using the admin credential. |
+| securityBootstrap.image | string | `"curlimages/curl:8.12.1@sha256:94e9e444bcba979c2ea12e27ae39bee4cd10bc7041a472c4727a558e213744e6"` | Image used for the security API calls. |
+| securityBootstrap.kubectlImage | string | `"registry.k8s.io/kubectl:v1.34.1@sha256:59bafa07ff3a6d4b417e7633ddb9d79a9606ca98bf64bac080b3e65748669250"` | kubectl image used to wait for the domain endpoint and admin secret data. |
+| sequencedConnection | object | `{"enabled":false,"kubectlImage":"registry.k8s.io/kubectl:v1.34.1@sha256:59bafa07ff3a6d4b417e7633ddb9d79a9606ca98bf64bac080b3e65748669250","maxWaitSeconds":3600,"pollIntervalSeconds":15,"syncWave":20,"ttlSecondsAfterFinished":3600}` | Use Argo hook jobs to create a stable connection secret before sync and patch endpoint data after the Domain becomes ready. |
 | sequencedConnection.enabled | bool | `false` | Enable Argo-hooked secret bootstrapping and connection-data syncing. |
-| sequencedConnection.kubectlImage | string | `"bitnami/kubectl:latest"` | kubectl image used by the sequencing jobs. |
+| sequencedConnection.kubectlImage | string | `"registry.k8s.io/kubectl:v1.34.1@sha256:59bafa07ff3a6d4b417e7633ddb9d79a9606ca98bf64bac080b3e65748669250"` | kubectl image used by the sequencing jobs. |
 | sequencedConnection.maxWaitSeconds | int | `3600` | Maximum time to wait for the Domain endpoint to appear. |
 | sequencedConnection.pollIntervalSeconds | int | `15` | Poll interval for waiting on the Domain endpoint. |
 | sequencedConnection.syncWave | int | `20` | Sync wave used by the post-resource connection sync job. |
