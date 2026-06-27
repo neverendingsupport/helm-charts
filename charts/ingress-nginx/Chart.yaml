@@ -1,5 +1,5 @@
 apiVersion: v2
-appVersion: v1.15.1-nes-1.15.5
+appVersion: v1.15.1-nes-1.15.6
 description: Never Ending Support ingress-nginx controller for Kubernetes using
   NGINX as a reverse proxy and load balancer
 home: https://github.com/neverendingsupport/ingress-nginx-nes
@@ -14,4 +14,4 @@ name: ingress-nginx
 sources:
 - https://github.com/neverendingsupport/ingress-nginx-nes
 - https://github.com/kubernetes/ingress-nginx
-version: 0.0.7
+version: 0.0.9
