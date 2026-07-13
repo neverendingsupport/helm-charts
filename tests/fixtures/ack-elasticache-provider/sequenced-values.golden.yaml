@@ -97,7 +97,7 @@ spec:
       serviceAccountName: ack-elasticache-provider-bootstrap
       containers:
         - name: bootstrap-secret
-          image: "registry.k8s.io/kubectl:v1.34.1@sha256:59bafa07ff3a6d4b417e7633ddb9d79a9606ca98bf64bac080b3e65748669250"
+          image: "alpine/k8s:1.34.1@sha256:ec714df3813b5405292860f8a1c55c5727bf8c33c88992f1e981efad8065547f"
           command:
             - /bin/sh
             - -ec
@@ -214,7 +214,7 @@ spec:
       serviceAccountName: ack-elasticache-provider-bootstrap
       containers:
         - name: sync-connection
-          image: "registry.k8s.io/kubectl:v1.34.1@sha256:59bafa07ff3a6d4b417e7633ddb9d79a9606ca98bf64bac080b3e65748669250"
+          image: "alpine/k8s:1.34.1@sha256:ec714df3813b5405292860f8a1c55c5727bf8c33c88992f1e981efad8065547f"
           command:
             - /bin/sh
             - -ec

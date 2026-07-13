@@ -11,6 +11,7 @@ preferredMaintenanceWindow: sun:05:00-sun:09:00
 cacheSubnetGroupName: dev-registry-cache-subnet-group
 securityGroupIDs:
   - sg-08dd4b4ff0fdf2f99
+snapshotName: dev-registry-cache-pre-migration
 snapshotRetentionLimit: 0
 snapshotWindow: 09:00-12:00
 networkType: ipv4
