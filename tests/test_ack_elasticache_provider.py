@@ -60,6 +60,7 @@ def test_replication_group_supports_translated_cache_cluster_fields(
             "preferredMaintenanceWindow": "sun:05:00-sun:09:00",
             "cacheSubnetGroupName": "dev-registry-cache-subnet-group",
             "securityGroupIDs": ["sg-08dd4b4ff0fdf2f99"],
+            "snapshotName": "dev-registry-cache-pre-migration",
             "snapshotRetentionLimit": 0,
             "snapshotWindow": "09:00-12:00",
             "networkType": "ipv4",
@@ -82,6 +83,10 @@ def test_replication_group_supports_translated_cache_cluster_fields(
     assert replication_group["spec"]["securityGroupIDs"] == [
         "sg-08dd4b4ff0fdf2f99"
     ]
+    assert (
+        replication_group["spec"]["snapshotName"]
+        == "dev-registry-cache-pre-migration"
+    )
     assert replication_group["spec"]["port"] == 6379
     assert replication_group["spec"]["atRestEncryptionEnabled"] is True
     assert replication_group["spec"]["transitEncryptionEnabled"] is True

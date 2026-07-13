@@ -111,6 +111,7 @@ spec:
   replicationGroupID: dev-registry-cache
   securityGroupIDs:
   - sg-08dd4b4ff0fdf2f99
+  snapshotName: dev-registry-cache-pre-migration
   snapshotRetentionLimit: 0
   snapshotWindow: 09:00-12:00
   transitEncryptionEnabled: true
