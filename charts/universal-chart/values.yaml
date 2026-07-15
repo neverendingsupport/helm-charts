@@ -607,6 +607,53 @@ readinessProbe:
 replicaCount: 1
 
 # @schema
+# type: object
+# properties:
+#   enabled:
+#     type: boolean
+#   minAvailable:
+#     anyof:
+#       - type: integer
+#         minimum: 0
+#       - type: string
+#       - type: "null"
+#   maxUnavailable:
+#     anyof:
+#       - type: integer
+#         minimum: 0
+#       - type: string
+#       - type: "null"
+#   unhealthyPodEvictionPolicy:
+#     anyof:
+#       - type: string
+#         enum:
+#           - IfHealthyBudget
+#           - AlwaysAllow
+#       - type: "null"
+#   annotations:
+#     type: object
+#     additionalProperties: true
+# @schema
+# -- Configure a PodDisruptionBudget for voluntary disruptions such as node drains.
+# Set exactly one of `minAvailable` or `maxUnavailable`; rendering fails when both
+# or neither are set. The budget is only rendered when `replicaCount` (or
+# `autoscaling.minReplicas` when autoscaling is enabled) is greater than 1, since
+# a budget over a single replica would permanently block node drains.
+# More information: https://kubernetes.io/docs/tasks/run-application/configure-pdb/
+podDisruptionBudget:
+  # -- Whether to create a PodDisruptionBudget for the Deployment pods.
+  enabled: false
+  # -- Minimum number or percentage of pods that must remain available.
+  minAvailable: null
+  # -- Maximum number or percentage of pods that may be unavailable.
+  maxUnavailable: null
+  # -- Optional eviction policy for unhealthy pods (Kubernetes 1.26+).
+  # See https://kubernetes.io/docs/tasks/run-application/configure-pdb/#unhealthy-pod-eviction-policy
+  unhealthyPodEvictionPolicy: null
+  # -- Additional annotations to add to the PodDisruptionBudget metadata.
+  annotations: {}
+
+# @schema
 # anyof:
 #   - type: integer
 #     minimum: 0
