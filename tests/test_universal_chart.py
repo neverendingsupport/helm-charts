@@ -551,6 +551,151 @@ def test_hpa_annotations_render_when_enabled(helm_runner) -> None:
     }
 
 
+def test_pod_disruption_budget_renders_when_enabled(helm_runner) -> None:
+    """Ensure a PodDisruptionBudget is rendered with selector labels."""
+
+    rendered = render_chart(
+        helm_runner,
+        CHART,
+        values={
+            "replicaCount": 2,
+            "podDisruptionBudget": {
+                "enabled": True,
+                "minAvailable": "50%",
+                "annotations": {
+                    "argocd.argoproj.io/sync-wave": "10",
+                },
+            },
+        },
+    )
+    manifests = load_manifests(rendered)
+    pdb = get_manifest(manifests, "PodDisruptionBudget")
+
+    assert pdb["metadata"]["name"] == CHART.release
+    assert pdb["metadata"]["annotations"] == {
+        "argocd.argoproj.io/sync-wave": "10"
+    }
+    assert pdb["spec"]["minAvailable"] == "50%"
+    assert "maxUnavailable" not in pdb["spec"]
+    assert pdb["spec"]["selector"]["matchLabels"] == {
+        "app.kubernetes.io/name": CHART.release,
+        "app.kubernetes.io/instance": CHART.release,
+    }
+
+
+def test_pod_disruption_budget_renders_max_unavailable(helm_runner) -> None:
+    """Ensure an integer maxUnavailable budget renders."""
+
+    rendered = render_chart(
+        helm_runner,
+        CHART,
+        values={
+            "replicaCount": 2,
+            "podDisruptionBudget": {
+                "enabled": True,
+                "maxUnavailable": 1,
+                "unhealthyPodEvictionPolicy": "AlwaysAllow",
+            },
+        },
+    )
+    manifests = load_manifests(rendered)
+    pdb = get_manifest(manifests, "PodDisruptionBudget")
+
+    assert pdb["spec"]["maxUnavailable"] == 1
+    assert "minAvailable" not in pdb["spec"]
+    assert pdb["spec"]["unhealthyPodEvictionPolicy"] == "AlwaysAllow"
+
+
+def test_pod_disruption_budget_rejects_min_and_max(helm_runner) -> None:
+    """Ensure setting both budget fields fails to render."""
+
+    with pytest.raises(
+        HelmTemplateError, match="exactly one of minAvailable or maxUnavailable"
+    ):
+        render_chart(
+            helm_runner,
+            CHART,
+            values={
+                "replicaCount": 2,
+                "podDisruptionBudget": {
+                    "enabled": True,
+                    "minAvailable": 1,
+                    "maxUnavailable": "25%",
+                },
+            },
+        )
+
+
+def test_pod_disruption_budget_skipped_for_single_replica(
+    helm_runner,
+) -> None:
+    """Ensure no PodDisruptionBudget renders over a single replica."""
+
+    rendered = render_chart(
+        helm_runner,
+        CHART,
+        values={
+            "replicaCount": 1,
+            "podDisruptionBudget": {"enabled": True, "minAvailable": 1},
+        },
+    )
+    manifests = load_manifests(rendered)
+
+    assert all(
+        manifest.get("kind") != "PodDisruptionBudget" for manifest in manifests
+    )
+
+
+def test_pod_disruption_budget_uses_autoscaling_min_replicas(
+    helm_runner,
+) -> None:
+    """Ensure autoscaling.minReplicas gates the PDB when autoscaling is on."""
+
+    rendered = render_chart(
+        helm_runner,
+        CHART,
+        values={
+            "replicaCount": 1,
+            "autoscaling": {"enabled": True, "minReplicas": 2},
+            "podDisruptionBudget": {"enabled": True, "minAvailable": 1},
+        },
+    )
+    manifests = load_manifests(rendered)
+    pdb = get_manifest(manifests, "PodDisruptionBudget")
+
+    assert pdb["spec"]["minAvailable"] == 1
+
+
+def test_pod_disruption_budget_is_not_rendered_when_disabled(
+    helm_runner,
+) -> None:
+    """Ensure the PodDisruptionBudget is omitted when disabled."""
+
+    rendered = render_chart(
+        helm_runner,
+        CHART,
+        values={"podDisruptionBudget": {"enabled": False}},
+    )
+    manifests = load_manifests(rendered)
+
+    assert all(
+        manifest.get("kind") != "PodDisruptionBudget" for manifest in manifests
+    )
+
+
+def test_pod_disruption_budget_requires_min_or_max(helm_runner) -> None:
+    """Ensure enabling a PDB without a budget value fails to render."""
+
+    with pytest.raises(
+        HelmTemplateError, match="exactly one of minAvailable or maxUnavailable"
+    ):
+        render_chart(
+            helm_runner,
+            CHART,
+            values={"podDisruptionBudget": {"enabled": True}},
+        )
+
+
 def test_service_monitor_is_not_rendered_when_disabled(helm_runner) -> None:
     """Ensure the ServiceMonitor is omitted when disabled."""
 

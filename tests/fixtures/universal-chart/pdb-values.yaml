@@ -1,0 +1,11 @@
+image:
+  repository: ghcr.io/example/app
+  tag: "1.2.3"
+
+replicaCount: 2
+
+podDisruptionBudget:
+  enabled: true
+  minAvailable: 1
+  annotations:
+    argocd.argoproj.io/sync-wave: "5"

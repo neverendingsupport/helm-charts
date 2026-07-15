@@ -23,6 +23,7 @@ Kubernetes primitives plus a small number of opinionated platform integrations.
   path blocked by default
 - first-class HPA scaling from Prometheus-backed external metrics through
   `autoscaling.hpaScalingRules`
+- optional `PodDisruptionBudget` through `podDisruptionBudget`
 - optional Redis support
 - optional S3 bucket creation via ACK-backed resources
 - extra volumes and mounts
@@ -115,6 +116,33 @@ autoscaling:
 
 Keep CPU or memory targets enabled to combine them with the external metric, or
 set both target fields to `null` for external-only scaling.
+
+## PodDisruptionBudget
+
+Use `podDisruptionBudget` when a multi-replica Deployment should limit voluntary
+disruptions such as node drains. Set exactly one of `minAvailable` or
+`maxUnavailable`; rendering fails when both or neither are set. The budget is
+only rendered when `replicaCount` (or `autoscaling.minReplicas` when autoscaling
+is enabled) is greater than 1, since a budget over a single replica would
+permanently block node drains.
+
+```yaml
+replicaCount: 2
+
+podDisruptionBudget:
+  enabled: true
+  minAvailable: 1
+```
+
+Or allow a percentage of pods to be unavailable during drains:
+
+```yaml
+replicaCount: 4
+
+podDisruptionBudget:
+  enabled: true
+  maxUnavailable: "25%"
+```
 
 ## Generated Values Reference
 
