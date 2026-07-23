@@ -1,0 +1,38 @@
+{{- if .Values.podDisruptionBudget.enabled }}
+{{- $pdb := .Values.podDisruptionBudget }}
+{{- $hasMinAvailable := not (kindIs "invalid" $pdb.minAvailable) }}
+{{- $hasMaxUnavailable := not (kindIs "invalid" $pdb.maxUnavailable) }}
+{{- if eq $hasMinAvailable $hasMaxUnavailable }}
+{{- fail "podDisruptionBudget: set exactly one of minAvailable or maxUnavailable" }}
+{{- end }}
+{{- $replicas := .Values.replicaCount }}
+{{- if .Values.autoscaling.enabled }}
+{{- $replicas = .Values.autoscaling.minReplicas }}
+{{- end }}
+{{- /* A budget over a single replica always reports disruptionsAllowed: 0 and
+blocks node drains, so only render when more than one replica is guaranteed. */}}
+{{- if gt ($replicas | int) 1 }}
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ include "universal-chart.fullname" . }}
+  labels:
+    {{- include "universal-chart.labels" . | nindent 4 }}
+  {{- with $pdb.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  {{- if $hasMaxUnavailable }}
+  maxUnavailable: {{ $pdb.maxUnavailable | toYaml }}
+  {{- else }}
+  minAvailable: {{ $pdb.minAvailable | toYaml }}
+  {{- end }}
+  {{- with $pdb.unhealthyPodEvictionPolicy }}
+  unhealthyPodEvictionPolicy: {{ . }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "universal-chart.selectorLabels" . | nindent 6 }}
+{{- end }}
+{{- end }}

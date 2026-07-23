@@ -206,6 +206,12 @@ helm template my-release . \
 | nameOverride | string | `""` |  |
 | nodeSelector | object | `{}` | Select specific nodes to run upon Normally this should be an empty map |
 | podAnnotations | object | `{}` | Add additional annotations to the pod. Annotations are generally for "people" uses and interoperability. For more information check out: https://kubernetes.io/docs/concepts/overview/working-with-objects/annotations/ |
+| podDisruptionBudget | object | `{"annotations":{},"enabled":false,"maxUnavailable":null,"minAvailable":null,"unhealthyPodEvictionPolicy":null}` | Configure a PodDisruptionBudget for voluntary disruptions such as node drains. Set exactly one of `minAvailable` or `maxUnavailable`; rendering fails when both or neither are set. The budget is only rendered when `replicaCount` (or `autoscaling.minReplicas` when autoscaling is enabled) is greater than 1, since a budget over a single replica would permanently block node drains. More information: https://kubernetes.io/docs/tasks/run-application/configure-pdb/ |
+| podDisruptionBudget.annotations | object | `{}` | Additional annotations to add to the PodDisruptionBudget metadata. |
+| podDisruptionBudget.enabled | bool | `false` | Whether to create a PodDisruptionBudget for the Deployment pods. |
+| podDisruptionBudget.maxUnavailable | string | `nil` | Maximum number or percentage of pods that may be unavailable. |
+| podDisruptionBudget.minAvailable | string | `nil` | Minimum number or percentage of pods that must remain available. |
+| podDisruptionBudget.unhealthyPodEvictionPolicy | string | `nil` | Optional eviction policy for unhealthy pods (Kubernetes 1.26+). See https://kubernetes.io/docs/tasks/run-application/configure-pdb/#unhealthy-pod-eviction-policy |
 | podLabels | object | `{}` | Add additional labels to the pods. Labels are generally for k8s internal use (pod selectors, etc) For more information check out: https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/ |
 | podSecurityContext | object | `{}` |  |
 | prometheusRule | object | `{"additionalLabels":{},"annotations":{},"defaultRuleLabels":{},"enabled":false,"groups":[],"rules":[]}` | Configure a PrometheusRule for evaluating alerting rules against scraped metrics. Recording rules generated from `autoscaling.hpaScalingRules` use this resource's metadata labels and annotations even when `prometheusRule.enabled` is false. |
