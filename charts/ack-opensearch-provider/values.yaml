@@ -407,7 +407,7 @@ securityBootstrap:
   # -- Enable the security bootstrap job.
   enabled: false
   # -- Image used for the security API calls.
-  image: curlimages/curl:8.12.1@sha256:94e9e444bcba979c2ea12e27ae39bee4cd10bc7041a472c4727a558e213744e6 # renovate: datasource=docker depName=curlimages/curl versioning=docker
+  image: curlimages/curl:8.21.0@sha256:7c12af72ceb38b7432ab85e1a265cff6ae58e06f95539d539b654f2cfa64bb13 # renovate: datasource=docker depName=curlimages/curl versioning=docker
   # -- kubectl image used to wait for the domain endpoint and admin secret data.
   kubectlImage: registry.k8s.io/kubectl:v1.34.1@sha256:59bafa07ff3a6d4b417e7633ddb9d79a9606ca98bf64bac080b3e65748669250 # renovate: datasource=docker depName=registry.k8s.io/kubectl versioning=docker
   # -- Maximum runtime for the bootstrap job.
