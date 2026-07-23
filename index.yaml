@@ -111,6 +111,27 @@ entries:
     version: 0.0.1
   ingress-nginx:
   - apiVersion: v2
+    appVersion: v1.15.1-nes-1.15.7
+    created: "2026-07-23T19:27:34.266439198Z"
+    description: Never Ending Support ingress-nginx controller for Kubernetes using
+      NGINX as a reverse proxy and load balancer
+    digest: 593a68bff6924a98e30b931a580b02f3d7ea1cb7efb18c10d4261b106af2a6f9
+    home: https://github.com/neverendingsupport/ingress-nginx-nes
+    icon: https://upload.wikimedia.org/wikipedia/commons/thumb/c/c5/Nginx_logo.svg/500px-Nginx_logo.svg.png
+    keywords:
+    - ingress
+    - nginx
+    kubeVersion: '>=1.21.0-0'
+    maintainers:
+    - name: neverendingsupport
+    name: ingress-nginx
+    sources:
+    - https://github.com/neverendingsupport/ingress-nginx-nes
+    - https://github.com/kubernetes/ingress-nginx
+    urls:
+    - https://github.com/neverendingsupport/helm-charts/releases/download/ingress-nginx-1.0.0/ingress-nginx-1.0.0.tgz
+    version: 1.0.0
+  - apiVersion: v2
     appVersion: v1.15.1-nes-1.15.5
     created: "2026-06-10T19:44:14.24751832Z"
     description: Never Ending Support ingress-nginx controller for Kubernetes using
@@ -762,4 +783,4 @@ entries:
     urls:
     - https://github.com/neverendingsupport/helm-charts/releases/download/universal-chart-1.0.0/universal-chart-1.0.0.tgz
     version: 1.0.0
-generated: "2026-07-13T20:26:14.764859684Z"
+generated: "2026-07-23T19:27:34.266636037Z"
