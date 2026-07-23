@@ -2,7 +2,7 @@
 
 [ingress-nginx-nes](https://github.com/neverendingsupport/ingress-nginx-nes) Ingress controller for Kubernetes using NGINX as a reverse proxy and load balancer
 
-![Version: 0.0.7](https://img.shields.io/badge/Version-0.0.7-informational?style=flat-square) ![AppVersion: v1.15.1-nes-1.15.5](https://img.shields.io/badge/AppVersion-v1.15.1--nes--1.15.5-informational?style=flat-square)
+![Version: 0.0.9](https://img.shields.io/badge/Version-0.0.9-informational?style=flat-square) ![AppVersion: v1.15.1-nes-1.15.7](https://img.shields.io/badge/AppVersion-v1.15.1--nes--1.15.7-informational?style=flat-square)
 
 To use, add `ingressClassName: nginx` spec field or the `kubernetes.io/ingress.class: nginx` annotation to your Ingress resources.
 
@@ -15,7 +15,7 @@ Kubernetes: `>=1.21.0-0`
 ## Get OCI Chart Info
 
 ```console
-helm show chart oci://ghcr.io/neverendingsupport/charts/ingress-nginx --version 0.0.7
+helm show chart oci://ghcr.io/neverendingsupport/charts/ingress-nginx --version 0.0.9
 ```
 
 ## Install Chart
@@ -23,11 +23,11 @@ helm show chart oci://ghcr.io/neverendingsupport/charts/ingress-nginx --version 
 **Important:** only helm3 is supported
 
 ```console
-helm install [RELEASE_NAME] oci://ghcr.io/neverendingsupport/charts/ingress-nginx --version 0.0.7
+helm install [RELEASE_NAME] oci://ghcr.io/neverendingsupport/charts/ingress-nginx --version 0.0.9
 ```
 
 The command deploys ingress-nginx on the Kubernetes cluster in the default configuration.
-By default, the chart installs `registry.nes.herodevs.com/nes/ingress-nginx:v1.15.1-nes-1.15.5`.
+By default, the chart installs `registry.nes.herodevs.com/nes/ingress-nginx:v1.15.1-nes-1.15.7`.
 
 _See [configuration](#configuration) below._
 
@@ -46,7 +46,7 @@ _See [helm uninstall](https://helm.sh/docs/helm/helm_uninstall/) for command doc
 ## Upgrading Chart
 
 ```console
-helm upgrade [RELEASE_NAME] oci://ghcr.io/neverendingsupport/charts/ingress-nginx --version 0.0.7 --install
+helm upgrade [RELEASE_NAME] oci://ghcr.io/neverendingsupport/charts/ingress-nginx --version 0.0.9 --install
 ```
 
 _See [helm upgrade](https://helm.sh/docs/helm/helm_upgrade/) for command documentation._
@@ -69,7 +69,7 @@ Note that there are some different and upgraded configurations between the two c
 See [Customizing the Chart Before Installing](https://helm.sh/docs/intro/using_helm/#customizing-the-chart-before-installing). To see all configurable options with detailed comments, visit the chart's [values.yaml](./values.yaml), or run these configuration commands:
 
 ```console
-helm show values oci://ghcr.io/neverendingsupport/charts/ingress-nginx --version 0.0.7
+helm show values oci://ghcr.io/neverendingsupport/charts/ingress-nginx --version 0.0.9
 ```
 
 ### PodDisruptionBudget
