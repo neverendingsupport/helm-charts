@@ -17,23 +17,6 @@ on:
           - ingress-nginx
           - nes-node-web
           - universal-chart
-      bump:
-        description: Version bump to apply
-        required: true
-        type: choice
-        options:
-          - patch
-          - minor
-          - major
-        default: patch
-      force:
-        description: Force a release even without detected changes
-        required: true
-        type: choice
-        options:
-          - "false"
-          - "true"
-        default: "false"
 
 jobs:
   detect-changes:
@@ -104,26 +87,19 @@ jobs:
 
       - name: Resolve chart release version
         id: version
-        env:
-          CHART: ${{ matrix.chart }}
-          DEFAULT_BUMP: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.bump || 'patch' }}
-          FORCE_RELEASE: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.force == 'true' }}
-        run: |
-          args=(
-            --chart-path "charts/$CHART"
-            --tag-prefix "$CHART-"
-            --default-bump "$DEFAULT_BUMP"
-            --github-output "$GITHUB_OUTPUT"
-          )
-          if [[ "$FORCE_RELEASE" == "true" ]]; then
-            args+=(--force)
-          fi
-          python3 scripts/resolve_chart_release.py "${args[@]}"
+        uses: PaulHatch/semantic-version@9f72830310d5ed81233b641ee59253644cd8a8fc # v6.0.2
+        with:
+          tag_prefix: "${{ matrix.chart }}-"
+          change_path: "charts/${{ matrix.chart }}"
+          major_pattern: "#major"
+          minor_pattern: "#minor"
+          ignore_commits_pattern: "#none"
+          search_commit_body: "true"
 
       - name: Create chart tag
-        if: steps.version.outputs.bump != 'none'
+        if: steps.version.outputs.changed == 'true' && steps.version.outputs.is_tagged != 'true'
         env:
-          RELEASE_TAG: ${{ steps.version.outputs.tag }}
+          RELEASE_TAG: ${{ steps.version.outputs.version_tag }}
         run: |
           git tag "$RELEASE_TAG" "$GITHUB_SHA"
           git push origin "refs/tags/$RELEASE_TAG"
@@ -163,9 +139,10 @@ jobs:
         id: notes
         run: |
           notes_file="$RUNNER_TEMP/release-notes-${{ matrix.chart }}.md"
-          last_tag="${{ steps.version.outputs.previous_tag }}"
+          previous_version="${{ steps.version.outputs.previous_version }}"
+          last_tag="${{ matrix.chart }}-$previous_version"
           log_args=()
-          if [[ -n "$last_tag" ]]; then
+          if git rev-parse --verify --quiet "refs/tags/$last_tag" >/dev/null; then
             log_args+=("${last_tag}..HEAD")
           fi
           changes=$(git log "${log_args[@]}" --pretty=format:'- %s (%h)' -- \
@@ -178,7 +155,7 @@ jobs:
               echo "_No chart changes detected._"
               if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
                 echo ""
-                echo "_Manual bump: no chart changes detected._"
+                echo "_Manual dispatch: no chart changes detected._"
               fi
             fi
           } > "$notes_file"
