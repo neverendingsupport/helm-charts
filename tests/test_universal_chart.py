@@ -11,6 +11,7 @@ from .chart_test_utils import (
     get_manifest,
     get_primary_container,
     load_manifests,
+    manifests_by_name,
     render_chart,
 )
 from .conftest import HelmTemplateError
@@ -477,20 +478,9 @@ def test_service_annotations_and_labels_render_on_primary_service_only(
         },
     )
     manifests = load_manifests(rendered)
-    services = [
-        manifest for manifest in manifests if manifest.get("kind") == "Service"
-    ]
-
-    main_service = next(
-        service
-        for service in services
-        if service["metadata"]["name"] == CHART.release
-    )
-    metrics_service = next(
-        service
-        for service in services
-        if service["metadata"]["name"] == f"{CHART.release}-metrics"
-    )
+    services = manifests_by_name(manifests, "Service")
+    main_service = services[CHART.release]
+    metrics_service = services[f"{CHART.release}-metrics"]
 
     assert main_service["metadata"]["annotations"] == {
         "teleport.dev/name": "example-app",
@@ -599,21 +589,11 @@ def test_metrics_service_renders_when_alternate_port_is_set(
     )
     manifests = load_manifests(rendered)
 
-    services = [
-        manifest for manifest in manifests if manifest.get("kind") == "Service"
-    ]
+    services = manifests_by_name(manifests, "Service")
     assert len(services) == 2
 
-    main_service = next(
-        service
-        for service in services
-        if service["metadata"]["name"] == CHART.release
-    )
-    metrics_service = next(
-        service
-        for service in services
-        if service["metadata"]["name"] == f"{CHART.release}-metrics"
-    )
+    main_service = services[CHART.release]
+    metrics_service = services[f"{CHART.release}-metrics"]
 
     assert metrics_service["spec"]["type"] == "ClusterIP"
     assert (
