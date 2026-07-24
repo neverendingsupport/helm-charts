@@ -611,17 +611,21 @@ replicaCount: 1
 # properties:
 #   enabled:
 #     type: boolean
+#   allowZeroDisruptions:
+#     type: boolean
 #   minAvailable:
 #     anyof:
 #       - type: integer
 #         minimum: 0
 #       - type: string
+#         pattern: ^[0-9]+%$
 #       - type: "null"
 #   maxUnavailable:
 #     anyof:
 #       - type: integer
 #         minimum: 0
 #       - type: string
+#         pattern: ^[0-9]+%$
 #       - type: "null"
 #   unhealthyPodEvictionPolicy:
 #     anyof:
@@ -636,13 +640,17 @@ replicaCount: 1
 # @schema
 # -- Configure a PodDisruptionBudget for voluntary disruptions such as node drains.
 # Set exactly one of `minAvailable` or `maxUnavailable`; rendering fails when both
-# or neither are set. The budget is only rendered when `replicaCount` (or
-# `autoscaling.minReplicas` when autoscaling is enabled) is greater than 1, since
-# a budget over a single replica would permanently block node drains.
+# or neither are set. `minAvailable` cannot require more healthy pods than
+# `replicaCount`, or `autoscaling.minReplicas` when autoscaling is enabled.
+# Percentage limits use Kubernetes' round-up behavior.
 # More information: https://kubernetes.io/docs/tasks/run-application/configure-pdb/
 podDisruptionBudget:
   # -- Whether to create a PodDisruptionBudget for the Deployment pods.
   enabled: false
+  # -- Allow a budget that blocks every voluntary eviction. Keep this false
+  # unless a cluster operator has agreed to remove or replace the budget before
+  # draining its nodes.
+  allowZeroDisruptions: false
   # -- Minimum number or percentage of pods that must remain available.
   minAvailable: null
   # -- Maximum number or percentage of pods that may be unavailable.

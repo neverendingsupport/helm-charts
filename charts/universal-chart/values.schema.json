@@ -436,6 +436,9 @@
         "enabled": {
           "type": "boolean"
         },
+        "allowZeroDisruptions": {
+          "type": "boolean"
+        },
         "minAvailable": {
           "anyOf": [
             {
@@ -443,7 +446,8 @@
               "minimum": 0
             },
             {
-              "type": "string"
+              "type": "string",
+              "pattern": "^[0-9]+%$"
             },
             {
               "type": "null"
@@ -457,7 +461,8 @@
               "minimum": 0
             },
             {
-              "type": "string"
+              "type": "string",
+              "pattern": "^[0-9]+%$"
             },
             {
               "type": "null"

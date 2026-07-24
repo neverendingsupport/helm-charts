@@ -5,13 +5,38 @@
 {{- if eq $hasMinAvailable $hasMaxUnavailable }}
 {{- fail "podDisruptionBudget: set exactly one of minAvailable or maxUnavailable" }}
 {{- end }}
-{{- $replicas := .Values.replicaCount }}
+{{- $replicas := .Values.replicaCount | int }}
 {{- if .Values.autoscaling.enabled }}
-{{- $replicas = .Values.autoscaling.minReplicas }}
+{{- $replicas = .Values.autoscaling.minReplicas | int }}
 {{- end }}
-{{- /* A budget over a single replica always reports disruptionsAllowed: 0 and
-blocks node drains, so only render when more than one replica is guaranteed. */}}
-{{- if gt ($replicas | int) 1 }}
+{{- if $hasMinAvailable }}
+{{- $minimumPods := $pdb.minAvailable | int }}
+{{- if kindIs "string" $pdb.minAvailable }}
+{{- $percentage := trimSuffix "%" $pdb.minAvailable | int }}
+{{- if gt $percentage 100 }}
+{{- fail (printf "podDisruptionBudget.minAvailable must be between 0%% and 100%%, got %s" $pdb.minAvailable) }}
+{{- end }}
+{{- $minimumPods = div (add (mul $percentage $replicas) 99) 100 }}
+{{- end }}
+{{- if gt $minimumPods $replicas }}
+{{- fail (printf "podDisruptionBudget.minAvailable (%v) requires %d healthy pods, but the effective replica minimum is %d" $pdb.minAvailable $minimumPods $replicas) }}
+{{- end }}
+{{- if and (eq $minimumPods $replicas) (not $pdb.allowZeroDisruptions) }}
+{{- fail (printf "podDisruptionBudget.minAvailable (%v) allows no voluntary disruptions with an effective replica minimum of %d; set podDisruptionBudget.allowZeroDisruptions=true only when blocking every eviction is intentional" $pdb.minAvailable $replicas) }}
+{{- end }}
+{{- else }}
+{{- $maximumPods := $pdb.maxUnavailable | int }}
+{{- if kindIs "string" $pdb.maxUnavailable }}
+{{- $percentage := trimSuffix "%" $pdb.maxUnavailable | int }}
+{{- if gt $percentage 100 }}
+{{- fail (printf "podDisruptionBudget.maxUnavailable must be between 0%% and 100%%, got %s" $pdb.maxUnavailable) }}
+{{- end }}
+{{- $maximumPods = div (add (mul $percentage $replicas) 99) 100 }}
+{{- end }}
+{{- if and (eq $maximumPods 0) (not $pdb.allowZeroDisruptions) }}
+{{- fail (printf "podDisruptionBudget.maxUnavailable (%v) allows no voluntary disruptions; set podDisruptionBudget.allowZeroDisruptions=true only when blocking every eviction is intentional" $pdb.maxUnavailable) }}
+{{- end }}
+{{- end }}
 apiVersion: policy/v1
 kind: PodDisruptionBudget
 metadata:
@@ -34,5 +59,4 @@ spec:
   selector:
     matchLabels:
       {{- include "universal-chart.selectorLabels" . | nindent 6 }}
-{{- end }}
 {{- end }}

@@ -121,10 +121,14 @@ set both target fields to `null` for external-only scaling.
 
 Use `podDisruptionBudget` when a multi-replica Deployment should limit voluntary
 disruptions such as node drains. Set exactly one of `minAvailable` or
-`maxUnavailable`; rendering fails when both or neither are set. The budget is
-only rendered when `replicaCount` (or `autoscaling.minReplicas` when autoscaling
-is enabled) is greater than 1, since a budget over a single replica would
-permanently block node drains.
+`maxUnavailable`; rendering fails when both or neither are set.
+
+The chart also stops impossible budgets before they reach the cluster.
+`minAvailable` cannot exceed `replicaCount`, or `autoscaling.minReplicas` when
+autoscaling is enabled. A budget that allows no voluntary disruptions requires
+`allowZeroDisruptions: true`, because it will block routine node drains.
+Kubernetes rounds percentages up, so `minAvailable: "75%"` requires both pods
+when the effective replica minimum is two.
 
 ```yaml
 replicaCount: 2
@@ -142,6 +146,17 @@ replicaCount: 4
 podDisruptionBudget:
   enabled: true
   maxUnavailable: "25%"
+```
+
+Set `allowZeroDisruptions: true` only when you mean to block every eviction:
+
+```yaml
+replicaCount: 2
+
+podDisruptionBudget:
+  enabled: true
+  minAvailable: 2
+  allowZeroDisruptions: true
 ```
 
 ## Generated Values Reference
