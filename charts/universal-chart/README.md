@@ -15,6 +15,50 @@ of helpful extra features:
 
 TODO: Explain how those work better
 
+## Availability scheduling
+
+The availability preset spreads matching pods across zones and nodes. It uses
+the standard `topology.kubernetes.io/zone` and `kubernetes.io/hostname` labels
+rather than a Karpenter-specific zone label.
+
+Preferred mode is the default because it won't block scheduling when capacity
+is tight:
+
+```yaml
+availability:
+  enabled: true
+  mode: preferred
+```
+
+Both constraints use `ScheduleAnyway`. The scheduler favors a different zone
+and node, but it can still place a pod when the cluster has limited capacity.
+
+Strict mode changes both constraints to `DoNotSchedule`:
+
+```yaml
+availability:
+  enabled: true
+  mode: strict
+```
+
+Use strict mode only when reduced availability is worse than delayed
+deployment. A pod remains Pending if the scheduler cannot satisfy both the zone
+and hostname constraints. This can stall a rollout during a zone outage or
+while the cluster waits for more nodes.
+
+The preset owns the zone and hostname constraints while it is enabled. The
+chart keeps custom constraints that use other topology keys, but drops raw zone
+or hostname constraints to avoid duplicate rules. Disable the preset when you
+need full control through `topologySpreadConstraints`.
+
+The legacy `spread_azs` value remains supported. It now uses
+`topology.kubernetes.io/zone`; new applications should use the availability
+preset when they also need node-level spreading.
+
+See the
+[Kubernetes topology spread documentation](https://kubernetes.io/docs/concepts/scheduling-eviction/topology-spread-constraints/)
+for the scheduler's full constraint behavior.
+
 ## Using The Chart
 
 Normally, you're going to want to distribute this chart via ArgoCD as an
@@ -176,6 +220,9 @@ helm template my-release . \
 | autoscaling.minReplicas | int | `1` | miminum number of replicas to run |
 | autoscaling.targetCPUUtilizationPercentage | int | `80` | If CPU utilization of replicas exceeds this percentage of requested CPU, start a new replica |
 | autoscaling.targetMemoryUtilizationPercentage | string | `nil` | If Memory utilization of replicas exceeds this percentage of requested Memory, start a new replica |
+| availability | object | `{"enabled":false,"mode":"preferred"}` | Spread replicas across availability zones and nodes. The preferred mode asks the scheduler to spread pods but still permits placement when capacity is limited. Strict mode leaves pods Pending rather than violate either rule. When enabled, this preset owns the `topology.kubernetes.io/zone` and `kubernetes.io/hostname` constraints; other custom constraints are preserved. More information: https://kubernetes.io/docs/concepts/scheduling-eviction/topology-spread-constraints/ |
+| availability.enabled | bool | `false` | Whether to add the zone and hostname availability constraints. |
+| availability.mode | string | `"preferred"` | Scheduling mode. Use `preferred` to favor availability without blocking placement, or `strict` to require both constraints. |
 | awsEnvSecrets.env_secret_name | string | `"aws-env"` | name of secret to store AWS secretmanager values within |
 | awsEnvSecrets.externalSecret.secretPath | string | `""` | secret path |
 | awsEnvSecrets.externalSecret.secretStoreRef.kind | string | `"SecretStore"` | Is the store in this namespace or cluster-wide? |
@@ -268,12 +315,12 @@ helm template my-release . \
 | serviceMonitor.enabled | bool | `false` | Whether to create a ServiceMonitor resource. |
 | serviceMonitor.interval | string | `nil` | Optional scrape interval (in seconds). When null, the operator default is used. |
 | serviceMonitor.path | string | `"/metrics"` | HTTP path to scrape for metrics. Must start with "/". |
-| spread_azs | boolean | `false` | Add a topology spread rule across Karpenter availability zones. |
+| spread_azs | boolean | `false` | Add a preferred topology spread rule across availability zones. Kept for backward compatibility; prefer `availability.enabled` for new apps. |
 | spread_spot | boolean | `false` | Add a topology spread rule across Karpenter capacity types (spot vs on-demand). |
 | startupProbe | string | `nil` | Configure a startup probe to check if the application has started successfully. The startup probe is used to give the application more time to start up before the liveness probe takes over. This is especially useful for applications that take a long time to initialize. Once the startup probe succeeds once, Kubernetes will stop using it and switch to the liveness probe for ongoing health checks. More information can be found here: https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/ Example configuration:   startupProbe:     httpGet:       path: /diagnostics/health       port: http     periodSeconds: 5     failureThreshold: 60 |
 | terminationGracePeriodSeconds | string | `nil` | Override the default termination grace period (in seconds). When null, the Kubernetes default of 30 seconds is used. Maximum allowed is 900 (15 minutes). |
 | tolerations | list | `[]` | List of taints these pods should tolerate. Normally this should be an empty list |
-| topologySpreadConstraints | list | `[{"maxSkew":1,"topologyKey":"topology.kubernetes.io/zone","whenUnsatisfiable":"ScheduleAnyway"}]` | When deploying with multiple replicas, spread pods around using these rules. The default is to spread pods evenly among the Availability Zones defined in the cluster. With a Karpenter-managed EKS cluster (like HeroDevs uses), there will usually be 3 AZs in a region where a cluster is deployed. If a constraint omits labelSelector, the chart injects selector labels. |
+| topologySpreadConstraints | list | `[{"maxSkew":1,"topologyKey":"topology.kubernetes.io/zone","whenUnsatisfiable":"ScheduleAnyway"}]` | When deploying with multiple replicas, spread pods around using these rules. The default is to spread pods evenly among the Availability Zones defined in the cluster. With a Karpenter-managed EKS cluster (like HeroDevs uses), there will usually be 3 AZs in a region where a cluster is deployed. If a constraint omits labelSelector, the chart injects selector labels. When the availability preset is enabled, it replaces custom zone and hostname constraints so each topology key appears only once. |
 | volumeMounts | list | `[]` | Additional volumes to mount |
 | volumes | list | `[]` | Additional volumes to create |
 

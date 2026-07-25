@@ -184,17 +184,30 @@ spec:
       {{- $selectorLabels := include "universal-chart.selectorLabels" . | fromYaml }}
       {{- $defaultLabelSelector := dict "matchLabels" $selectorLabels }}
       {{- $topologySpreadConstraints := list }}
+      {{- $topologyKeys := list }}
+      {{- $availabilityTopologyKeys := list "topology.kubernetes.io/zone" "kubernetes.io/hostname" }}
+      {{- if .Values.availability.enabled }}
+      {{- $whenUnsatisfiable := ternary "DoNotSchedule" "ScheduleAnyway" (eq .Values.availability.mode "strict") }}
+      {{- range $availabilityTopologyKeys }}
+      {{- $topologySpreadConstraints = append $topologySpreadConstraints (dict "maxSkew" 1 "topologyKey" . "whenUnsatisfiable" $whenUnsatisfiable "labelSelector" $defaultLabelSelector) }}
+      {{- $topologyKeys = append $topologyKeys . }}
+      {{- end }}
+      {{- end }}
       {{- range .Values.topologySpreadConstraints }}
       {{- $constraint := . }}
       {{- if not (hasKey $constraint "labelSelector") }}
       {{- $constraint = merge $constraint (dict "labelSelector" $defaultLabelSelector) }}
       {{- end }}
+      {{- if not (and $.Values.availability.enabled (has $constraint.topologyKey $availabilityTopologyKeys)) }}
       {{- $topologySpreadConstraints = append $topologySpreadConstraints $constraint }}
+      {{- $topologyKeys = append $topologyKeys $constraint.topologyKey }}
       {{- end }}
-      {{- if .Values.spread_azs }}
-      {{- $topologySpreadConstraints = append $topologySpreadConstraints (dict "maxSkew" 1 "topologyKey" "karpenter.sh/zone" "whenUnsatisfiable" "ScheduleAnyway" "labelSelector" $defaultLabelSelector) }}
       {{- end }}
-      {{- if .Values.spread_spot }}
+      {{- if and .Values.spread_azs (not (has "topology.kubernetes.io/zone" $topologyKeys)) }}
+      {{- $topologySpreadConstraints = append $topologySpreadConstraints (dict "maxSkew" 1 "topologyKey" "topology.kubernetes.io/zone" "whenUnsatisfiable" "ScheduleAnyway" "labelSelector" $defaultLabelSelector) }}
+      {{- $topologyKeys = append $topologyKeys "topology.kubernetes.io/zone" }}
+      {{- end }}
+      {{- if and .Values.spread_spot (not (has "karpenter.sh/capacity-type" $topologyKeys)) }}
       {{- $topologySpreadConstraints = append $topologySpreadConstraints (dict "maxSkew" 1 "topologyKey" "karpenter.sh/capacity-type" "whenUnsatisfiable" "ScheduleAnyway" "labelSelector" $defaultLabelSelector) }}
       {{- end }}
       {{- with $topologySpreadConstraints }}

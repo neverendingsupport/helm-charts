@@ -83,12 +83,5 @@ spec:
               app.kubernetes.io/instance: universal-chart
               app.kubernetes.io/name: universal-chart
           maxSkew: 1
-          topologyKey: karpenter.sh/zone
-          whenUnsatisfiable: ScheduleAnyway
-        - labelSelector:
-            matchLabels:
-              app.kubernetes.io/instance: universal-chart
-              app.kubernetes.io/name: universal-chart
-          maxSkew: 1
           topologyKey: karpenter.sh/capacity-type
           whenUnsatisfiable: ScheduleAnyway
