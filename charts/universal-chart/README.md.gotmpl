@@ -14,6 +14,50 @@ of helpful extra features:
 
 TODO: Explain how those work better
 
+## Availability scheduling
+
+The availability preset spreads matching pods across zones and nodes. It uses
+the standard `topology.kubernetes.io/zone` and `kubernetes.io/hostname` labels
+rather than a Karpenter-specific zone label.
+
+Preferred mode is the default because it won't block scheduling when capacity
+is tight:
+
+```yaml
+availability:
+  enabled: true
+  mode: preferred
+```
+
+Both constraints use `ScheduleAnyway`. The scheduler favors a different zone
+and node, but it can still place a pod when the cluster has limited capacity.
+
+Strict mode changes both constraints to `DoNotSchedule`:
+
+```yaml
+availability:
+  enabled: true
+  mode: strict
+```
+
+Use strict mode only when reduced availability is worse than delayed
+deployment. A pod remains Pending if the scheduler cannot satisfy both the zone
+and hostname constraints. This can stall a rollout during a zone outage or
+while the cluster waits for more nodes.
+
+The preset owns the zone and hostname constraints while it is enabled. The
+chart keeps custom constraints that use other topology keys, but drops raw zone
+or hostname constraints to avoid duplicate rules. Disable the preset when you
+need full control through `topologySpreadConstraints`.
+
+The legacy `spread_azs` value remains supported. It now uses
+`topology.kubernetes.io/zone`; new applications should use the availability
+preset when they also need node-level spreading.
+
+See the
+[Kubernetes topology spread documentation](https://kubernetes.io/docs/concepts/scheduling-eviction/topology-spread-constraints/)
+for the scheduler's full constraint behavior.
+
 ## Using The Chart
 
 Normally, you're going to want to distribute this chart via ArgoCD as an

@@ -805,7 +805,33 @@ tolerations: []
 # More info at https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity
 affinity: {}
 
-# -- (boolean) Add a topology spread rule across Karpenter availability zones.
+# @schema
+# type: object
+# additionalProperties: false
+# properties:
+#   enabled:
+#     type: boolean
+#   mode:
+#     type: string
+#     enum:
+#       - preferred
+#       - strict
+# @schema
+# -- Spread replicas across availability zones and nodes. The preferred mode
+# asks the scheduler to spread pods but still permits placement when capacity is
+# limited. Strict mode leaves pods Pending rather than violate either rule.
+# When enabled, this preset owns the `topology.kubernetes.io/zone` and
+# `kubernetes.io/hostname` constraints; other custom constraints are preserved.
+# More information: https://kubernetes.io/docs/concepts/scheduling-eviction/topology-spread-constraints/
+availability:
+  # -- Whether to add the zone and hostname availability constraints.
+  enabled: false
+  # -- Scheduling mode. Use `preferred` to favor availability without blocking
+  # placement, or `strict` to require both constraints.
+  mode: preferred
+
+# -- (boolean) Add a preferred topology spread rule across availability zones.
+# Kept for backward compatibility; prefer `availability.enabled` for new apps.
 spread_azs: false
 
 # -- (boolean) Add a topology spread rule across Karpenter capacity types
@@ -816,7 +842,9 @@ spread_spot: false
 # rules. The default is to spread pods evenly among the Availability Zones
 # defined in the cluster. With a Karpenter-managed EKS cluster (like HeroDevs
 # uses), there will usually be 3 AZs in a region where a cluster is deployed.
-# If a constraint omits labelSelector, the chart injects selector labels.
+# If a constraint omits labelSelector, the chart injects selector labels. When
+# the availability preset is enabled, it replaces custom zone and hostname
+# constraints so each topology key appears only once.
 topologySpreadConstraints:
   - maxSkew: 1
     topologyKey: topology.kubernetes.io/zone

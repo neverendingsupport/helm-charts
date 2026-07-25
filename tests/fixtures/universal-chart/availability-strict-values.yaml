@@ -1,0 +1,7 @@
+image:
+  repository: ghcr.io/example/app
+  tag: "1.2.3"
+replicaCount: 3
+availability:
+  enabled: true
+  mode: strict

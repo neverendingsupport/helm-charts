@@ -185,6 +185,22 @@
         }
       }
     },
+    "availability": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        },
+        "mode": {
+          "type": "string",
+          "enum": [
+            "preferred",
+            "strict"
+          ]
+        }
+      }
+    },
     "spread_azs": {
       "type": "boolean"
     },
