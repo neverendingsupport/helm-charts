@@ -6,9 +6,8 @@ from pathlib import Path
 
 import pytest
 
-from .chart_test_utils import ChartContext, assert_matches_golden, render_chart
-
-CHART = ChartContext("universal-chart")
+from .chart_test_utils import assert_matches_golden, render_chart
+from .universal_chart_test_utils import CHART
 
 
 def discover_golden_pairs() -> list[tuple[Path, Path]]:

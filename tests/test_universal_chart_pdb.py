@@ -6,15 +6,9 @@ from typing import Any
 
 import pytest
 
-from .chart_test_utils import (
-    ChartContext,
-    get_manifest,
-    load_manifests,
-    render_chart,
-)
+from .chart_test_utils import get_manifest, load_manifests, render_chart
 from .conftest import HelmTemplateError
-
-CHART = ChartContext("universal-chart")
+from .universal_chart_test_utils import CHART
 
 
 def _pdb_values(

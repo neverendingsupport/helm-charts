@@ -1,4 +1,4 @@
-"""Tests for universal-chart public metrics blocking."""
+"""Public metrics blocking tests for universal-chart."""
 
 from __future__ import annotations
 
@@ -6,123 +6,40 @@ from typing import Any
 
 import pytest
 
-from .chart_test_utils import (
-    ChartContext,
-    get_manifest,
-    load_manifests,
-    render_chart,
-)
+from .chart_test_utils import get_manifest, render_chart
 from .conftest import HelmTemplateError
-
-CHART = ChartContext("universal-chart")
-
-
-def _ingresses_by_name(
-    manifests: list[dict[str, Any]],
-) -> dict[str, dict[str, Any]]:
-    """Return ingress manifests keyed by name."""
-
-    return {
-        manifest["metadata"]["name"]: manifest
-        for manifest in manifests
-        if manifest.get("kind") == "Ingress"
-    }
-
-
-def _nginx_ingress_values(
-    *,
-    paths: list[dict[str, str]] | None = None,
-    annotations: dict[str, str] | None = None,
-    class_name: str | None = "nginx",
-) -> dict[str, Any]:
-    """Return values for an nginx ingress with metrics scraping enabled."""
-
-    ingress: dict[str, Any] = {
-        "enabled": True,
-        "hosts": [
-            {
-                "host": "app.example.com",
-                "paths": paths or [{"path": "/", "pathType": "Prefix"}],
-            }
-        ],
-    }
-    if class_name is not None:
-        ingress["className"] = class_name
-    if annotations is not None:
-        ingress["annotations"] = annotations
-
-    return {
-        "ingress": ingress,
-        "serviceMonitor": {"enabled": True, "path": "/metrics"},
-    }
-
-
-def _regex_ingress_values(
-    *,
-    block_external_ingress: dict[str, Any] | None = None,
-) -> dict[str, Any]:
-    """Return values for an nginx regex/rewrite ingress with metrics enabled."""
-
-    values = _nginx_ingress_values(
-        paths=[
-            {
-                "path": "/(eol)(/|$)(.*)",
-                "pathType": "ImplementationSpecific",
-            }
-        ],
-        annotations={
-            "nginx.ingress.kubernetes.io/rewrite-target": "/$1/$3",
-            "nginx.ingress.kubernetes.io/use-regex": "true",
-        },
-    )
-    values["serviceMonitor"]["path"] = "/eol/api/metrics"
-    if block_external_ingress is not None:
-        values["serviceMonitor"][
-            "blockExternalIngress"
-        ] = block_external_ingress
-
-    return values
+from .universal_chart_metrics_block_test_utils import (
+    ingresses_by_name,
+    nginx_ingress_values,
+)
+from .universal_chart_test_utils import CHART, render_manifests
 
 
 def test_metrics_block_ingress_renders_for_nginx_ingress(
     helm_runner,
 ) -> None:
-    """Ensure nginx ingress blocks public access to ServiceMonitor metrics."""
+    """Block public metrics paths on every nginx Ingress host."""
 
-    rendered = render_chart(
-        helm_runner,
-        CHART,
-        values={
-            "ingress": {
-                "enabled": True,
-                "className": "nginx",
-                "annotations": {
-                    "nginx.ingress.kubernetes.io/permanent-redirect": (
-                        "https://example.com"
-                    ),
-                },
-                "hosts": [
-                    {
-                        "host": "app.example.com",
-                        "paths": [{"path": "/", "pathType": "Prefix"}],
-                    },
-                    {
-                        "host": "alt.example.com",
-                        "paths": [{"path": "/", "pathType": "Prefix"}],
-                    },
-                ],
-                "tls": [
-                    {
-                        "secretName": "app-example-com",
-                        "hosts": ["app.example.com", "alt.example.com"],
-                    }
-                ],
-            },
-            "serviceMonitor": {"enabled": True, "path": "/metrics"},
-        },
+    values = nginx_ingress_values(
+        annotations={
+            "nginx.ingress.kubernetes.io/permanent-redirect": (
+                "https://example.com"
+            ),
+        }
     )
-    manifests = load_manifests(rendered)
-    ingresses = _ingresses_by_name(manifests)
+    values["ingress"]["hosts"].append(
+        {
+            "host": "alt.example.com",
+            "paths": [{"path": "/", "pathType": "Prefix"}],
+        }
+    )
+    values["ingress"]["tls"] = [
+        {
+            "secretName": "app-example-com",
+            "hosts": ["app.example.com", "alt.example.com"],
+        }
+    ]
+    ingresses = ingresses_by_name(render_manifests(helm_runner, values=values))
     main = ingresses[CHART.release]
     block = ingresses[f"{CHART.release}-metrics-block"]
 
@@ -133,7 +50,6 @@ def test_metrics_block_ingress_renders_for_nginx_ingress(
     }
     assert block["spec"]["ingressClassName"] == "nginx"
     assert block["spec"]["tls"][0]["secretName"] == "app-example-com"
-
     rules = block["spec"]["rules"]
     assert [rule["host"] for rule in rules] == [
         "app.example.com",
@@ -150,13 +66,13 @@ def test_metrics_block_ingress_rejects_duplicate_primary_path(
     helm_runner,
     path: str,
 ) -> None:
-    """Reject primary paths that would compete with the block Ingress."""
+    """Reject primary paths that compete with the block Ingress."""
 
     with pytest.raises(HelmTemplateError):
         render_chart(
             helm_runner,
             CHART,
-            values=_nginx_ingress_values(
+            values=nginx_ingress_values(
                 paths=[
                     {"path": "/", "pathType": "Prefix"},
                     {"path": path, "pathType": "Prefix"},
@@ -165,30 +81,15 @@ def test_metrics_block_ingress_rejects_duplicate_primary_path(
         )
 
 
-def test_metrics_block_ingress_uses_prometheus_default_path_when_null(
+def test_metrics_block_ingress_uses_default_path_when_null(
     helm_runner,
 ) -> None:
-    """Block /metrics when ServiceMonitor omits path."""
+    """Block /metrics when the ServiceMonitor omits its path."""
 
-    rendered = render_chart(
-        helm_runner,
-        CHART,
-        values={
-            "ingress": {
-                "enabled": True,
-                "className": "nginx",
-                "hosts": [
-                    {
-                        "host": "app.example.com",
-                        "paths": [{"path": "/", "pathType": "Prefix"}],
-                    }
-                ],
-            },
-            "serviceMonitor": {"enabled": True, "path": None},
-        },
-    )
-    manifests = load_manifests(rendered)
-    ingresses = _ingresses_by_name(manifests)
+    values = nginx_ingress_values()
+    values["serviceMonitor"]["path"] = None
+    manifests = render_manifests(helm_runner, values=values)
+    ingresses = ingresses_by_name(manifests)
     endpoint = get_manifest(manifests, "ServiceMonitor")["spec"]["endpoints"][0]
     block_path = ingresses[f"{CHART.release}-metrics-block"]["spec"]["rules"][
         0
@@ -198,29 +99,15 @@ def test_metrics_block_ingress_uses_prometheus_default_path_when_null(
     assert block_path["path"] == "/metrics"
 
 
-def test_metrics_block_ingress_renders_for_classless_ingress(
-    helm_runner,
-) -> None:
-    """Mirror classless ingresses for default ingress-nginx controllers."""
+def test_metrics_block_ingress_renders_without_class(helm_runner) -> None:
+    """Support default ingress-nginx controllers with no named class."""
 
-    rendered = render_chart(
-        helm_runner,
-        CHART,
-        values={
-            "ingress": {
-                "enabled": True,
-                "hosts": [
-                    {
-                        "host": "app.example.com",
-                        "paths": [{"path": "/", "pathType": "Prefix"}],
-                    }
-                ],
-            },
-            "serviceMonitor": {"enabled": True},
-        },
+    ingresses = ingresses_by_name(
+        render_manifests(
+            helm_runner,
+            values=nginx_ingress_values(class_name=None),
+        )
     )
-    manifests = load_manifests(rendered)
-    ingresses = _ingresses_by_name(manifests)
     block = ingresses[f"{CHART.release}-metrics-block"]
 
     assert "ingressClassName" not in block["spec"]
@@ -229,28 +116,11 @@ def test_metrics_block_ingress_renders_for_classless_ingress(
 def test_metrics_block_ingress_handles_null_annotations(
     helm_runner,
 ) -> None:
-    """Avoid failing when callers explicitly set ingress.annotations to null."""
+    """Render when ingress annotations are explicitly null."""
 
-    rendered = render_chart(
-        helm_runner,
-        CHART,
-        values={
-            "ingress": {
-                "enabled": True,
-                "className": "nginx",
-                "annotations": None,
-                "hosts": [
-                    {
-                        "host": "app.example.com",
-                        "paths": [{"path": "/", "pathType": "Prefix"}],
-                    }
-                ],
-            },
-            "serviceMonitor": {"enabled": True},
-        },
-    )
-    manifests = load_manifests(rendered)
-    ingresses = _ingresses_by_name(manifests)
+    values = nginx_ingress_values()
+    values["ingress"]["annotations"] = None
+    ingresses = ingresses_by_name(render_manifests(helm_runner, values=values))
 
     assert f"{CHART.release}-metrics-block" in ingresses
 
@@ -258,35 +128,20 @@ def test_metrics_block_ingress_handles_null_annotations(
 def test_metrics_block_ingress_uses_public_path_override(
     helm_runner,
 ) -> None:
-    """Allow apps to block a public path that differs from the scrape path."""
+    """Block a public path that differs from the scrape path."""
 
-    rendered = render_chart(
-        helm_runner,
-        CHART,
-        values={
-            "ingress": {
-                "enabled": True,
-                "annotations": {"kubernetes.io/ingress.class": "nginx"},
-                "hosts": [
-                    {
-                        "host": "app.example.com",
-                        "paths": [{"path": "/", "pathType": "Prefix"}],
-                    }
-                ],
-            },
-            "serviceMonitor": {
-                "enabled": True,
-                "path": "/internal/metrics",
-                "blockExternalIngress": {"path": "/app/metrics"},
-            },
-        },
+    values = nginx_ingress_values(
+        annotations={"kubernetes.io/ingress.class": "nginx"},
+        class_name=None,
     )
-    manifests = load_manifests(rendered)
-    ingresses = _ingresses_by_name(manifests)
+    values["serviceMonitor"] = {
+        "enabled": True,
+        "path": "/internal/metrics",
+        "blockExternalIngress": {"path": "/app/metrics"},
+    }
+    ingresses = ingresses_by_name(render_manifests(helm_runner, values=values))
     block = ingresses[f"{CHART.release}-metrics-block"]
-    block_path = ingresses[f"{CHART.release}-metrics-block"]["spec"]["rules"][
-        0
-    ]["http"]["paths"][0]
+    block_path = block["spec"]["rules"][0]["http"]["paths"][0]
 
     assert block["metadata"]["annotations"] == {
         "kubernetes.io/ingress.class": "nginx",
@@ -297,189 +152,29 @@ def test_metrics_block_ingress_uses_public_path_override(
     assert block_path["pathType"] == "Prefix"
 
 
-def test_metrics_block_ingress_rejects_rewrite_ingress(
+def test_metrics_block_ingress_rejects_unsupported_class(
     helm_runner,
 ) -> None:
-    """Reject ingress rules where nginx path precedence cannot be guaranteed."""
+    """Reject classes where nginx deny rules cannot be enforced."""
 
     with pytest.raises(HelmTemplateError):
         render_chart(
             helm_runner,
             CHART,
-            values={
-                "ingress": {
-                    "enabled": True,
-                    "className": "nginx",
-                    "annotations": {
-                        "nginx.ingress.kubernetes.io/rewrite-target": "/$3",
-                    },
-                    "hosts": [
-                        {
-                            "host": "app.example.com",
-                            "paths": [
-                                {
-                                    "path": "/(app)(/|$)(.*)",
-                                    "pathType": "ImplementationSpecific",
-                                }
-                            ],
-                        }
-                    ],
-                },
-                "serviceMonitor": {
-                    "enabled": True,
-                    "path": "/metrics",
-                    "blockExternalIngress": {"path": "/app/metrics"},
-                },
-            },
-        )
-
-
-def test_metrics_block_ingress_renders_for_explicit_regex_ingress(
-    helm_runner,
-) -> None:
-    """Allow regex/rewrite ingress when given a specific block regex."""
-
-    rendered = render_chart(
-        helm_runner,
-        CHART,
-        values=_regex_ingress_values(
-            block_external_ingress={
-                "allowRegexIngress": True,
-                "path": "/eol/api/metrics(/|$)(.*)",
-                "pathType": "ImplementationSpecific",
-            }
-        ),
-    )
-    manifests = load_manifests(rendered)
-    ingresses = _ingresses_by_name(manifests)
-    block_path = ingresses[f"{CHART.release}-metrics-block"]["spec"]["rules"][
-        0
-    ]["http"]["paths"][0]
-
-    assert block_path["path"] == "/eol/api/metrics(/|$)(.*)"
-    assert block_path["pathType"] == "ImplementationSpecific"
-
-
-def test_metrics_block_ingress_regex_mode_requires_explicit_block_path(
-    helm_runner,
-) -> None:
-    """Require callers to specify the public metrics regex in regex mode."""
-
-    with pytest.raises(HelmTemplateError):
-        render_chart(
-            helm_runner,
-            CHART,
-            values=_regex_ingress_values(
-                block_external_ingress={"allowRegexIngress": True},
-            ),
-        )
-
-
-def test_metrics_block_ingress_regex_mode_requires_implementation_specific_path(
-    helm_runner,
-) -> None:
-    """Require ImplementationSpecific for regex metrics-block paths."""
-
-    with pytest.raises(HelmTemplateError):
-        render_chart(
-            helm_runner,
-            CHART,
-            values=_regex_ingress_values(
-                block_external_ingress={
-                    "allowRegexIngress": True,
-                    "path": "/eol/api/metrics(/|$)(.*)",
-                },
-            ),
-        )
-
-
-def test_metrics_block_ingress_rejects_case_variant_regex_ingress(
-    helm_runner,
-) -> None:
-    """Reject nginx truthy use-regex values beyond lowercase true."""
-
-    with pytest.raises(HelmTemplateError):
-        render_chart(
-            helm_runner,
-            CHART,
-            values={
-                "ingress": {
-                    "enabled": True,
-                    "className": "nginx",
-                    "annotations": {
-                        "nginx.ingress.kubernetes.io/use-regex": "True",
-                    },
-                    "hosts": [
-                        {
-                            "host": "app.example.com",
-                            "paths": [
-                                {
-                                    "path": "/(app)(/|$)(.*)",
-                                    "pathType": "ImplementationSpecific",
-                                }
-                            ],
-                        }
-                    ],
-                },
-                "serviceMonitor": {"enabled": True},
-            },
-        )
-
-
-def test_metrics_block_ingress_rejects_unsupported_ingress_class(
-    helm_runner,
-) -> None:
-    """Reject classes where the nginx deny rule cannot be safely enforced."""
-
-    with pytest.raises(HelmTemplateError):
-        render_chart(
-            helm_runner,
-            CHART,
-            values={
-                "ingress": {
-                    "enabled": True,
-                    "className": "alb",
-                    "hosts": [
-                        {
-                            "host": "app.example.com",
-                            "paths": [{"path": "/", "pathType": "Prefix"}],
-                        }
-                    ],
-                },
-                "serviceMonitor": {"enabled": True},
-            },
+            values=nginx_ingress_values(class_name="alb"),
         )
 
 
 def test_metrics_block_ingress_allows_configured_nginx_class(
     helm_runner,
 ) -> None:
-    """Allow alternate class names when they are known to use ingress-nginx."""
+    """Allow alternate class names known to use ingress-nginx."""
 
-    rendered = render_chart(
-        helm_runner,
-        CHART,
-        values={
-            "ingress": {
-                "enabled": True,
-                "className": "nginx-internal",
-                "hosts": [
-                    {
-                        "host": "app.example.com",
-                        "paths": [{"path": "/", "pathType": "Prefix"}],
-                    }
-                ],
-            },
-            "serviceMonitor": {
-                "enabled": True,
-                "blockExternalIngress": {
-                    "ingressClassNames": ["", "nginx", "nginx-internal"],
-                },
-            },
-        },
-    )
-    manifests = load_manifests(rendered)
-    ingresses = _ingresses_by_name(manifests)
+    values = nginx_ingress_values(class_name="nginx-internal")
+    values["serviceMonitor"]["blockExternalIngress"] = {
+        "ingressClassNames": ["", "nginx", "nginx-internal"],
+    }
+    ingresses = ingresses_by_name(render_manifests(helm_runner, values=values))
     block = ingresses[f"{CHART.release}-metrics-block"]
 
     assert block["spec"]["ingressClassName"] == "nginx-internal"
@@ -488,71 +183,55 @@ def test_metrics_block_ingress_allows_configured_nginx_class(
 @pytest.mark.parametrize(
     "values",
     [
-        {"serviceMonitor": {"enabled": True}},
-        {
-            "ingress": {
-                "enabled": True,
-                "className": "nginx",
-                "hosts": [
-                    {
-                        "host": "app.example.com",
-                        "paths": [{"path": "/", "pathType": "Prefix"}],
-                    }
-                ],
+        pytest.param(
+            {"serviceMonitor": {"enabled": True}},
+            id="ingress-disabled",
+        ),
+        pytest.param(
+            {
+                **nginx_ingress_values(),
+                "serviceMonitor": {"enabled": False},
             },
-            "serviceMonitor": {"enabled": False},
-        },
-        {
-            "ingress": {
-                "enabled": True,
-                "className": "nginx",
-                "hosts": [
-                    {
-                        "host": "app.example.com",
-                        "paths": [{"path": "/", "pathType": "Prefix"}],
-                    }
-                ],
+            id="service-monitor-disabled",
+        ),
+        pytest.param(
+            {
+                **nginx_ingress_values(),
+                "serviceMonitor": {
+                    "enabled": True,
+                    "blockExternalIngress": {"enabled": False},
+                },
             },
-            "serviceMonitor": {
-                "enabled": True,
-                "blockExternalIngress": {"enabled": False},
-            },
-        },
+            id="block-disabled",
+        ),
     ],
 )
 def test_metrics_block_ingress_is_conditional(
     helm_runner,
     values: dict[str, Any],
 ) -> None:
-    """Ensure the public metrics block only renders when it can be enforced."""
+    """Render the block only when all required features are enabled."""
 
-    rendered = render_chart(helm_runner, CHART, values=values)
-    manifests = load_manifests(rendered)
-    ingresses = _ingresses_by_name(manifests)
+    ingresses = ingresses_by_name(render_manifests(helm_runner, values=values))
 
     assert f"{CHART.release}-metrics-block" not in ingresses
 
 
-def test_metrics_block_rejects_invalid_enabled_value(helm_runner) -> None:
-    """Reject non-boolean values for the public metrics block toggle."""
-
-    with pytest.raises(HelmTemplateError):
-        render_chart(
-            helm_runner,
-            CHART,
-            values={
-                "serviceMonitor": {
-                    "enabled": True,
-                    "blockExternalIngress": {"enabled": "hero"},
-                }
-            },
-        )
-
-
-def test_metrics_block_rejects_invalid_denylist_source_range(
+@pytest.mark.parametrize(
+    "block_values",
+    [
+        pytest.param({"enabled": "hero"}, id="enabled-is-not-boolean"),
+        pytest.param(
+            {"denylistSourceRange": "not-a-cidr"},
+            id="denylist-is-not-cidr",
+        ),
+    ],
+)
+def test_metrics_block_rejects_invalid_values(
     helm_runner,
+    block_values: dict[str, Any],
 ) -> None:
-    """Reject denylist values that are not CIDR-shaped."""
+    """Reject malformed public metrics block values."""
 
     with pytest.raises(HelmTemplateError):
         render_chart(
@@ -561,9 +240,7 @@ def test_metrics_block_rejects_invalid_denylist_source_range(
             values={
                 "serviceMonitor": {
                     "enabled": True,
-                    "blockExternalIngress": {
-                        "denylistSourceRange": "not-a-cidr",
-                    },
+                    "blockExternalIngress": block_values,
                 }
             },
         )
