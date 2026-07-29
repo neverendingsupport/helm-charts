@@ -1,0 +1,16 @@
+image:
+  repository: ghcr.io/example/app
+  tag: "1.2.3"
+
+reloader:
+  enabled: true
+
+extraEnvSecrets:
+  - database
+
+extraEnvConfigmaps:
+  - application-config
+
+deployment:
+  annotations:
+    example.com/owner: platform

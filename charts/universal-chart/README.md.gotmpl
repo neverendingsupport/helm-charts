@@ -58,6 +58,39 @@ See the
 [Kubernetes topology spread documentation](https://kubernetes.io/docs/concepts/scheduling-eviction/topology-spread-constraints/)
 for the scheduler's full constraint behavior.
 
+## Reload environment inputs
+
+Kubernetes reads `envFrom` values when a container starts. Updating a Secret or
+ConfigMap doesn't change the environment of a running process. This includes a
+Secret update from External Secrets Operator.
+
+Enable `reloader` to ask
+[Stakater Reloader](https://docs.stakater.com/reloader/latest/) to roll the
+Deployment when one of its environment inputs changes:
+
+```yaml
+reloader:
+  enabled: true
+```
+
+The chart adds `reloader.stakater.com/auto: "true"` to the Deployment. Reloader
+then discovers the Secret and ConfigMap references in the rendered workload, so
+the chart doesn't maintain a separate list.
+
+Stakater Reloader must be installed in the cluster for the annotation to have
+an effect.
+
+This feature is disabled by default. If you already manage the annotation, the
+chart keeps your value:
+
+```yaml
+deployment:
+  annotations:
+    reloader.stakater.com/auto: "true"
+```
+
+An explicit annotation takes precedence even when `reloader.enabled` is true.
+
 ## Using The Chart
 
 Normally, you're going to want to distribute this chart via ArgoCD as an

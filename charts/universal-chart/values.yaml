@@ -41,6 +41,22 @@ deployment:
   annotations: {}
 
 # @schema
+# type: object
+# additionalProperties: false
+# properties:
+#   enabled:
+#     type: boolean
+# @schema
+# -- Ask Stakater Reloader to restart the Deployment when a referenced Secret
+# or ConfigMap changes. The chart adds `reloader.stakater.com/auto: "true"` and
+# lets Reloader inspect the workload for references. This is disabled by
+# default, so existing releases keep their current restart behavior. An
+# explicit value in `deployment.annotations` takes precedence.
+reloader:
+  # -- Whether to enable automatic Secret and ConfigMap reload discovery.
+  enabled: false
+
+# @schema
 # required: false
 # @schema
 # -- define init container(s) which will run before the "real" container

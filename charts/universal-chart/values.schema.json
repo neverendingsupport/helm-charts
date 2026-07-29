@@ -42,6 +42,15 @@
         }
       }
     },
+    "reloader": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        }
+      }
+    },
     "serviceMonitor": {
       "properties": {
         "enabled": {
