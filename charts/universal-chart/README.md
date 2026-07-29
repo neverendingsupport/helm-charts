@@ -59,6 +59,39 @@ See the
 [Kubernetes topology spread documentation](https://kubernetes.io/docs/concepts/scheduling-eviction/topology-spread-constraints/)
 for the scheduler's full constraint behavior.
 
+## Reload environment inputs
+
+Kubernetes reads `envFrom` values when a container starts. Updating a Secret or
+ConfigMap doesn't change the environment of a running process. This includes a
+Secret update from External Secrets Operator.
+
+Enable `reloader` to ask
+[Stakater Reloader](https://docs.stakater.com/reloader/latest/) to roll the
+Deployment when one of its environment inputs changes:
+
+```yaml
+reloader:
+  enabled: true
+```
+
+The chart adds `reloader.stakater.com/auto: "true"` to the Deployment. Reloader
+then discovers the Secret and ConfigMap references in the rendered workload, so
+the chart doesn't maintain a separate list.
+
+Stakater Reloader must be installed in the cluster for the annotation to have
+an effect.
+
+This feature is disabled by default. If you already manage the annotation, the
+chart keeps your value:
+
+```yaml
+deployment:
+  annotations:
+    reloader.stakater.com/auto: "true"
+```
+
+An explicit annotation takes precedence even when `reloader.enabled` is true.
+
 ## Using The Chart
 
 Normally, you're going to want to distribute this chart via ArgoCD as an
@@ -282,6 +315,8 @@ helm template my-release . \
 | redis.metrics.prometheusRule.rules | list | `[{"alert":"RedisDown","annotations":{"description":"Redis(R) instance {{ \"{{ $labels.instance }}\" }} is down","summary":"Redis(R) instance {{ \"{{ $labels.instance }}\" }} down"},"expr":"redis_up{service=\"{{ template \"common.names.fullname\" . }}-metrics\"} == 0","for":"2m","labels":{"severity":"error"}},{"alert":"RedisMemoryHigh","annotations":{"description":"Redis(R) instance {{ \"{{ $labels.instance }}\" }} is using {{ \"{{ $value }}\" }}% of its available memory.\n","summary":"Redis(R) instance {{ \"{{ $labels.instance }}\" }} is using too much memory"},"expr":"redis_memory_used_bytes{service=\"{{ template \"common.names.fullname\" . }}-metrics\"} * 100 / redis_memory_max_bytes{service=\"{{ template \"common.names.fullname\" . }}-metrics\"} > 90\n","for":"2m","labels":{"severity":"error"}},{"alert":"RedisKeyEviction","annotations":{"description":"Redis(R) instance {{ \"{{ $labels.instance }}\" }} has evicted {{ \"{{ $value }}\" }} keys in the last 5 minutes.\n","summary":"Redis(R) instance {{ \"{{ $labels.instance }}\" }} has evicted keys"},"expr":"increase(redis_evicted_keys_total{service=\"{{ template \"common.names.fullname\" . }}-metrics\"}[5m]) > 0\n","for":"1s","labels":{"severity":"error"}}]` | default rules from the Bitnami chart :shrug: |
 | redis.replica | object | `{"resourcesPreset":"micro"}` | use presets for resource limits. See https://github.com/bitnami/charts/blob/main/bitnami/common/templates/_resources.tpl |
 | redis.tls.enabled | bool | `false` | enable or disable TLS |
+| reloader | object | `{"enabled":false}` | Ask Stakater Reloader to restart the Deployment when a referenced Secret or ConfigMap changes. The chart adds `reloader.stakater.com/auto: "true"` and lets Reloader inspect the workload for references. This is disabled by default, so existing releases keep their current restart behavior. An explicit value in `deployment.annotations` takes precedence. |
+| reloader.enabled | bool | `false` | Whether to enable automatic Secret and ConfigMap reload discovery. |
 | replicaCount | int | `1` | set a fixed number of replicas in the deployment This value is ignored if autoscaling is enabled |
 | resources | object | `{}` | resource requests and limits. typically you can accept the values commented below, but ideally you'd run this in dev with some synthetic load and then either check on the monitoring values from Grafana or look at the Vertical Pod Autoscaler's recomendations via Goldilocks. |
 | revisionHistoryLimit | int | `3` | number of old ReplicaSets to retain for rollback |

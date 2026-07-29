@@ -1,10 +1,15 @@
 apiVersion: apps/v1
 kind: Deployment
+{{- $deploymentAnnotations := deepCopy (.Values.deployment.annotations | default dict) }}
+{{- $reloadAnnotation := "reloader.stakater.com/auto" }}
+{{- if and .Values.reloader.enabled (not (hasKey $deploymentAnnotations $reloadAnnotation)) }}
+{{- $_ := set $deploymentAnnotations $reloadAnnotation "true" }}
+{{- end }}
 metadata:
   name: {{ include "universal-chart.fullname" . }}
   labels:
     {{- include "universal-chart.labels" . | nindent 4 }}
-  {{- with .Values.deployment.annotations }}
+  {{- with $deploymentAnnotations }}
   annotations:
     {{- toYaml . | nindent 4 }}
   {{- end }}
