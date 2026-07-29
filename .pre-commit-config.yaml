@@ -21,6 +21,20 @@ repos:
   ########################################
   # helm
   ########################################
+  # generate values.schema.json from the annotations in values.yaml
+  - repo: https://github.com/dadav/helm-schema
+    rev: 0.23.4
+    hooks:
+      - id: helm-schema
+        name: Check universal chart schema
+        args:
+          - --append-newline
+          - --skip-auto-generation=required
+          - --chart-search-root=charts/universal-chart
+          - --no-dependencies
+        files: ^charts/universal-chart/(Chart\.yaml|values\.yaml|values\.schema\.json)$
+        pass_filenames: false
+
   # helm lint
   - repo: https://github.com/gruntwork-io/pre-commit
     rev: v0.1.30

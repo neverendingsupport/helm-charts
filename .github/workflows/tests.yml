@@ -69,5 +69,8 @@ jobs:
         with:
           cache: true
 
+      - name: Verify generated Helm schema
+        run: pre-commit run helm-schema --all-files
+
       - name: Helm lint
         run: pre-commit run helmlint --all-files

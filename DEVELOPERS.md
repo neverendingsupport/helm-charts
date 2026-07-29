@@ -16,9 +16,15 @@ The generated chart `README.md` remains the source of truth for values docs,
 and `docs/reference.md` should stay as a symlink to that file.
 
 Schemas are generated from each chart's `values.yaml` annotations with
-helm-schema. Run `helm-schema -a -k required` to regenerate them. The
-`required` field is skipped because helm-schema otherwise assumes every value
-is required.
+helm-schema. Run `pre-commit run helm-schema --all-files` after changing those
+annotations. The first run updates a stale `values.schema.json` and exits
+nonzero because it changed the file. Review the result, then run the command
+again; a clean second run confirms that the schema is current.
+
+The hook pins helm-schema and runs it with `--append-newline`,
+`--skip-auto-generation=required`, and `--no-dependencies`. It currently
+targets `charts/universal-chart`, the only chart with a generated values
+schema.
 
 
 # Andre
