@@ -62,6 +62,21 @@ Create the name of the service account to use
 {{- end }}
 
 {{/*
+Render the application image reference from the tag or digest selected by the
+values schema.
+*/}}
+{{- define "universal-chart.image" -}}
+{{- $repository := .Values.image.repository -}}
+{{- $tag := .Values.image.tag -}}
+{{- $digest := .Values.image.digest -}}
+{{- if $digest -}}
+{{- printf "%s@%s" $repository $digest -}}
+{{- else -}}
+{{- printf "%s:%s" $repository $tag -}}
+{{- end -}}
+{{- end }}
+
+{{/*
 Render an External metric entry for a HorizontalPodAutoscaler.
 */}}
 {{- define "universal-chart.hpa.externalMetric" -}}

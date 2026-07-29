@@ -15,7 +15,10 @@ When adding a new chart, also add the Backstage/TechDocs scaffold:
 The generated chart `README.md` remains the source of truth for values docs,
 and `docs/reference.md` should stay as a symlink to that file.
 
-Schemas are generated with helm-schema.  Run `helm-schema -k required` to regenerate the schema, as the default behavior is to assume everything is required.  Perhaps this should be revisited, though.
+Schemas are generated from each chart's `values.yaml` annotations with
+helm-schema. Run `helm-schema -a -k required` to regenerate them. The
+`required` field is skipped because helm-schema otherwise assumes every value
+is required.
 
 
 # Andre

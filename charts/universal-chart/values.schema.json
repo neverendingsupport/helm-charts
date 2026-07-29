@@ -1,284 +1,700 @@
 {
-  "$schema": "https://json-schema.org/draft-07/schema#",
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "additionalProperties": false,
   "properties": {
-    "image": {
+    "affinity": {
+      "additionalProperties": true,
+      "description": "Select roughly specific nodes to run upon.\nThis is similar to node selectors, but allows a bit more fuzziness and flexibility.\nMore info at https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity",
+      "required": [],
+      "title": "affinity",
+      "type": "object"
+    },
+    "autoscaling": {
+      "additionalProperties": false,
+      "description": "section for configuring autoscaling.\nMore information can be found here: https://kubernetes.io/docs/concepts/workloads/autoscaling/",
       "properties": {
-        "tag": {
+        "annotations": {
+          "additionalProperties": true,
+          "required": [],
+          "type": "object"
+        },
+        "behavior": {
+          "additionalProperties": true,
+          "required": [],
+          "type": "object"
+        },
+        "enabled": {
+          "type": "boolean"
+        },
+        "hpaScalingRules": {
+          "items": {
+            "additionalProperties": false,
+            "properties": {
+              "expr": {
+                "type": "string"
+              },
+              "groupName": {
+                "type": "string"
+              },
+              "interval": {
+                "type": "string"
+              },
+              "labels": {
+                "additionalProperties": {
+                  "type": "string"
+                },
+                "required": [],
+                "type": "object"
+              },
+              "name": {
+                "pattern": "^[a-zA-Z_:][a-zA-Z0-9_:]*$",
+                "type": "string"
+              },
+              "selector": {
+                "additionalProperties": {
+                  "type": "string"
+                },
+                "required": [],
+                "type": "object"
+              },
+              "target": {
+                "additionalProperties": false,
+                "properties": {
+                  "averageValue": {
+                    "type": "string"
+                  },
+                  "type": {
+                    "enum": [
+                      "Value",
+                      "AverageValue"
+                    ],
+                    "type": "string"
+                  },
+                  "value": {
+                    "type": "string"
+                  }
+                },
+                "required": [],
+                "type": "object"
+              }
+            },
+            "required": [
+              "name",
+              "expr",
+              "target"
+            ],
+            "type": "object"
+          },
+          "type": "array"
+        },
+        "maxReplicas": {
+          "minimum": 1,
+          "type": "integer"
+        },
+        "minReplicas": {
+          "minimum": 1,
+          "type": "integer"
+        },
+        "targetCPUUtilizationPercentage": {
+          "anyOf": [
+            {
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "required": []
+        },
+        "targetMemoryUtilizationPercentage": {
+          "anyOf": [
+            {
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "required": []
+        }
+      },
+      "required": [],
+      "title": "autoscaling",
+      "type": "object"
+    },
+    "availability": {
+      "additionalProperties": false,
+      "description": "Spread replicas across availability zones and nodes. The preferred mode\nasks the scheduler to spread pods but still permits placement when capacity is\nlimited. Strict mode leaves pods Pending rather than violate either rule.\nWhen enabled, this preset owns the `topology.kubernetes.io/zone` and\n`kubernetes.io/hostname` constraints; other custom constraints are preserved.\nMore information: https://kubernetes.io/docs/concepts/scheduling-eviction/topology-spread-constraints/",
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        },
+        "mode": {
+          "enum": [
+            "preferred",
+            "strict"
+          ],
+          "type": "string"
+        }
+      },
+      "required": [],
+      "title": "availability",
+      "type": "object"
+    },
+    "awsEnvSecrets": {
+      "additionalProperties": false,
+      "description": "Describes an AWS secretmanager secret which will define env vars",
+      "properties": {
+        "env_secret_name": {
+          "default": "aws-env",
+          "description": "name of secret to store AWS secretmanager values within",
+          "title": "env_secret_name",
           "type": "string"
         },
-        "repository": {
-          "type": "string"
+        "externalSecret": {
+          "additionalProperties": false,
+          "description": "configure the secretmanager source",
+          "properties": {
+            "secretPath": {
+              "default": "",
+              "description": "secret path",
+              "title": "secretPath",
+              "type": "string"
+            },
+            "secretStoreRef": {
+              "additionalProperties": false,
+              "properties": {
+                "kind": {
+                  "default": "SecretStore",
+                  "description": "Is the store in this namespace or cluster-wide?",
+                  "enum": [
+                    "SecretStore",
+                    "ClusterSecretStore"
+                  ],
+                  "required": [],
+                  "title": "kind"
+                },
+                "name": {
+                  "default": "aws-secrets-manager",
+                  "description": "name of the secret store; aws-secret-manager is usually right",
+                  "title": "name",
+                  "type": "string"
+                }
+              },
+              "required": [],
+              "title": "secretStoreRef",
+              "type": "object"
+            }
+          },
+          "required": [],
+          "title": "externalSecret",
+          "type": "object"
+        }
+      },
+      "required": [],
+      "title": "awsEnvSecrets",
+      "type": "object"
+    },
+    "deployment": {
+      "additionalProperties": false,
+      "properties": {
+        "annotations": {
+          "additionalProperties": true,
+          "description": "extra annotations to add to the deployment resource's metadata.\nThese annotations are key-value pairs attached directly to the Deployment\nresource. They can be used by external tooling, operators, or for tracking\ndeployment metadata and events. For more info, see:\nhttps://kubernetes.io/docs/concepts/overview/working-with-objects/annotations/",
+          "required": [],
+          "title": "annotations",
+          "type": "object"
+        }
+      },
+      "required": [],
+      "title": "deployment",
+      "type": "object"
+    },
+    "extraContainerPorts": {
+      "description": "extra ports to be exposed directly from pods (no service)",
+      "items": {
+        "properties": {
+          "containerPort": {
+            "type": "integer"
+          },
+          "name": {
+            "type": "string"
+          },
+          "protocol": {
+            "default": "TCP",
+            "type": "string"
+          }
+        },
+        "required": [],
+        "type": "object"
+      },
+      "required": [],
+      "title": "extraContainerPorts"
+    },
+    "extraContainerProps": {
+      "additionalProperties": true,
+      "description": "A dictionary of extra attributes to add to the container spec in the\ndeployment. Elements will be directly added to the deployment's\n`spec.template.spec.containers` object. Note that adding an element already\nin the deployment template like `env` or `image` will cause undesirable\nbehavior.",
+      "required": [],
+      "title": "extraContainerProps",
+      "type": "object"
+    },
+    "extraEnvConfigmaps": {
+      "description": "extra configmaps to load into environment",
+      "items": {
+        "type": "string"
+      },
+      "title": "extraEnvConfigmaps",
+      "type": "array"
+    },
+    "extraEnvSecrets": {
+      "description": "extra secrets to load into environment",
+      "items": {
+        "type": "string"
+      },
+      "title": "extraEnvSecrets",
+      "type": "array"
+    },
+    "extraEnvVars": {
+      "additionalProperties": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "properties": {
+              "valueFrom": {
+                "anyOf": [
+                  {
+                    "properties": {
+                      "fieldRef": {
+                        "properties": {
+                          "fieldPath": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "fieldPath"
+                        ],
+                        "type": "object"
+                      }
+                    },
+                    "required": [
+                      "fieldRef"
+                    ]
+                  },
+                  {
+                    "properties": {
+                      "secretKeyRef": {
+                        "properties": {
+                          "key": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "name",
+                          "key"
+                        ],
+                        "type": "object"
+                      }
+                    },
+                    "required": [
+                      "secretKeyRef"
+                    ]
+                  }
+                ],
+                "type": "object"
+              }
+            },
+            "required": [
+              "valueFrom"
+            ],
+            "type": "object"
+          }
+        ]
+      },
+      "description": "additional environment variables and their values.\nSupports both simple string values and complex objects with valueFrom.",
+      "examples": [
+        "PORT: \"3000\"\nDEBUG: \"true\"\nPOD_IP:\n  valueFrom:\n    fieldRef:\n      fieldPath: status.podIP\nAWS_ACCESS_KEY_ID:\n  valueFrom:\n    secretKeyRef:\n      name: my-secret\n      key: aws-access-key"
+      ],
+      "required": [],
+      "title": "extraEnvVars",
+      "type": "object"
+    },
+    "extraManifests": {
+      "description": "(list) A list of extra yaml manifests to include.\nEach element will be rendered exactly as passed in",
+      "items": {
+        "required": []
+      },
+      "title": "extraManifests",
+      "type": "array"
+    },
+    "fullnameOverride": {
+      "default": "",
+      "title": "fullnameOverride",
+      "type": "string"
+    },
+    "global": {
+      "description": "Global values are values that can be accessed from any chart or subchart by exactly the same name.",
+      "required": [],
+      "title": "global",
+      "type": "object"
+    },
+    "image": {
+      "additionalProperties": false,
+      "description": "This sets the container image more information can be found here: https://kubernetes.io/docs/concepts/containers/images/",
+      "oneOf": [
+        {
+          "properties": {
+            "digest": {
+              "type": "null"
+            },
+            "tag": {
+              "minLength": 1,
+              "type": "string"
+            }
+          },
+          "required": [
+            "tag"
+          ]
+        },
+        {
+          "properties": {
+            "digest": {
+              "pattern": "^sha256:[a-f0-9]{64}$",
+              "type": "string"
+            },
+            "tag": {
+              "type": "null"
+            }
+          },
+          "required": [
+            "digest"
+          ]
+        }
+      ],
+      "properties": {
+        "digest": {
+          "default": "null",
+          "description": "(string) OCI SHA-256 digest. Set exactly one of `tag` or `digest`; clear\nan inherited tag when selecting a digest.",
+          "pattern": "^sha256:[a-f0-9]{64}$",
+          "required": [],
+          "title": "digest",
+          "type": [
+            "string",
+            "null"
+          ]
         },
         "pullPolicy": {
-          "type": "string",
+          "default": "Always",
+          "description": "k8s image pull policy",
           "enum": [
-            "IfNotPresent",
             "Always",
-            "Never"
+            "Never",
+            "IfNotPresent"
+          ],
+          "required": [],
+          "title": "pullPolicy"
+        },
+        "repository": {
+          "default": "null",
+          "description": "(string) repository path to image without tag name.\nExample: ghcr.io/neverendingsupport/universal-chart",
+          "required": [],
+          "title": "repository"
+        },
+        "tag": {
+          "default": "null",
+          "description": "(string) Tag or tag-and-digest reference to pull. Set exactly one of\n`tag` or `digest`.",
+          "minLength": 1,
+          "required": [],
+          "title": "tag",
+          "type": [
+            "string",
+            "null"
           ]
         }
       },
       "required": [
-        "repository",
-        "tag"
-      ]
+        "repository"
+      ],
+      "title": "image",
+      "type": "object"
     },
-    "awsEnvSecrets": {
-      "properties": {
-        "externalSecret": {
-          "properties": {
-            "secretStoreRef": {
-              "properties": {
-                "kind": {
-                  "type": "string",
-                  "enum": [
-                    "SecretStore",
-                    "ClusterSecretStore"
-                  ]
-                }
-              }
-            }
-          }
-        }
-      }
+    "imagePullSecrets": {
+      "description": "This is for the secrets for pulling an image from a private repository more information can be found here: https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/",
+      "items": {
+        "required": []
+      },
+      "title": "imagePullSecrets",
+      "type": "array"
     },
-    "reloader": {
-      "type": "object",
+    "ingress": {
       "additionalProperties": false,
+      "description": "This block is for setting up the ingress.\nMore information can be found here: https://kubernetes.io/docs/concepts/services-networking/ingress/",
       "properties": {
-        "enabled": {
-          "type": "boolean"
-        }
-      }
-    },
-    "serviceMonitor": {
-      "properties": {
-        "enabled": {
-          "type": "boolean"
+        "annotations": {
+          "additionalProperties": true,
+          "description": "a map of annotations to define on the ingress resource",
+          "required": [],
+          "title": "annotations"
         },
-        "path": {
-          "anyOf": [
-            {
-              "type": "string",
-              "pattern": "^/.*"
-            },
-            {
-              "type": "null"
-            }
-          ]
-        },
-        "interval": {
-          "anyOf": [
-            {
-              "type": "integer",
-              "minimum": 1
-            },
-            {
-              "type": "null"
-            }
-          ]
-        },
-        "alternatePort": {
-          "anyOf": [
-            {
-              "type": "integer",
-              "minimum": 1,
-              "maximum": 65535
-            },
-            {
-              "type": "null"
-            }
-          ]
-        },
-        "blockExternalIngress": {
-          "type": "object",
-          "properties": {
-            "enabled": {
-              "type": "boolean"
-            },
-            "path": {
-              "anyOf": [
-                {
-                  "type": "string",
-                  "pattern": "^/.*"
-                },
-                {
-                  "type": "null"
-                }
-              ]
-            },
-            "pathType": {
-              "type": "string",
-              "enum": [
-                "ImplementationSpecific",
-                "Exact",
-                "Prefix"
-              ]
-            },
-            "allowRegexIngress": {
-              "type": "boolean"
-            },
-            "denylistSourceRange": {
-              "type": "string",
-              "pattern": "^\\s*([0-9A-Fa-f:.]+/[0-9]{1,3})(\\s*,\\s*[0-9A-Fa-f:.]+/[0-9]{1,3})*\\s*$"
-            },
-            "ingressClassNames": {
-              "type": "array",
-              "items": {
-                "type": "string"
-              }
-            }
-          }
-        }
-      }
-    },
-    "service": {
-      "properties": {
-        "type": {
+        "className": {
+          "default": "",
+          "description": "which ingress class to use (usually nginx, but could be alb)",
+          "title": "className",
           "type": "string"
         },
-        "labels": {
-          "type": "object"
+        "enabled": {
+          "default": false,
+          "description": "whether or not to use an ingress",
+          "title": "enabled",
+          "type": "boolean"
         },
-        "annotations": {
-          "type": "object"
-        },
-        "port": {
-          "type": "integer",
-          "minimum": 1,
-          "maximum": 65535
-        },
-        "extraPorts": {
-          "type": "array",
+        "hosts": {
+          "description": "list of host blocks to listen on; host blocks define more than just a hostname\nhosts.host -- a hostname to listen upon. If TLS is enabled, the host will\nbe selected via SNI.\nhosts.paths -- List of path rules.  Normally you want the root for a\nhostname to go to the root of your app, and the example commented above\nworks well for that.",
           "items": {
-            "type": "object",
-            "required": [
-              "name",
-              "port"
-            ],
+            "required": []
+          },
+          "title": "hosts",
+          "type": "array"
+        },
+        "tls": {
+          "description": "- host: chart-example.local\n  paths:\n    - path: /\n      pathType: ImplementationSpecific\nlist of TLS certs to use.  The objects in the list have a secret name\nwhere the cert will be stored and a list of hosts to include in that cert.\nNormally this will only be a one item list, but it's technically acceptable\nto create multiple certs. If ingress.tls.secretName isn't specified, the\nsecret will just be named \"tls\".",
+          "items": {
+            "required": []
+          },
+          "title": "tls",
+          "type": "array"
+        }
+      },
+      "required": [],
+      "title": "ingress",
+      "type": "object"
+    },
+    "initContainers": {
+      "description": "define init container(s) which will run before the \"real\" container\nstarts. The init container runs with the same environment, volumes, and\nsecurity context as the main container.",
+      "items": {
+        "anyOf": [
+          {
+            "additionalProperties": false,
             "properties": {
-              "name": {
-                "type": "string",
-                "minLength": 1
+              "command": {
+                "description": "the command to run in the init container\nThis overrides the command in the container.  Leave it empty to just run\nthe container's default command.",
+                "items": {
+                  "required": []
+                },
+                "title": "command",
+                "type": "array"
               },
-              "port": {
-                "type": "integer",
-                "minimum": 1,
-                "maximum": 65535
+              "extraContainerProps": {
+                "additionalProperties": true,
+                "description": "a map of additional properties for the init container.  This can\ntechnically be any values from the spec, though reusing image, command,\nsecurityContext, volumes, env, or envFrom might cause unexpected behavior.",
+                "not": {
+                  "enum": [
+                    "image",
+                    "command"
+                  ],
+                  "required": []
+                },
+                "required": [],
+                "title": "extraContainerProps",
+                "type": "object"
               },
-              "targetPort": {
+              "image": {
                 "anyOf": [
-                  {
-                    "type": "integer",
-                    "minimum": 1,
-                    "maximum": 65535
-                  },
                   {
                     "type": "string"
                   },
                   {
                     "type": "null"
                   }
-                ]
-              },
-              "protocol": {
-                "type": "string",
-                "enum": [
-                  "TCP",
-                  "UDP",
-                  "SCTP"
-                ]
+                ],
+                "default": "null",
+                "description": "(string) the image to run on init\nif this is left as null or a false-ish value, the initContainers section of\nthe deploment will be skipped",
+                "required": [],
+                "title": "image"
               }
-            }
+            },
+            "required": [],
+            "type": "object"
           }
-        }
-      }
+        ],
+        "required": []
+      },
+      "required": [],
+      "title": "initContainers"
     },
-    "availability": {
-      "type": "object",
-      "additionalProperties": false,
-      "properties": {
-        "enabled": {
-          "type": "boolean"
-        },
-        "mode": {
-          "type": "string",
-          "enum": [
-            "preferred",
-            "strict"
-          ]
-        }
-      }
-    },
-    "spread_azs": {
-      "type": "boolean"
-    },
-    "spread_spot": {
-      "type": "boolean"
-    },
-    "terminationGracePeriodSeconds": {
+    "livenessProbe": {
       "anyOf": [
         {
-          "type": "integer",
-          "minimum": 0,
-          "maximum": 900
+          "type": "null"
         },
         {
-          "type": "null"
+          "additionalProperties": true,
+          "required": [],
+          "type": "object"
         }
-      ]
+      ],
+      "default": "",
+      "description": "Configure a liveness probe to detect hung or dead containers.\nThe liveness probe determines if a container is still running and healthy. If the\nliveness probe fails, Kubernetes will restart the container. This is useful for\ndetecting situations where the application is running but unable to make progress\n(e.g., deadlocked). The liveness probe runs throughout the container's lifetime.\nMore information can be found here: https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/\nExample configuration:\n  livenessProbe:\n    httpGet:\n      path: /internal/health\n      port: http\n    initialDelaySeconds: 30\n    periodSeconds: 10",
+      "required": [],
+      "title": "livenessProbe"
     },
-    "revisionHistoryLimit": {
-      "type": "integer",
-      "minimum": 0
+    "nameOverride": {
+      "default": "",
+      "description": "This is to override the chart name.",
+      "title": "nameOverride",
+      "type": "string"
     },
-    "prometheusRule": {
+    "nodeSelector": {
+      "additionalProperties": true,
+      "description": "Select specific nodes to run upon\nNormally this should be an empty map",
+      "required": [],
+      "title": "nodeSelector",
+      "type": "object"
+    },
+    "podAnnotations": {
+      "additionalProperties": true,
+      "description": "Add additional annotations to the pod.\nAnnotations are generally for \"people\" uses and interoperability.\nFor more information check out: https://kubernetes.io/docs/concepts/overview/working-with-objects/annotations/",
+      "required": [],
+      "title": "podAnnotations",
+      "type": "object"
+    },
+    "podDisruptionBudget": {
+      "additionalProperties": false,
+      "description": "Configure a PodDisruptionBudget for voluntary disruptions such as node drains.\nSet exactly one of `minAvailable` or `maxUnavailable`; rendering fails when both\nor neither are set. `minAvailable` cannot require more healthy pods than\n`replicaCount`, or `autoscaling.minReplicas` when autoscaling is enabled.\nPercentage limits use Kubernetes' round-up behavior.\nMore information: https://kubernetes.io/docs/tasks/run-application/configure-pdb/",
       "properties": {
+        "allowZeroDisruptions": {
+          "type": "boolean"
+        },
+        "annotations": {
+          "additionalProperties": true,
+          "required": [],
+          "type": "object"
+        },
         "enabled": {
           "type": "boolean"
         },
+        "maxUnavailable": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "pattern": "^[0-9]+%$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "required": []
+        },
+        "minAvailable": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "pattern": "^[0-9]+%$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "required": []
+        },
+        "unhealthyPodEvictionPolicy": {
+          "anyOf": [
+            {
+              "enum": [
+                "IfHealthyBudget",
+                "AlwaysAllow"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "required": []
+        }
+      },
+      "required": [],
+      "title": "podDisruptionBudget",
+      "type": "object"
+    },
+    "podLabels": {
+      "additionalProperties": true,
+      "description": "Add additional labels to the pods.\nLabels are generally for k8s internal use (pod selectors, etc)\nFor more information check out: https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/",
+      "required": [],
+      "title": "podLabels",
+      "type": "object"
+    },
+    "podSecurityContext": {
+      "additionalProperties": true,
+      "required": [],
+      "title": "podSecurityContext",
+      "type": "object"
+    },
+    "prometheusRule": {
+      "additionalProperties": false,
+      "description": "Configure a PrometheusRule for evaluating alerting rules against scraped metrics.\nRecording rules generated from `autoscaling.hpaScalingRules` use this\nresource's metadata labels and annotations even when `prometheusRule.enabled`\nis false.",
+      "properties": {
         "additionalLabels": {
-          "type": "object",
           "additionalProperties": {
             "type": "string"
-          }
+          },
+          "required": [],
+          "type": "object"
         },
         "annotations": {
-          "type": "object",
           "additionalProperties": {
             "type": "string"
-          }
+          },
+          "required": [],
+          "type": "object"
         },
         "defaultRuleLabels": {
-          "type": "object",
           "additionalProperties": {
             "type": "string"
-          }
+          },
+          "required": [],
+          "type": "object"
+        },
+        "enabled": {
+          "type": "boolean"
         },
         "groups": {
-          "type": "array",
           "items": {
-            "required": [
-              "name",
-              "rules"
-            ],
+            "additionalProperties": true,
             "properties": {
-              "name": {
-                "type": "string"
-              },
               "interval": {
                 "type": "string"
               },
+              "name": {
+                "type": "string"
+              },
               "rules": {
-                "type": "array",
                 "items": {
-                  "required": [
-                    "alert",
-                    "expr"
-                  ],
+                  "additionalProperties": true,
                   "properties": {
                     "alert": {
                       "type": "string"
+                    },
+                    "annotations": {
+                      "additionalProperties": {
+                        "type": "string"
+                      },
+                      "required": [],
+                      "type": "object"
                     },
                     "expr": {
                       "type": "string"
@@ -290,37 +706,43 @@
                       "type": "string"
                     },
                     "labels": {
-                      "type": "object",
                       "additionalProperties": {
                         "type": "string"
-                      }
-                    },
-                    "annotations": {
-                      "type": "object",
-                      "additionalProperties": {
-                        "type": "string"
-                      }
+                      },
+                      "required": [],
+                      "type": "object"
                     }
                   },
-                  "type": "object",
-                  "additionalProperties": true
-                }
+                  "required": [
+                    "alert",
+                    "expr"
+                  ],
+                  "type": "object"
+                },
+                "type": "array"
               }
             },
-            "type": "object",
-            "additionalProperties": true
-          }
+            "required": [
+              "name",
+              "rules"
+            ],
+            "type": "object"
+          },
+          "type": "array"
         },
         "rules": {
-          "type": "array",
           "items": {
-            "required": [
-              "alert",
-              "expr"
-            ],
+            "additionalProperties": true,
             "properties": {
               "alert": {
                 "type": "string"
+              },
+              "annotations": {
+                "additionalProperties": {
+                  "type": "string"
+                },
+                "required": [],
+                "type": "object"
               },
               "expr": {
                 "type": "string"
@@ -332,190 +754,477 @@
                 "type": "string"
               },
               "labels": {
-                "type": "object",
                 "additionalProperties": {
                   "type": "string"
-                }
-              },
-              "annotations": {
-                "type": "object",
-                "additionalProperties": {
-                  "type": "string"
-                }
+                },
+                "required": [],
+                "type": "object"
               }
             },
-            "type": "object",
-            "additionalProperties": true
-          }
+            "required": [
+              "alert",
+              "expr"
+            ],
+            "type": "object"
+          },
+          "type": "array"
         }
-      }
+      },
+      "required": [],
+      "title": "prometheusRule"
     },
-    "autoscaling": {
-      "type": "object",
+    "readinessProbe": {
+      "anyOf": [
+        {
+          "type": "null"
+        },
+        {
+          "additionalProperties": true,
+          "required": [],
+          "type": "object"
+        }
+      ],
+      "default": "",
+      "description": "Configure a readiness probe to gate traffic until the application is ready to serve.\nThe readiness probe determines if a container is ready to accept traffic. If the\nreadiness probe fails, Kubernetes will remove the pod from service endpoints,\npreventing traffic from being routed to it. Unlike the liveness probe, a failed\nreadiness probe does not restart the container - it simply stops sending traffic\nto the pod until it becomes ready again. This is useful for applications that need\ntime to initialize or load data before they can handle requests.\nMore information can be found here: https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/\nExample configuration:\n  readinessProbe:\n    httpGet:\n      path: /internal/ready\n      port: http\n    initialDelaySeconds: 0\n    periodSeconds: 10\n    failureThreshold: 3",
+      "required": [],
+      "title": "readinessProbe"
+    },
+    "redis": {
+      "additionalProperties": true,
+      "description": "#######################################\nRedis subchart configuration values.\nDefault values are at https://artifacthub.io/packages/helm/bitnami/redis",
+      "required": [],
+      "title": "redis",
+      "type": "object"
+    },
+    "reloader": {
+      "additionalProperties": false,
+      "description": "Ask Stakater Reloader to restart the Deployment when a referenced Secret\nor ConfigMap changes. The chart adds `reloader.stakater.com/auto: \"true\"` and\nlets Reloader inspect the workload for references. This is disabled by\ndefault, so existing releases keep their current restart behavior. An\nexplicit value in `deployment.annotations` takes precedence.",
       "properties": {
         "enabled": {
           "type": "boolean"
+        }
+      },
+      "required": [],
+      "title": "reloader",
+      "type": "object"
+    },
+    "replicaCount": {
+      "default": 1,
+      "description": "set a fixed number of replicas in the deployment\nThis value is ignored if autoscaling is enabled",
+      "title": "replicaCount",
+      "type": "integer"
+    },
+    "resources": {
+      "additionalProperties": false,
+      "description": "resource requests and limits.\ntypically you can accept the values commented below, but ideally you'd run\nthis in dev with some synthetic load and then either check on the monitoring\nvalues from Grafana or look at the Vertical Pod Autoscaler's recomendations\nvia Goldilocks.",
+      "properties": {
+        "limits": {
+          "description": "maximum values for given resource",
+          "properties": {
+            "cpu": {
+              "type": "string"
+            },
+            "memory": {
+              "type": "string"
+            }
+          },
+          "required": [],
+          "title": "limits",
+          "type": "object"
         },
-        "minReplicas": {
-          "type": "integer",
-          "minimum": 1
+        "requests": {
+          "description": "requested values for given resource; can burst beyond",
+          "properties": {
+            "cpu": {
+              "type": "string"
+            },
+            "memory": {
+              "type": "string"
+            }
+          },
+          "required": [],
+          "title": "requests",
+          "type": "object"
+        }
+      },
+      "required": [],
+      "title": "resources"
+    },
+    "revisionHistoryLimit": {
+      "default": 3,
+      "description": "number of old ReplicaSets to retain for rollback",
+      "minimum": 0,
+      "title": "revisionHistoryLimit",
+      "type": "integer"
+    },
+    "s3": {
+      "additionalProperties": false,
+      "description": "#######################################\nS3 bucket configuration (mirrors managed-s3)",
+      "properties": {
+        "cors": {
+          "additionalProperties": true,
+          "default": {},
+          "description": "CORS configuration. Leave empty for no CORS rules.\nExample:\n  cors:\n    corsRules:\n      - id: \"my-cors-rule\"\n        allowedOrigins:\n          - \"*\"\n        allowedMethods:\n          - GET\n          - PUT\n        allowedHeaders:\n          - \"*\"\n        exposeHeaders:\n          - \"x-amz-server-side-encryption\"\n        maxAgeSeconds: 3000",
+          "required": [],
+          "title": "cors",
+          "type": "object"
         },
-        "maxReplicas": {
-          "type": "integer",
-          "minimum": 1
+        "enabled": {
+          "default": false,
+          "description": "When true, create an S3 bucket CR via ACK.",
+          "title": "enabled",
+          "type": "boolean"
         },
-        "targetCPUUtilizationPercentage": {
+        "encryption": {
+          "additionalProperties": false,
+          "description": "Server-side encryption settings. `kmsMasterKeyID` is required when\n`sseAlgorithm` is `aws:kms` or `aws:kms:dsse`.",
+          "properties": {
+            "kmsMasterKeyID": {
+              "type": "string"
+            },
+            "sseAlgorithm": {
+              "default": "AES256",
+              "enum": [
+                "AES256",
+                "aws:kms",
+                "aws:kms:dsse"
+              ],
+              "type": "string"
+            }
+          },
+          "required": [],
+          "title": "encryption",
+          "type": "object"
+        },
+        "lifecycle": {
+          "additionalProperties": true,
+          "default": {},
+          "description": "Lifecycle configuration rules. Leave empty for no lifecycle rules.\nExample:\n  lifecycle:\n    rules:\n      - id: expire-old-objects\n        status: Enabled\n        filter:\n          prefix: \"\"\n          objectSizeGreaterThan: 1024\n          objectSizeLessThan: 10240\n          tags:\n            - key: \"Environment\"\n              value: \"Production\"\n        expiration:\n          days: 365\n      - id: transition-to-ia\n        status: Enabled\n        filter:\n          prefix: \"logs/\"\n        transitions:\n          - days: 30\n            storageClass: STANDARD_IA",
+          "required": [],
+          "title": "lifecycle",
+          "type": "object"
+        },
+        "policy": {
+          "additionalProperties": true,
+          "default": {},
+          "description": "Bucket policy as a YAML object (will be converted to JSON string).\nLeave empty for no bucket policy. Use AWS IAM policy format with capitalized keys.\nExample:\n  policy:\n    Version: \"2012-10-17\"\n    Statement:\n      - Sid: PublicReadGetObject\n        Effect: Allow\n        Principal: \"*\"\n        Action:\n          - \"s3:GetObject\"\n        Resource:\n          - \"arn:aws:s3:::my-bucket-name/*\"",
+          "required": [],
+          "title": "policy",
+          "type": "object"
+        },
+        "s3bucketName": {
           "anyOf": [
             {
-              "type": "integer",
-              "minimum": 1
+              "const": "",
+              "required": []
             },
             {
-              "type": "null"
+              "maxLength": 63,
+              "minLength": 3,
+              "pattern": "^[a-z0-9][a-z0-9.-]*[a-z0-9]$",
+              "type": "string"
             }
-          ]
+          ],
+          "default": "",
+          "description": "S3 bucket name (required). Must be globally unique and follow S3 naming rules.",
+          "required": [],
+          "title": "s3bucketName"
         },
-        "targetMemoryUtilizationPercentage": {
-          "anyOf": [
-            {
-              "type": "integer",
-              "minimum": 1
-            },
-            {
-              "type": "null"
-            }
-          ]
-        },
+        "versioning": {
+          "default": "Suspended",
+          "description": "Versioning status. Set to \"Enabled\" to enable versioning, \"Suspended\" to suspend it.",
+          "enum": [
+            "Enabled",
+            "Suspended"
+          ],
+          "title": "versioning",
+          "type": "string"
+        }
+      },
+      "required": [],
+      "title": "s3",
+      "type": "object"
+    },
+    "securityContext": {
+      "additionalProperties": true,
+      "required": [],
+      "title": "securityContext",
+      "type": "object"
+    },
+    "service": {
+      "additionalProperties": false,
+      "description": "A \"service\" is basically a named port which follows a pod or pods; you\nshould always use a service when networking in k8s.\nMore information can be found here: https://kubernetes.io/docs/concepts/services-networking/service/",
+      "properties": {
         "annotations": {
-          "type": "object",
-          "additionalProperties": true
+          "additionalProperties": true,
+          "description": "a map of annotations to define on the main Service resource",
+          "required": [],
+          "title": "annotations"
         },
-        "behavior": {
-          "type": "object",
-          "additionalProperties": true
-        },
-        "hpaScalingRules": {
-          "type": "array",
+        "extraPorts": {
+          "description": "Additional ports to expose from the main Service.",
           "items": {
-            "type": "object",
-            "required": [
-              "name",
-              "expr",
-              "target"
-            ],
             "properties": {
               "name": {
-                "type": "string",
-                "pattern": "^[a-zA-Z_:][a-zA-Z0-9_:]*$"
-              },
-              "expr": {
+                "minLength": 1,
                 "type": "string"
               },
-              "labels": {
-                "type": "object",
-                "additionalProperties": {
-                  "type": "string"
-                }
+              "port": {
+                "maximum": 65535,
+                "minimum": 1,
+                "type": "integer"
               },
-              "selector": {
-                "type": "object",
-                "additionalProperties": {
-                  "type": "string"
-                }
+              "protocol": {
+                "enum": [
+                  "TCP",
+                  "UDP",
+                  "SCTP"
+                ],
+                "type": "string"
               },
-              "target": {
-                "type": "object",
-                "properties": {
-                  "type": {
-                    "type": "string",
-                    "enum": [
-                      "Value",
-                      "AverageValue"
-                    ]
+              "targetPort": {
+                "anyOf": [
+                  {
+                    "maximum": 65535,
+                    "minimum": 1,
+                    "type": "integer"
                   },
-                  "value": {
+                  {
                     "type": "string"
                   },
-                  "averageValue": {
-                    "type": "string"
+                  {
+                    "type": "null"
                   }
-                },
-                "additionalProperties": false
-              },
-              "groupName": {
-                "type": "string"
-              },
-              "interval": {
-                "type": "string"
+                ],
+                "required": []
               }
             },
-            "additionalProperties": false
-          }
+            "required": [
+              "name",
+              "port"
+            ],
+            "type": "object"
+          },
+          "title": "extraPorts",
+          "type": "array"
+        },
+        "labels": {
+          "additionalProperties": true,
+          "description": "a map of labels to define on the main Service resource",
+          "required": [],
+          "title": "labels",
+          "type": "object"
+        },
+        "port": {
+          "default": 3000,
+          "description": "Defines the port the service listens upon. This is the *external* port\nexposed by the container, not necessarily the internal port inside the\ncontainer.  It also doesn't have to be 80 or 443; an ingress (if used) will\nlisten on a differnet port and communicate with the container on this\nservice/port combination.\nmore information can be found here: https://kubernetes.io/docs/concepts/services-networking/service/#field-spec-ports",
+          "title": "port",
+          "type": "integer"
+        },
+        "type": {
+          "default": "ClusterIP",
+          "description": "Define the service type\nmore information can be found here: https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types",
+          "title": "type",
+          "type": "string"
         }
       },
-      "additionalProperties": true
+      "required": [],
+      "title": "service",
+      "type": "object"
     },
-    "podDisruptionBudget": {
-      "type": "object",
+    "serviceAccount": {
+      "additionalProperties": false,
+      "description": "This section builds out the service account more information can be found here: https://kubernetes.io/docs/concepts/security/service-accounts/",
       "properties": {
+        "annotations": {
+          "additionalProperties": true,
+          "description": "Annotations to add to the service account",
+          "required": [],
+          "title": "annotations",
+          "type": "object"
+        },
+        "automount": {
+          "default": true,
+          "description": "Automatically mount a ServiceAccount's API credentials",
+          "title": "automount",
+          "type": "boolean"
+        },
+        "create": {
+          "default": true,
+          "description": "Specifies whether a service account should be created (things may go poorly if you set this to false)",
+          "title": "create",
+          "type": "boolean"
+        },
+        "name": {
+          "default": "",
+          "description": "The name of the service account to use.\nIf not set and create is true, a name is generated using the fullname template",
+          "title": "name",
+          "type": "string"
+        }
+      },
+      "required": [],
+      "title": "serviceAccount",
+      "type": "object"
+    },
+    "serviceMonitor": {
+      "additionalProperties": false,
+      "description": "Configure a ServiceMonitor for scraping metrics from the service.",
+      "properties": {
+        "alternatePort": {
+          "anyOf": [
+            {
+              "maximum": 65535,
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "required": []
+        },
+        "blockExternalIngress": {
+          "properties": {
+            "denylistSourceRange": {
+              "pattern": "^\\s*([0-9A-Fa-f:.]+/[0-9]{1,3})(\\s*,\\s*[0-9A-Fa-f:.]+/[0-9]{1,3})*\\s*$",
+              "type": "string"
+            },
+            "enabled": {
+              "type": "boolean"
+            },
+            "ingressClassNames": {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            "path": {
+              "anyOf": [
+                {
+                  "pattern": "^/.*",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "required": []
+            }
+          },
+          "required": [],
+          "type": "object"
+        },
         "enabled": {
           "type": "boolean"
         },
-        "allowZeroDisruptions": {
-          "type": "boolean"
-        },
-        "minAvailable": {
+        "interval": {
           "anyOf": [
             {
-              "type": "integer",
-              "minimum": 0
-            },
-            {
-              "type": "string",
-              "pattern": "^[0-9]+%$"
+              "minimum": 1,
+              "type": "integer"
             },
             {
               "type": "null"
             }
-          ]
+          ],
+          "required": []
         },
-        "maxUnavailable": {
+        "path": {
           "anyOf": [
             {
-              "type": "integer",
-              "minimum": 0
-            },
-            {
-              "type": "string",
-              "pattern": "^[0-9]+%$"
+              "pattern": "^/.*",
+              "type": "string"
             },
             {
               "type": "null"
             }
-          ]
-        },
-        "unhealthyPodEvictionPolicy": {
-          "anyOf": [
-            {
-              "type": "string",
-              "enum": [
-                "IfHealthyBudget",
-                "AlwaysAllow"
-              ]
-            },
-            {
-              "type": "null"
-            }
-          ]
-        },
-        "annotations": {
-          "type": "object",
-          "additionalProperties": true
+          ],
+          "required": []
         }
       },
-      "additionalProperties": true
+      "required": [],
+      "title": "serviceMonitor",
+      "type": "object"
+    },
+    "spread_azs": {
+      "default": false,
+      "description": "(boolean) Add a preferred topology spread rule across availability zones.\nKept for backward compatibility; prefer `availability.enabled` for new apps.",
+      "title": "spread_azs",
+      "type": "boolean"
+    },
+    "spread_spot": {
+      "default": false,
+      "description": "(boolean) Add a topology spread rule across Karpenter capacity types\n(spot vs on-demand).",
+      "title": "spread_spot",
+      "type": "boolean"
+    },
+    "startupProbe": {
+      "anyOf": [
+        {
+          "type": "null"
+        },
+        {
+          "additionalProperties": true,
+          "required": [],
+          "type": "object"
+        }
+      ],
+      "default": "",
+      "description": "Configure a startup probe to check if the application has started successfully.\nThe startup probe is used to give the application more time to start up before the\nliveness probe takes over. This is especially useful for applications that take a\nlong time to initialize. Once the startup probe succeeds once, Kubernetes will\nstop using it and switch to the liveness probe for ongoing health checks.\nMore information can be found here: https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/\nExample configuration:\n  startupProbe:\n    httpGet:\n      path: /diagnostics/health\n      port: http\n    periodSeconds: 5\n    failureThreshold: 60",
+      "required": [],
+      "title": "startupProbe"
+    },
+    "terminationGracePeriodSeconds": {
+      "anyOf": [
+        {
+          "maximum": 900,
+          "minimum": 0,
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": "null",
+      "description": "Override the default termination grace period (in seconds).\nWhen null, the Kubernetes default of 30 seconds is used.\nMaximum allowed is 900 (15 minutes).",
+      "required": [],
+      "title": "terminationGracePeriodSeconds"
+    },
+    "tolerations": {
+      "description": "List of taints these pods should tolerate.\nNormally this should be an empty list",
+      "items": {
+        "required": []
+      },
+      "title": "tolerations",
+      "type": "array"
+    },
+    "topologySpreadConstraints": {
+      "description": "When deploying with multiple replicas, spread pods around using these\nrules. The default is to spread pods evenly among the Availability Zones\ndefined in the cluster. With a Karpenter-managed EKS cluster (like HeroDevs\nuses), there will usually be 3 AZs in a region where a cluster is deployed.\nIf a constraint omits labelSelector, the chart injects selector labels. When\nthe availability preset is enabled, it replaces custom zone and hostname\nconstraints so each topology key appears only once.",
+      "items": {
+        "additionalProperties": true,
+        "required": [],
+        "type": "object"
+      },
+      "title": "topologySpreadConstraints",
+      "type": "array"
+    },
+    "volumeMounts": {
+      "description": "Additional volumes to mount",
+      "items": {
+        "required": []
+      },
+      "title": "volumeMounts",
+      "type": "array"
+    },
+    "volumes": {
+      "description": "Additional volumes to create",
+      "items": {
+        "required": []
+      },
+      "title": "volumes",
+      "type": "array"
     }
   },
-  "title": "Values",
+  "required": [],
   "type": "object"
 }

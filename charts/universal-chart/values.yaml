@@ -1,5 +1,25 @@
 # Default values for universal-chart.
 
+# @schema
+# type: object
+# oneOf:
+#   - properties:
+#       tag:
+#         type: string
+#         minLength: 1
+#       digest:
+#         type: "null"
+#     required:
+#       - tag
+#   - properties:
+#       tag:
+#         type: "null"
+#       digest:
+#         type: string
+#         pattern: ^sha256:[a-f0-9]{64}$
+#     required:
+#       - digest
+# @schema
 # This sets the container image more information can be found here: https://kubernetes.io/docs/concepts/containers/images/
 image:
   # @schema
@@ -9,10 +29,23 @@ image:
   # Example: ghcr.io/neverendingsupport/universal-chart
   repository: null
   # @schema
-  # required: true
+  # type:
+  #   - string
+  #   - "null"
+  # minLength: 1
   # @schema
-  # -- (string) tag / sha of image to pull
+  # -- (string) Tag or tag-and-digest reference to pull. Set exactly one of
+  # `tag` or `digest`.
   tag: null
+  # @schema
+  # type:
+  #   - string
+  #   - "null"
+  # pattern: ^sha256:[a-f0-9]{64}$
+  # @schema
+  # -- (string) OCI SHA-256 digest. Set exactly one of `tag` or `digest`; clear
+  # an inherited tag when selecting a digest.
+  digest: null
   # @schema
   # enum:
   # - Always
@@ -64,9 +97,9 @@ reloader:
 # security context as the main container.
 initContainers:
   -  # @schema
-    # anyof:
-    #   type: string
-    #   type: null
+    # anyOf:
+    #   - type: string
+    #   - type: "null"
     # @schema
     # -- (string) the image to run on init
     # if this is left as null or a false-ish value, the initContainers section of
@@ -113,13 +146,13 @@ awsEnvSecrets:
 # type: object
 # required: false
 # additionalProperties:
-#   anyof:
+#   anyOf:
 #     - type: string
 #     - type: object
 #       properties:
 #         valueFrom:
 #           type: object
-#           anyof:
+#           anyOf:
 #             - properties:
 #                 fieldRef:
 #                   type: object
@@ -143,7 +176,6 @@ awsEnvSecrets:
 #                     - key
 #               required:
 #                 - secretKeyRef
-#           required: true
 #       required:
 #         - valueFrom
 # examples:
@@ -203,24 +235,44 @@ serviceAccount:
   create: true
   # Automatically mount a ServiceAccount's API credentials
   automount: true
+  # @schema
+  # type: object
+  # additionalProperties: true
+  # @schema
   # Annotations to add to the service account
   annotations: {}
   # The name of the service account to use.
   # If not set and create is true, a name is generated using the fullname template
   name: ""
 
+# @schema
+# type: object
+# additionalProperties: true
+# @schema
 # -- Add additional annotations to the pod.
 # Annotations are generally for "people" uses and interoperability.
 # For more information check out: https://kubernetes.io/docs/concepts/overview/working-with-objects/annotations/
 podAnnotations: {}
+# @schema
+# type: object
+# additionalProperties: true
+# @schema
 # -- Add additional labels to the pods.
 # Labels are generally for k8s internal use (pod selectors, etc)
 # For more information check out: https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/
 podLabels: {}
 
+# @schema
+# type: object
+# additionalProperties: true
+# @schema
 podSecurityContext: {}
   # fsGroup: 2000
 
+# @schema
+# type: object
+# additionalProperties: true
+# @schema
 securityContext: {}
   # capabilities:
   #   drop:
@@ -292,17 +344,17 @@ service:
 #   enabled:
 #     type: boolean
 #   path:
-#     anyof:
+#     anyOf:
 #       - type: string
 #         pattern: ^/.*
 #       - type: "null"
 #   interval:
-#     anyof:
+#     anyOf:
 #       - type: integer
 #         minimum: 1
 #       - type: "null"
 #   alternatePort:
-#     anyof:
+#     anyOf:
 #       - type: integer
 #         minimum: 1
 #         maximum: 65535
@@ -313,7 +365,7 @@ service:
 #       enabled:
 #         type: boolean
 #       path:
-#         anyof:
+#         anyOf:
 #           - type: string
 #             pattern: ^/.*
 #           - type: "null"
@@ -547,9 +599,10 @@ resources: {}
   #   memory: 128Mi
 
 # @schema
-# anyof:
-#   type: null
-#   type: map
+# anyOf:
+#   - type: "null"
+#   - type: object
+#     additionalProperties: true
 # @schema
 # -- Configure a startup probe to check if the application has started successfully.
 # The startup probe is used to give the application more time to start up before the
@@ -570,9 +623,10 @@ startupProbe:
   #   port: http
 
 # @schema
-# anyof:
-#   type: null
-#   type: map
+# anyOf:
+#   - type: "null"
+#   - type: object
+#     additionalProperties: true
 # @schema
 # -- Configure a liveness probe to detect hung or dead containers.
 # The liveness probe determines if a container is still running and healthy. If the
@@ -593,9 +647,10 @@ livenessProbe:
   #   port: http
 
 # @schema
-# anyof:
-#   type: null
-#   type: map
+# anyOf:
+#   - type: "null"
+#   - type: object
+#     additionalProperties: true
 # @schema
 # -- Configure a readiness probe to gate traffic until the application is ready to serve.
 # The readiness probe determines if a container is ready to accept traffic. If the
@@ -630,21 +685,21 @@ replicaCount: 1
 #   allowZeroDisruptions:
 #     type: boolean
 #   minAvailable:
-#     anyof:
+#     anyOf:
 #       - type: integer
 #         minimum: 0
 #       - type: string
 #         pattern: ^[0-9]+%$
 #       - type: "null"
 #   maxUnavailable:
-#     anyof:
+#     anyOf:
 #       - type: integer
 #         minimum: 0
 #       - type: string
 #         pattern: ^[0-9]+%$
 #       - type: "null"
 #   unhealthyPodEvictionPolicy:
-#     anyof:
+#     anyOf:
 #       - type: string
 #         enum:
 #           - IfHealthyBudget
@@ -678,7 +733,7 @@ podDisruptionBudget:
   annotations: {}
 
 # @schema
-# anyof:
+# anyOf:
 #   - type: integer
 #     minimum: 0
 #     maximum: 900
@@ -708,12 +763,12 @@ revisionHistoryLimit: 3
 #     type: integer
 #     minimum: 1
 #   targetCPUUtilizationPercentage:
-#     anyof:
+#     anyOf:
 #       - type: integer
 #         minimum: 1
 #       - type: "null"
 #   targetMemoryUtilizationPercentage:
-#     anyof:
+#     anyOf:
 #       - type: integer
 #         minimum: 1
 #       - type: "null"
@@ -808,6 +863,10 @@ volumeMounts: []
 #   mountPath: "/etc/foo"
 #   readOnly: true
 
+# @schema
+# type: object
+# additionalProperties: true
+# @schema
 # -- Select specific nodes to run upon
 # Normally this should be an empty map
 nodeSelector: {}
@@ -816,6 +875,10 @@ nodeSelector: {}
 # Normally this should be an empty list
 tolerations: []
 
+# @schema
+# type: object
+# additionalProperties: true
+# @schema
 # -- Select roughly specific nodes to run upon.
 # This is similar to node selectors, but allows a bit more fuzziness and flexibility.
 # More info at https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity
@@ -854,6 +917,12 @@ spread_azs: false
 # (spot vs on-demand).
 spread_spot: false
 
+# @schema
+# type: array
+# items:
+#   type: object
+#   additionalProperties: true
+# @schema
 # -- When deploying with multiple replicas, spread pods around using these
 # rules. The default is to spread pods evenly among the Availability Zones
 # defined in the cluster. With a Karpenter-managed EKS cluster (like HeroDevs
@@ -886,6 +955,8 @@ extraManifests: []
 
 ########################################
 # @schema
+# type: object
+# properties: {}
 # additionalProperties: true
 # @schema
 # -- Redis subchart configuration values.
@@ -978,29 +1049,32 @@ s3:
   enabled: false
 
   # @schema
-  # type: string
-  # minlength: 3
-  # maxlength: 63
-  # pattern: ^[a-z0-9][a-z0-9.-]*[a-z0-9]$
+  # anyOf:
+  #   - const: ""
+  #   - type: string
+  #     minLength: 3
+  #     maxLength: 63
+  #     pattern: ^[a-z0-9][a-z0-9.-]*[a-z0-9]$
   # @schema
   # -- S3 bucket name (required). Must be globally unique and follow S3 naming rules.
   s3bucketName: ""
 
   # @schema
-  # type: string
-  # enum:
-  #   - AES256
-  #   - aws:kms
-  #   - aws:kms:dsse
-  # default: AES256
+  # type: object
+  # additionalProperties: false
+  # properties:
+  #   sseAlgorithm:
+  #     type: string
+  #     enum:
+  #       - AES256
+  #       - aws:kms
+  #       - aws:kms:dsse
+  #     default: AES256
+  #   kmsMasterKeyID:
+  #     type: string
   # @schema
-  # -- Server-side encryption algorithm. AES256 is SSE-S3 (S3-managed keys).
-  # Use aws:kms for KMS-managed keys.
-  # @schema
-  # type: string
-  # @schema
-  # -- KMS master key ID (optional). Required when using aws:kms or aws:kms:dsse.
-  # Can be a key ID, key ARN, or alias (e.g., "alias/my-key").
+  # -- Server-side encryption settings. `kmsMasterKeyID` is required when
+  # `sseAlgorithm` is `aws:kms` or `aws:kms:dsse`.
   encryption:
     sseAlgorithm: AES256
     # kmsMasterKeyID: ""
@@ -1008,6 +1082,7 @@ s3:
   # @schema
   # type: object
   # default: {}
+  # additionalProperties: true
   # @schema
   # -- Lifecycle configuration rules. Leave empty for no lifecycle rules.
   # Example:
@@ -1036,6 +1111,7 @@ s3:
   # @schema
   # type: object
   # default: {}
+  # additionalProperties: true
   # @schema
   # -- CORS configuration. Leave empty for no CORS rules.
   # Example:
@@ -1057,6 +1133,7 @@ s3:
   # @schema
   # type: object
   # default: {}
+  # additionalProperties: true
   # @schema
   # -- Bucket policy as a YAML object (will be converted to JSON string).
   # Leave empty for no bucket policy. Use AWS IAM policy format with capitalized keys.

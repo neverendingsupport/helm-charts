@@ -15,6 +15,43 @@ of helpful extra features:
 
 TODO: Explain how those work better
 
+## Pin application images by digest
+
+An image tag can move to different content. A digest identifies the content, so
+the same values pull the same image during promotion or rollback.
+
+Set exactly one of `image.tag` or `image.digest`. When selecting a digest,
+clear any tag inherited from another values file:
+
+```yaml
+image:
+  repository: ghcr.io/example/app
+  tag: null
+  digest: sha256:0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+```
+
+This renders
+`ghcr.io/example/app@sha256:0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef`.
+Promote the same digest between environments. To roll back, restore the
+previous digest.
+
+| Values | Rendered image |
+| --- | --- |
+| `tag` only | `repository:tag` |
+| `digest` only | `repository@digest` |
+
+Existing values that put `tag@sha256:...` in `image.tag` still work when
+`image.digest` is unset. The values schema rejects configurations that set both
+fields or neither field.
+
+Init containers accept complete references through `initContainers[].image`,
+so use `repository@digest` there.
+
+See the [Kubernetes image documentation](https://kubernetes.io/docs/concepts/containers/images/)
+for tag and digest behavior. The
+[OCI image specification](https://github.com/opencontainers/image-spec/blob/main/descriptor.md#digests)
+defines the digest format.
+
 ## Availability scheduling
 
 The availability preset spreads matching pods across zones and nodes. It uses
@@ -268,9 +305,10 @@ helm template my-release . \
 | extraEnvVars | object | `{}` | additional environment variables and their values. Supports both simple string values and complex objects with valueFrom. |
 | extraManifests | list | `[]` | A list of extra yaml manifests to include. Each element will be rendered exactly as passed in |
 | fullnameOverride | string | `""` |  |
+| image.digest | string | `nil` | OCI SHA-256 digest. Set exactly one of `tag` or `digest`; clear an inherited tag when selecting a digest. |
 | image.pullPolicy | string | `"Always"` | k8s image pull policy |
 | image.repository | string | `nil` | repository path to image without tag name. Example: ghcr.io/neverendingsupport/universal-chart |
-| image.tag | string | `nil` | tag / sha of image to pull |
+| image.tag | string | `nil` | Tag or tag-and-digest reference to pull. Set exactly one of `tag` or `digest`. |
 | imagePullSecrets | list | `[]` |  |
 | ingress | object | `{"annotations":{},"className":"","enabled":false,"hosts":[],"tls":[]}` | This block is for setting up the ingress. More information can be found here: https://kubernetes.io/docs/concepts/services-networking/ingress/ |
 | ingress.annotations | object | `{}` | a map of annotations to define on the ingress resource |
@@ -322,7 +360,7 @@ helm template my-release . \
 | revisionHistoryLimit | int | `3` | number of old ReplicaSets to retain for rollback |
 | s3.cors | object | `{}` | CORS configuration. Leave empty for no CORS rules. Example:   cors:     corsRules:       - id: "my-cors-rule"         allowedOrigins:           - "*"         allowedMethods:           - GET           - PUT         allowedHeaders:           - "*"         exposeHeaders:           - "x-amz-server-side-encryption"         maxAgeSeconds: 3000 |
 | s3.enabled | bool | `false` | When true, create an S3 bucket CR via ACK. |
-| s3.encryption | object | `{"sseAlgorithm":"AES256"}` | KMS master key ID (optional). Required when using aws:kms or aws:kms:dsse. Can be a key ID, key ARN, or alias (e.g., "alias/my-key"). |
+| s3.encryption | object | `{"sseAlgorithm":"AES256"}` | Server-side encryption settings. `kmsMasterKeyID` is required when `sseAlgorithm` is `aws:kms` or `aws:kms:dsse`. |
 | s3.lifecycle | object | `{}` | Lifecycle configuration rules. Leave empty for no lifecycle rules. Example:   lifecycle:     rules:       - id: expire-old-objects         status: Enabled         filter:           prefix: ""           objectSizeGreaterThan: 1024           objectSizeLessThan: 10240           tags:             - key: "Environment"               value: "Production"         expiration:           days: 365       - id: transition-to-ia         status: Enabled         filter:           prefix: "logs/"         transitions:           - days: 30             storageClass: STANDARD_IA |
 | s3.policy | object | `{}` | Bucket policy as a YAML object (will be converted to JSON string). Leave empty for no bucket policy. Use AWS IAM policy format with capitalized keys. Example:   policy:     Version: "2012-10-17"     Statement:       - Sid: PublicReadGetObject         Effect: Allow         Principal: "*"         Action:           - "s3:GetObject"         Resource:           - "arn:aws:s3:::my-bucket-name/*" |
 | s3.s3bucketName | string | `""` | S3 bucket name (required). Must be globally unique and follow S3 naming rules. |

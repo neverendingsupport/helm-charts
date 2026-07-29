@@ -14,6 +14,43 @@ of helpful extra features:
 
 TODO: Explain how those work better
 
+## Pin application images by digest
+
+An image tag can move to different content. A digest identifies the content, so
+the same values pull the same image during promotion or rollback.
+
+Set exactly one of `image.tag` or `image.digest`. When selecting a digest,
+clear any tag inherited from another values file:
+
+```yaml
+image:
+  repository: ghcr.io/example/app
+  tag: null
+  digest: sha256:0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+```
+
+This renders
+`ghcr.io/example/app@sha256:0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef`.
+Promote the same digest between environments. To roll back, restore the
+previous digest.
+
+| Values | Rendered image |
+| --- | --- |
+| `tag` only | `repository:tag` |
+| `digest` only | `repository@digest` |
+
+Existing values that put `tag@sha256:...` in `image.tag` still work when
+`image.digest` is unset. The values schema rejects configurations that set both
+fields or neither field.
+
+Init containers accept complete references through `initContainers[].image`,
+so use `repository@digest` there.
+
+See the [Kubernetes image documentation](https://kubernetes.io/docs/concepts/containers/images/)
+for tag and digest behavior. The
+[OCI image specification](https://github.com/opencontainers/image-spec/blob/main/descriptor.md#digests)
+defines the digest format.
+
 ## Availability scheduling
 
 The availability preset spreads matching pods across zones and nodes. It uses
