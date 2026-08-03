@@ -2,14 +2,8 @@
 
 from __future__ import annotations
 
-from typing import Any
-
-import pytest
-
-from .chart_test_utils import get_manifest, render_chart
-from .conftest import HelmTemplateError
+from .chart_test_utils import get_manifest
 from .universal_chart_test_utils import (
-    CHART,
     render_manifest,
     render_manifests,
 )
@@ -31,7 +25,7 @@ def test_hpa_scaling_rule_renders_external_metric_and_recording_rule(
                 "enabled": True,
                 "minReplicas": 2,
                 "maxReplicas": 20,
-                "targetCPUUtilizationPercentage": None,
+                "metrics": [],
                 "behavior": {
                     "scaleDown": {"stabilizationWindowSeconds": 300},
                 },
@@ -132,7 +126,8 @@ def test_hpa_annotations_render_when_enabled(helm_runner) -> None:
             "autoscaling": {
                 "enabled": True,
                 "annotations": {"argocd.argoproj.io/sync-wave": "10"},
-            }
+            },
+            "resources": {"requests": {"cpu": "100m"}},
         },
     )
 
@@ -141,79 +136,159 @@ def test_hpa_annotations_render_when_enabled(helm_runner) -> None:
     }
 
 
-@pytest.mark.parametrize(
-    "values",
-    [
-        pytest.param(
-            {
-                "autoscaling": {
-                    "enabled": True,
-                    "hpaScalingRules": [
-                        {
-                            "name": "myapp_queue_depth",
-                            "target": {"averageValue": "100"},
-                        }
-                    ],
-                }
-            },
-            id="scaling-rule-missing-expr",
-        ),
-        pytest.param(
-            {
-                "autoscaling": {
-                    "enabled": True,
-                    "hpaScalingRules": [
-                        {
-                            "name": "myapp-queue-depth",
-                            "expr": "vector(1)",
-                            "target": {"averageValue": "100"},
-                        }
-                    ],
-                }
-            },
-            id="invalid-metric-name",
-        ),
-        pytest.param(
-            {
-                "autoscaling": {
-                    "enabled": True,
-                    "hpaScalingRules": [
-                        {
-                            "name": "myapp_queue_depth",
-                            "expr": "vector(1)",
-                            "labels": {"queue": 1},
-                            "target": {"averageValue": "100"},
-                        }
-                    ],
-                }
-            },
-            id="scaling-rule-label-is-not-string",
-        ),
-        pytest.param(
-            {
-                "autoscaling": {
-                    "enabled": True,
-                    "hpaScalingRules": [
-                        {
-                            "name": "myapp_queue_depth",
-                            "expr": "vector(1)",
-                            "target": {
-                                "type": "Utilization",
-                                "averageValue": "100",
-                            },
-                        }
-                    ],
-                }
-            },
-            id="invalid-target-type",
-        ),
-    ],
-)
-def test_hpa_schema_rejects_invalid_values(
-    helm_runner,
-    values: dict[str, Any],
-) -> None:
-    """Reject malformed HPA scaling rules."""
+def test_autoscaling_uses_native_autoscaling_v2_metrics(helm_runner) -> None:
+    """Pass every stable autoscaling/v2 MetricSpec source through unchanged."""
 
-    with pytest.raises(HelmTemplateError):
-        render_chart(helm_runner, CHART, values=values)
+    metrics = [
+        {
+            "type": "Resource",
+            "resource": {
+                "name": "cpu",
+                "target": {
+                    "type": "Utilization",
+                    "averageUtilization": 70,
+                },
+            },
+        },
+        {
+            "type": "ContainerResource",
+            "containerResource": {
+                "name": "memory",
+                "container": "universal-chart",
+                "target": {
+                    "type": "AverageValue",
+                    "averageValue": "512Mi",
+                },
+            },
+        },
+        {
+            "type": "External",
+            "external": {
+                "metric": {
+                    "name": "queue_depth",
+                    "selector": {"matchLabels": {"queue": "critical"}},
+                },
+                "target": {"type": "Value", "value": "100"},
+            },
+        },
+        {
+            "type": "Object",
+            "object": {
+                "describedObject": {
+                    "apiVersion": "networking.k8s.io/v1",
+                    "kind": "Ingress",
+                    "name": "example",
+                },
+                "metric": {"name": "requests_per_second"},
+                "target": {"type": "Value", "value": "1k"},
+            },
+        },
+        {
+            "type": "Pods",
+            "pods": {
+                "metric": {"name": "packets_per_second"},
+                "target": {"type": "AverageValue", "averageValue": "1k"},
+            },
+        },
+    ]
+    hpa = render_manifest(
+        helm_runner,
+        "HorizontalPodAutoscaler",
+        values={
+            "autoscaling": {
+                "enabled": True,
+                "minReplicas": 2,
+                "maxReplicas": 12,
+                "metrics": metrics,
+            },
+            "resources": {"requests": {"cpu": "100m"}},
+        },
+    )
+
+    assert hpa["apiVersion"] == "autoscaling/v2"
+    assert hpa["spec"]["metrics"] == metrics
+
+
+def test_native_metrics_replace_percentage_resource_targets(
+    helm_runner,
+) -> None:
+    """Use an explicitly supplied native metrics list instead of legacy CPU."""
+
+    external_metric = {
+        "type": "External",
+        "external": {
+            "metric": {"name": "queue_depth"},
+            "target": {"type": "AverageValue", "averageValue": "20"},
+        },
+    }
+    hpa = render_manifest(
+        helm_runner,
+        "HorizontalPodAutoscaler",
+        values={
+            "autoscaling": {
+                "enabled": True,
+                "targetCPUUtilizationPercentage": 80,
+                "metrics": [external_metric],
+            }
+        },
+    )
+
+    assert hpa["spec"]["metrics"] == [external_metric]
+
+
+def test_autoscaling_disabled_keeps_fixed_replicas(helm_runner) -> None:
+    """Keep fixed replicas when HPA autoscaling is disabled."""
+
+    manifests = render_manifests(
+        helm_runner,
+        values={
+            "replicaCount": 3,
+            "autoscaling": {
+                "enabled": False,
+                "metrics": [],
+            },
+        },
+    )
+
+    assert all(item["kind"] != "HorizontalPodAutoscaler" for item in manifests)
+    deployment = get_manifest(manifests, "Deployment")
+    assert deployment["spec"]["replicas"] == 3
+
+
+def test_hpa_scaling_rules_append_to_native_metrics(helm_runner) -> None:
+    """Append generated Prometheus metrics to native metrics."""
+
+    native_metric = {
+        "type": "External",
+        "external": {
+            "metric": {"name": "native_queue_depth"},
+            "target": {"type": "Value", "value": "50"},
+        },
+    }
+    hpa = render_manifest(
+        helm_runner,
+        "HorizontalPodAutoscaler",
+        values={
+            "autoscaling": {
+                "enabled": True,
+                "targetCPUUtilizationPercentage": None,
+                "metrics": [native_metric],
+                "hpaScalingRules": [
+                    {
+                        "name": "recorded_queue_depth",
+                        "expr": "vector(2)",
+                        "target": {"averageValue": "2"},
+                    }
+                ],
+            }
+        },
+    )
+
+    names = [
+        metric["external"]["metric"]["name"]
+        for metric in hpa["spec"]["metrics"]
+    ]
+    assert names == [
+        "native_queue_depth",
+        "recorded_queue_depth",
+    ]

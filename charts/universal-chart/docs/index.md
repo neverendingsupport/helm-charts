@@ -21,8 +21,10 @@ Kubernetes primitives plus a small number of opinionated platform integrations.
   `Database`, `DbUser`, or one-off Jobs
 - optional `ServiceMonitor`, with public nginx ingress access to the metrics
   path blocked by default
-- first-class HPA scaling from Prometheus-backed external metrics through
-  `autoscaling.hpaScalingRules`
+- stable `autoscaling/v2` HorizontalPodAutoscaler (HPA) support for resource,
+  container, object, pod, and external metrics
+- mutually exclusive VerticalPodAutoscaler (VPA) autosizing for
+  recommendation-only or active resource management
 - optional `PodDisruptionBudget` through `podDisruptionBudget`
 - optional Redis support
 - optional S3 bucket creation via ACK-backed resources
@@ -88,34 +90,22 @@ When the chart is used from Argo multi-source applications:
 Treat it as the final deploy-time override so nothing later in the stack can
 silently replace image tags or release pins.
 
-## Scaling From Prometheus Metrics
+## Autoscaling and autosizing
 
-Use `autoscaling.hpaScalingRules` when a workload should scale from an
-application metric exposed through Prometheus and `prometheus-adapter`. Each
-entry creates a Prometheus recording rule labeled `hpa_metric: "true"` and adds
-an External metric to the chart-managed `HorizontalPodAutoscaler`.
+The chart exposes one controller at a time:
 
-```yaml
-prometheusRule:
-  additionalLabels:
-    release: kube-prometheus-stack
+| Goal | Values | Controller |
+| --- | --- | --- |
+| Fixed replicas and resources | Disable both features | Deployment |
+| Change replica count from load | Enable `autoscaling` | HorizontalPodAutoscaler |
+| Collect resource recommendations | Enable `autosizing` with `updateMode: Off` | VerticalPodAutoscaler recommender |
+| Apply resource recommendations | Enable `autosizing` with an active update mode | VerticalPodAutoscaler |
 
-autoscaling:
-  enabled: true
-  targetCPUUtilizationPercentage: null
-  hpaScalingRules:
-    - name: myapp_queue_depth
-      expr: |
-        sum(
-          myapp_queue_messages_ready{namespace="myapp"}
-        )
-      target:
-        type: AverageValue
-        averageValue: "100"
-```
-
-Keep CPU or memory targets enabled to combine them with the external metric, or
-set both target fields to `null` for external-only scaling.
+Use the [HPA autoscaling guide](autoscaling.md) for native
+`autoscaling/v2` and Prometheus-backed metrics. Use the
+[VPA autosizing guide](autosizing.md) for recommendations, update modes,
+resource ceilings, verification, and rollback. Helm rendering fails if both
+features are enabled.
 
 ## PodDisruptionBudget
 

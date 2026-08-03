@@ -1,6 +1,12 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "additionalProperties": false,
+  "definitions": {
+    "quantity": {
+      "pattern": "^[+-]?([0-9]+([.][0-9]*)?|[.][0-9]+)([eE][+-]?[0-9]+|[numkMGTPE]|[KMGTPE]i)?$",
+      "type": "string"
+    }
+  },
   "properties": {
     "affinity": {
       "additionalProperties": true,
@@ -11,15 +17,129 @@
     },
     "autoscaling": {
       "additionalProperties": false,
-      "description": "section for configuring autoscaling.\nMore information can be found here: https://kubernetes.io/docs/concepts/workloads/autoscaling/",
+      "description": "autoscaling configures the chart-managed HorizontalPodAutoscaler using\nthe stable Kubernetes autoscaling/v2 API. Existing flat HPA values remain the\ncanonical interface.",
       "properties": {
         "annotations": {
-          "additionalProperties": true,
+          "additionalProperties": {
+            "type": "string"
+          },
           "required": [],
           "type": "object"
         },
         "behavior": {
-          "additionalProperties": true,
+          "additionalProperties": false,
+          "properties": {
+            "scaleDown": {
+              "additionalProperties": false,
+              "properties": {
+                "policies": {
+                  "items": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "periodSeconds": {
+                        "maximum": 1800,
+                        "minimum": 1,
+                        "type": "integer"
+                      },
+                      "type": {
+                        "enum": [
+                          "Percent",
+                          "Pods"
+                        ],
+                        "type": "string"
+                      },
+                      "value": {
+                        "minimum": 1,
+                        "type": "integer"
+                      }
+                    },
+                    "required": [
+                      "type",
+                      "value",
+                      "periodSeconds"
+                    ],
+                    "type": "object"
+                  },
+                  "minItems": 1,
+                  "type": "array"
+                },
+                "selectPolicy": {
+                  "enum": [
+                    "Max",
+                    "Min",
+                    "Disabled"
+                  ],
+                  "type": "string"
+                },
+                "stabilizationWindowSeconds": {
+                  "maximum": 3600,
+                  "minimum": 0,
+                  "type": "integer"
+                },
+                "tolerance": {
+                  "$ref": "#/definitions/quantity",
+                  "required": []
+                }
+              },
+              "required": [],
+              "type": "object"
+            },
+            "scaleUp": {
+              "additionalProperties": false,
+              "properties": {
+                "policies": {
+                  "items": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "periodSeconds": {
+                        "maximum": 1800,
+                        "minimum": 1,
+                        "type": "integer"
+                      },
+                      "type": {
+                        "enum": [
+                          "Percent",
+                          "Pods"
+                        ],
+                        "type": "string"
+                      },
+                      "value": {
+                        "minimum": 1,
+                        "type": "integer"
+                      }
+                    },
+                    "required": [
+                      "type",
+                      "value",
+                      "periodSeconds"
+                    ],
+                    "type": "object"
+                  },
+                  "minItems": 1,
+                  "type": "array"
+                },
+                "selectPolicy": {
+                  "enum": [
+                    "Max",
+                    "Min",
+                    "Disabled"
+                  ],
+                  "type": "string"
+                },
+                "stabilizationWindowSeconds": {
+                  "maximum": 3600,
+                  "minimum": 0,
+                  "type": "integer"
+                },
+                "tolerance": {
+                  "$ref": "#/definitions/quantity",
+                  "required": []
+                }
+              },
+              "required": [],
+              "type": "object"
+            }
+          },
           "required": [],
           "type": "object"
         },
@@ -61,7 +181,8 @@
                 "additionalProperties": false,
                 "properties": {
                   "averageValue": {
-                    "type": "string"
+                    "$ref": "#/definitions/quantity",
+                    "required": []
                   },
                   "type": {
                     "enum": [
@@ -71,7 +192,8 @@
                     "type": "string"
                   },
                   "value": {
-                    "type": "string"
+                    "$ref": "#/definitions/quantity",
+                    "required": []
                   }
                 },
                 "required": [],
@@ -91,6 +213,538 @@
           "minimum": 1,
           "type": "integer"
         },
+        "metrics": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "items": {
+                "oneOf": [
+                  {
+                    "additionalProperties": false,
+                    "properties": {
+                      "resource": {
+                        "additionalProperties": false,
+                        "properties": {
+                          "name": {
+                            "minLength": 1,
+                            "type": "string"
+                          },
+                          "target": {
+                            "oneOf": [
+                              {
+                                "additionalProperties": false,
+                                "properties": {
+                                  "averageUtilization": {
+                                    "minimum": 1,
+                                    "type": "integer"
+                                  },
+                                  "type": {
+                                    "const": "Utilization",
+                                    "required": []
+                                  }
+                                },
+                                "required": [
+                                  "type",
+                                  "averageUtilization"
+                                ],
+                                "type": "object"
+                              },
+                              {
+                                "additionalProperties": false,
+                                "properties": {
+                                  "averageValue": {
+                                    "$ref": "#/definitions/quantity",
+                                    "required": []
+                                  },
+                                  "type": {
+                                    "const": "AverageValue",
+                                    "required": []
+                                  }
+                                },
+                                "required": [
+                                  "type",
+                                  "averageValue"
+                                ],
+                                "type": "object"
+                              }
+                            ],
+                            "required": []
+                          }
+                        },
+                        "required": [
+                          "name",
+                          "target"
+                        ],
+                        "type": "object"
+                      },
+                      "type": {
+                        "const": "Resource",
+                        "required": []
+                      }
+                    },
+                    "required": [
+                      "type",
+                      "resource"
+                    ],
+                    "type": "object"
+                  },
+                  {
+                    "additionalProperties": false,
+                    "properties": {
+                      "containerResource": {
+                        "additionalProperties": false,
+                        "properties": {
+                          "container": {
+                            "minLength": 1,
+                            "type": "string"
+                          },
+                          "name": {
+                            "minLength": 1,
+                            "type": "string"
+                          },
+                          "target": {
+                            "oneOf": [
+                              {
+                                "additionalProperties": false,
+                                "properties": {
+                                  "averageUtilization": {
+                                    "minimum": 1,
+                                    "type": "integer"
+                                  },
+                                  "type": {
+                                    "const": "Utilization",
+                                    "required": []
+                                  }
+                                },
+                                "required": [
+                                  "type",
+                                  "averageUtilization"
+                                ],
+                                "type": "object"
+                              },
+                              {
+                                "additionalProperties": false,
+                                "properties": {
+                                  "averageValue": {
+                                    "$ref": "#/definitions/quantity",
+                                    "required": []
+                                  },
+                                  "type": {
+                                    "const": "AverageValue",
+                                    "required": []
+                                  }
+                                },
+                                "required": [
+                                  "type",
+                                  "averageValue"
+                                ],
+                                "type": "object"
+                              }
+                            ],
+                            "required": []
+                          }
+                        },
+                        "required": [
+                          "name",
+                          "container",
+                          "target"
+                        ],
+                        "type": "object"
+                      },
+                      "type": {
+                        "const": "ContainerResource",
+                        "required": []
+                      }
+                    },
+                    "required": [
+                      "type",
+                      "containerResource"
+                    ],
+                    "type": "object"
+                  },
+                  {
+                    "additionalProperties": false,
+                    "properties": {
+                      "external": {
+                        "additionalProperties": false,
+                        "properties": {
+                          "metric": {
+                            "additionalProperties": false,
+                            "properties": {
+                              "name": {
+                                "minLength": 1,
+                                "type": "string"
+                              },
+                              "selector": {
+                                "additionalProperties": false,
+                                "properties": {
+                                  "matchExpressions": {
+                                    "items": {
+                                      "additionalProperties": false,
+                                      "properties": {
+                                        "key": {
+                                          "minLength": 1,
+                                          "type": "string"
+                                        },
+                                        "operator": {
+                                          "enum": [
+                                            "In",
+                                            "NotIn",
+                                            "Exists",
+                                            "DoesNotExist"
+                                          ],
+                                          "type": "string"
+                                        },
+                                        "values": {
+                                          "items": {
+                                            "type": "string"
+                                          },
+                                          "type": "array"
+                                        }
+                                      },
+                                      "required": [
+                                        "key",
+                                        "operator"
+                                      ],
+                                      "type": "object"
+                                    },
+                                    "type": "array"
+                                  },
+                                  "matchLabels": {
+                                    "additionalProperties": {
+                                      "type": "string"
+                                    },
+                                    "required": [],
+                                    "type": "object"
+                                  }
+                                },
+                                "required": [],
+                                "type": "object"
+                              }
+                            },
+                            "required": [
+                              "name"
+                            ],
+                            "type": "object"
+                          },
+                          "target": {
+                            "oneOf": [
+                              {
+                                "additionalProperties": false,
+                                "properties": {
+                                  "type": {
+                                    "const": "Value",
+                                    "required": []
+                                  },
+                                  "value": {
+                                    "$ref": "#/definitions/quantity",
+                                    "required": []
+                                  }
+                                },
+                                "required": [
+                                  "type",
+                                  "value"
+                                ],
+                                "type": "object"
+                              },
+                              {
+                                "additionalProperties": false,
+                                "properties": {
+                                  "averageValue": {
+                                    "$ref": "#/definitions/quantity",
+                                    "required": []
+                                  },
+                                  "type": {
+                                    "const": "AverageValue",
+                                    "required": []
+                                  }
+                                },
+                                "required": [
+                                  "type",
+                                  "averageValue"
+                                ],
+                                "type": "object"
+                              }
+                            ],
+                            "required": []
+                          }
+                        },
+                        "required": [
+                          "metric",
+                          "target"
+                        ],
+                        "type": "object"
+                      },
+                      "type": {
+                        "const": "External",
+                        "required": []
+                      }
+                    },
+                    "required": [
+                      "type",
+                      "external"
+                    ],
+                    "type": "object"
+                  },
+                  {
+                    "additionalProperties": false,
+                    "properties": {
+                      "object": {
+                        "additionalProperties": false,
+                        "properties": {
+                          "describedObject": {
+                            "additionalProperties": false,
+                            "properties": {
+                              "apiVersion": {
+                                "minLength": 1,
+                                "type": "string"
+                              },
+                              "kind": {
+                                "minLength": 1,
+                                "type": "string"
+                              },
+                              "name": {
+                                "minLength": 1,
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "apiVersion",
+                              "kind",
+                              "name"
+                            ],
+                            "type": "object"
+                          },
+                          "metric": {
+                            "additionalProperties": false,
+                            "properties": {
+                              "name": {
+                                "minLength": 1,
+                                "type": "string"
+                              },
+                              "selector": {
+                                "additionalProperties": false,
+                                "properties": {
+                                  "matchExpressions": {
+                                    "items": {
+                                      "additionalProperties": false,
+                                      "properties": {
+                                        "key": {
+                                          "minLength": 1,
+                                          "type": "string"
+                                        },
+                                        "operator": {
+                                          "enum": [
+                                            "In",
+                                            "NotIn",
+                                            "Exists",
+                                            "DoesNotExist"
+                                          ],
+                                          "type": "string"
+                                        },
+                                        "values": {
+                                          "items": {
+                                            "type": "string"
+                                          },
+                                          "type": "array"
+                                        }
+                                      },
+                                      "required": [
+                                        "key",
+                                        "operator"
+                                      ],
+                                      "type": "object"
+                                    },
+                                    "type": "array"
+                                  },
+                                  "matchLabels": {
+                                    "additionalProperties": {
+                                      "type": "string"
+                                    },
+                                    "required": [],
+                                    "type": "object"
+                                  }
+                                },
+                                "required": [],
+                                "type": "object"
+                              }
+                            },
+                            "required": [
+                              "name"
+                            ],
+                            "type": "object"
+                          },
+                          "target": {
+                            "oneOf": [
+                              {
+                                "additionalProperties": false,
+                                "properties": {
+                                  "type": {
+                                    "const": "Value",
+                                    "required": []
+                                  },
+                                  "value": {
+                                    "$ref": "#/definitions/quantity",
+                                    "required": []
+                                  }
+                                },
+                                "required": [
+                                  "type",
+                                  "value"
+                                ],
+                                "type": "object"
+                              },
+                              {
+                                "additionalProperties": false,
+                                "properties": {
+                                  "averageValue": {
+                                    "$ref": "#/definitions/quantity",
+                                    "required": []
+                                  },
+                                  "type": {
+                                    "const": "AverageValue",
+                                    "required": []
+                                  }
+                                },
+                                "required": [
+                                  "type",
+                                  "averageValue"
+                                ],
+                                "type": "object"
+                              }
+                            ],
+                            "required": []
+                          }
+                        },
+                        "required": [
+                          "describedObject",
+                          "metric",
+                          "target"
+                        ],
+                        "type": "object"
+                      },
+                      "type": {
+                        "const": "Object",
+                        "required": []
+                      }
+                    },
+                    "required": [
+                      "type",
+                      "object"
+                    ],
+                    "type": "object"
+                  },
+                  {
+                    "additionalProperties": false,
+                    "properties": {
+                      "pods": {
+                        "additionalProperties": false,
+                        "properties": {
+                          "metric": {
+                            "additionalProperties": false,
+                            "properties": {
+                              "name": {
+                                "minLength": 1,
+                                "type": "string"
+                              },
+                              "selector": {
+                                "additionalProperties": false,
+                                "properties": {
+                                  "matchExpressions": {
+                                    "items": {
+                                      "additionalProperties": false,
+                                      "properties": {
+                                        "key": {
+                                          "minLength": 1,
+                                          "type": "string"
+                                        },
+                                        "operator": {
+                                          "enum": [
+                                            "In",
+                                            "NotIn",
+                                            "Exists",
+                                            "DoesNotExist"
+                                          ],
+                                          "type": "string"
+                                        },
+                                        "values": {
+                                          "items": {
+                                            "type": "string"
+                                          },
+                                          "type": "array"
+                                        }
+                                      },
+                                      "required": [
+                                        "key",
+                                        "operator"
+                                      ],
+                                      "type": "object"
+                                    },
+                                    "type": "array"
+                                  },
+                                  "matchLabels": {
+                                    "additionalProperties": {
+                                      "type": "string"
+                                    },
+                                    "required": [],
+                                    "type": "object"
+                                  }
+                                },
+                                "required": [],
+                                "type": "object"
+                              }
+                            },
+                            "required": [
+                              "name"
+                            ],
+                            "type": "object"
+                          },
+                          "target": {
+                            "additionalProperties": false,
+                            "properties": {
+                              "averageValue": {
+                                "$ref": "#/definitions/quantity",
+                                "required": []
+                              },
+                              "type": {
+                                "const": "AverageValue",
+                                "required": []
+                              }
+                            },
+                            "required": [
+                              "type",
+                              "averageValue"
+                            ],
+                            "type": "object"
+                          }
+                        },
+                        "required": [
+                          "metric",
+                          "target"
+                        ],
+                        "type": "object"
+                      },
+                      "type": {
+                        "const": "Pods",
+                        "required": []
+                      }
+                    },
+                    "required": [
+                      "type",
+                      "pods"
+                    ],
+                    "type": "object"
+                  }
+                ],
+                "required": []
+              },
+              "type": "array"
+            }
+          ],
+          "required": []
+        },
         "minReplicas": {
           "minimum": 1,
           "type": "integer"
@@ -98,6 +752,7 @@
         "targetCPUUtilizationPercentage": {
           "anyOf": [
             {
+              "maximum": 100,
               "minimum": 1,
               "type": "integer"
             },
@@ -110,6 +765,7 @@
         "targetMemoryUtilizationPercentage": {
           "anyOf": [
             {
+              "maximum": 100,
               "minimum": 1,
               "type": "integer"
             },
@@ -122,6 +778,130 @@
       },
       "required": [],
       "title": "autoscaling",
+      "type": "object"
+    },
+    "autosizing": {
+      "additionalProperties": false,
+      "description": "autosizing configures the chart-managed VerticalPodAutoscaler. It is\nmutually exclusive with autoscaling, including recommendation-only mode.",
+      "properties": {
+        "annotations": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "required": [],
+          "type": "object"
+        },
+        "enabled": {
+          "type": "boolean"
+        },
+        "resourcePolicy": {
+          "additionalProperties": false,
+          "properties": {
+            "containerPolicies": {
+              "items": {
+                "additionalProperties": false,
+                "properties": {
+                  "containerName": {
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "controlledResources": {
+                    "items": {
+                      "enum": [
+                        "cpu",
+                        "memory"
+                      ],
+                      "type": "string"
+                    },
+                    "type": "array",
+                    "uniqueItems": true
+                  },
+                  "controlledValues": {
+                    "enum": [
+                      "RequestsOnly",
+                      "RequestsAndLimits"
+                    ],
+                    "type": "string"
+                  },
+                  "maxAllowed": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "cpu": {
+                        "$ref": "#/definitions/quantity",
+                        "required": []
+                      },
+                      "memory": {
+                        "$ref": "#/definitions/quantity",
+                        "required": []
+                      }
+                    },
+                    "required": [],
+                    "type": "object"
+                  },
+                  "minAllowed": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "cpu": {
+                        "$ref": "#/definitions/quantity",
+                        "required": []
+                      },
+                      "memory": {
+                        "$ref": "#/definitions/quantity",
+                        "required": []
+                      }
+                    },
+                    "required": [],
+                    "type": "object"
+                  },
+                  "mode": {
+                    "enum": [
+                      "Auto",
+                      "Off"
+                    ],
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "containerName",
+                  "controlledResources",
+                  "controlledValues"
+                ],
+                "type": "object"
+              },
+              "type": "array"
+            }
+          },
+          "required": [
+            "containerPolicies"
+          ],
+          "type": "object"
+        },
+        "updatePolicy": {
+          "additionalProperties": false,
+          "properties": {
+            "minReplicas": {
+              "minimum": 1,
+              "type": "integer"
+            },
+            "updateMode": {
+              "enum": [
+                "Off",
+                "Initial",
+                "Recreate",
+                "InPlaceOrRecreate"
+              ],
+              "type": "string"
+            }
+          },
+          "required": [
+            "updateMode",
+            "minReplicas"
+          ],
+          "type": "object"
+        }
+      },
+      "required": [],
+      "title": "autosizing",
       "type": "object"
     },
     "availability": {

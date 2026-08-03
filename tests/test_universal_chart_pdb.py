@@ -38,6 +38,7 @@ def _pdb_values(
             "enabled": True,
             "minReplicas": autoscaling_min,
         }
+        values["resources"] = {"requests": {"cpu": "100m"}}
     return values
 
 
