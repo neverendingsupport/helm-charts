@@ -1,5 +1,6 @@
-{{- $hpaScalingRules := default list .Values.autoscaling.hpaScalingRules }}
-{{- $hasHpaScalingRules := and .Values.autoscaling.enabled (gt (len $hpaScalingRules) 0) }}
+{{- $horizontal := include "universal-chart.autoscaling.horizontal" . | fromYaml }}
+{{- $hpaScalingRules := $horizontal.prometheusScalingRules }}
+{{- $hasHpaScalingRules := and $horizontal.enabled (gt (len $hpaScalingRules) 0) }}
 {{- $hasConfiguredRules := and .Values.prometheusRule.enabled (or .Values.prometheusRule.groups .Values.prometheusRule.rules) }}
 {{- if or $hasConfiguredRules $hasHpaScalingRules }}
 apiVersion: monitoring.coreos.com/v1
@@ -66,7 +67,7 @@ spec:
     {{- $scalingGroupOrder = append $scalingGroupOrder $groupKey }}
     {{- end }}
     {{- $labels := mergeOverwrite (deepCopy (default dict $rule.labels)) (dict "hpa_metric" "true") }}
-    {{- $recordingRule := dict "record" (required (printf "autoscaling.hpaScalingRules[%d].name is required" $index) $rule.name) "expr" (required (printf "autoscaling.hpaScalingRules[%d].expr is required" $index) $rule.expr) "labels" $labels }}
+    {{- $recordingRule := dict "record" (required (printf "autoscaling prometheusScalingRules[%d].name is required" $index) $rule.name) "expr" (required (printf "autoscaling prometheusScalingRules[%d].expr is required" $index) $rule.expr) "labels" $labels }}
     {{- $group := get $scalingGroups $groupKey }}
     {{- $_ := set $group "rules" (append (get $group "rules") $recordingRule) }}
     {{- end }}

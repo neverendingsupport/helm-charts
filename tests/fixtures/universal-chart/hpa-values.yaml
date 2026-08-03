@@ -9,3 +9,7 @@ autoscaling:
   targetCPUUtilizationPercentage: 75
   annotations:
     argocd.argoproj.io/sync-wave: "10"
+
+resources:
+  requests:
+    cpu: 100m

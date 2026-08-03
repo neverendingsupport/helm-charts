@@ -8,12 +8,57 @@ NES Universal Helm Chart
 
 ## Additional Information
 
-This is supposedly a universal helm chart for "simple" apps.  It has a couple
-of helpful extra features:
-* built-in support for loading env vars from an AWS Secret Manager secret
-* Bitnami redis chart
+`universal-chart` deploys application containers with standard Kubernetes
+workload, networking, secrets, observability, availability, and autoscaling
+primitives. The generated values reference below is the configuration source
+of truth. Task-focused guides are available in the
+[universal-chart documentation](https://github.com/neverendingsupport/helm-charts/tree/main/charts/universal-chart/docs).
 
-TODO: Explain how those work better
+## Autoscaling
+
+New HPA configurations use the stable Kubernetes `autoscaling/v2` interface
+under `autoscaling.horizontal`. CPU utilization requires a CPU request:
+
+```yaml
+image:
+  repository: ghcr.io/example/app
+  tag: "1.2.3"
+
+resources:
+  requests:
+    cpu: 100m
+
+autoscaling:
+  horizontal:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 10
+    metrics:
+      - type: Resource
+        resource:
+          name: cpu
+          target:
+            type: Utilization
+            averageUtilization: 80
+```
+
+For an existing application, merge this section into its values to start VPA
+adoption in recommendation-only mode:
+
+```yaml
+autoscaling:
+  vertical:
+    enabled: true
+    updatePolicy:
+      updateMode: "Off"
+      minReplicas: 2
+```
+
+Read the
+[autoscaling guide](https://github.com/neverendingsupport/helm-charts/blob/main/charts/universal-chart/docs/autoscaling.md)
+before activating VPA or using Prometheus-backed HPA metrics. It covers
+prerequisites, safety ceilings, HPA/VPA conflicts, verification,
+troubleshooting, and rollback.
 
 ## Pin application images by digest
 
@@ -281,15 +326,30 @@ helm template my-release . \
 | Key | Type | Default | Description |
 |-----|------|---------|-------------|
 | affinity | object | `{}` | Select roughly specific nodes to run upon. This is similar to node selectors, but allows a bit more fuzziness and flexibility. More info at https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity |
-| autoscaling | object | `{"annotations":{},"behavior":{},"enabled":false,"hpaScalingRules":[],"maxReplicas":10,"minReplicas":1,"targetCPUUtilizationPercentage":80,"targetMemoryUtilizationPercentage":null}` | section for configuring autoscaling. More information can be found here: https://kubernetes.io/docs/concepts/workloads/autoscaling/ |
-| autoscaling.annotations | object | `{}` | Additional annotations to add to the HorizontalPodAutoscaler metadata. |
-| autoscaling.behavior | object | `{}` | Optional HorizontalPodAutoscaler behavior defaults. |
-| autoscaling.enabled | bool | `false` | enable autoscaling |
-| autoscaling.hpaScalingRules | list | `[]` | Prometheus-backed external metric scaling rules. Each rule generates a Prometheus recording rule labeled `hpa_metric: "true"` and adds an External metric to the chart-managed HPA. Set `targetCPUUtilizationPercentage: null` and `targetMemoryUtilizationPercentage: null` for external-only scaling. |
-| autoscaling.maxReplicas | int | `10` | maximum number of replicas to run |
-| autoscaling.minReplicas | int | `1` | miminum number of replicas to run |
-| autoscaling.targetCPUUtilizationPercentage | int | `80` | If CPU utilization of replicas exceeds this percentage of requested CPU, start a new replica |
-| autoscaling.targetMemoryUtilizationPercentage | string | `nil` | If Memory utilization of replicas exceeds this percentage of requested Memory, start a new replica |
+| autoscaling | object | `{"annotations":{},"behavior":{},"enabled":false,"horizontal":{},"hpaScalingRules":[],"maxReplicas":10,"minReplicas":1,"targetCPUUtilizationPercentage":80,"targetMemoryUtilizationPercentage":null,"vertical":{"annotations":{},"enabled":false,"resourcePolicy":{"containerPolicies":[{"containerName":"*","controlledResources":["cpu","memory"],"controlledValues":"RequestsOnly","maxAllowed":{},"minAllowed":{},"mode":"Auto"}]},"updatePolicy":{"minReplicas":2,"updateMode":"Off"}}}` | autoscaling configures horizontal and vertical pod autoscaling. Prefer `autoscaling.horizontal` for new HPA configurations. The legacy sibling HPA keys remain supported; an explicitly supplied horizontal key overrides its legacy equivalent. |
+| autoscaling.annotations | object | `{}` | annotations are the legacy HPA annotations. Prefer `horizontal.annotations`. |
+| autoscaling.behavior | object | `{}` | behavior is the legacy autoscaling/v2 HPA behavior. Prefer `horizontal.behavior`. |
+| autoscaling.enabled | bool | `false` | enabled is the legacy HPA switch. Prefer `horizontal.enabled`. |
+| autoscaling.horizontal | object | `{}` | horizontal is the stable autoscaling/v2 HorizontalPodAutoscaler configuration. Explicit keys override legacy sibling keys; omitted keys inherit them. |
+| autoscaling.hpaScalingRules | list | `[]` | hpaScalingRules are the legacy Prometheus-backed scaling rules. Prefer `horizontal.prometheusScalingRules`. |
+| autoscaling.maxReplicas | int | `10` | maxReplicas is the legacy HPA ceiling. Prefer `horizontal.maxReplicas`. |
+| autoscaling.minReplicas | int | `1` | minReplicas is the legacy HPA floor. Prefer `horizontal.minReplicas`. |
+| autoscaling.targetCPUUtilizationPercentage | int | `80` | targetCPUUtilizationPercentage is the legacy CPU utilization target. It requires `resources.requests.cpu`. |
+| autoscaling.targetMemoryUtilizationPercentage | string | `nil` | targetMemoryUtilizationPercentage is the legacy memory utilization target. It requires `resources.requests.memory`. |
+| autoscaling.vertical | object | `{"annotations":{},"enabled":false,"resourcePolicy":{"containerPolicies":[{"containerName":"*","controlledResources":["cpu","memory"],"controlledValues":"RequestsOnly","maxAllowed":{},"minAllowed":{},"mode":"Auto"}]},"updatePolicy":{"minReplicas":2,"updateMode":"Off"}}` | vertical configures VerticalPodAutoscaler. Enabling update mode `Off` creates recommendations without mutating pods. Active modes require a `maxAllowed` ceiling for every controlled resource. |
+| autoscaling.vertical.annotations | object | `{}` | annotations are added to VerticalPodAutoscaler metadata. |
+| autoscaling.vertical.enabled | bool | `false` | enabled creates an autoscaling.k8s.io/v1 VerticalPodAutoscaler. |
+| autoscaling.vertical.resourcePolicy | object | `{"containerPolicies":[{"containerName":"*","controlledResources":["cpu","memory"],"controlledValues":"RequestsOnly","maxAllowed":{},"minAllowed":{},"mode":"Auto"}]}` | resourcePolicy defines per-container recommendation and mutation boundaries. |
+| autoscaling.vertical.resourcePolicy.containerPolicies | list | `[{"containerName":"*","controlledResources":["cpu","memory"],"controlledValues":"RequestsOnly","maxAllowed":{},"minAllowed":{},"mode":"Auto"}]` | containerPolicies select controlled containers and resource bounds. |
+| autoscaling.vertical.resourcePolicy.containerPolicies[0] | object | `{"containerName":"*","controlledResources":["cpu","memory"],"controlledValues":"RequestsOnly","maxAllowed":{},"minAllowed":{},"mode":"Auto"}` | containerName selects all containers by default. |
+| autoscaling.vertical.resourcePolicy.containerPolicies[0].controlledResources | list | `["cpu","memory"]` | controlledResources limits VPA to CPU and memory requests. |
+| autoscaling.vertical.resourcePolicy.containerPolicies[0].controlledValues | string | `"RequestsOnly"` | controlledValues changes requests without changing limits. |
+| autoscaling.vertical.resourcePolicy.containerPolicies[0].maxAllowed | object | `{}` | maxAllowed sets required ceilings before activating VPA. |
+| autoscaling.vertical.resourcePolicy.containerPolicies[0].minAllowed | object | `{}` | minAllowed optionally sets resource recommendation floors. |
+| autoscaling.vertical.resourcePolicy.containerPolicies[0].mode | string | `"Auto"` | mode enables recommendations for the selected containers. |
+| autoscaling.vertical.updatePolicy | object | `{"minReplicas":2,"updateMode":"Off"}` | updatePolicy controls VPA mutation. `InPlaceOrRecreate` requires compatible cluster and VPA feature gates and may fall back to eviction. |
+| autoscaling.vertical.updatePolicy.minReplicas | int | `2` | minReplicas prevents active VPA from reducing available pods below this count during updates. |
+| autoscaling.vertical.updatePolicy.updateMode | string | `"Off"` | updateMode selects recommendation-only or active VPA behavior. |
 | availability | object | `{"enabled":false,"mode":"preferred"}` | Spread replicas across availability zones and nodes. The preferred mode asks the scheduler to spread pods but still permits placement when capacity is limited. Strict mode leaves pods Pending rather than violate either rule. When enabled, this preset owns the `topology.kubernetes.io/zone` and `kubernetes.io/hostname` constraints; other custom constraints are preserved. More information: https://kubernetes.io/docs/concepts/scheduling-eviction/topology-spread-constraints/ |
 | availability.enabled | bool | `false` | Whether to add the zone and hostname availability constraints. |
 | availability.mode | string | `"preferred"` | Scheduling mode. Use `preferred` to favor availability without blocking placement, or `strict` to require both constraints. |
@@ -396,6 +456,3 @@ helm template my-release . \
 | topologySpreadConstraints | list | `[{"maxSkew":1,"topologyKey":"topology.kubernetes.io/zone","whenUnsatisfiable":"ScheduleAnyway"}]` | When deploying with multiple replicas, spread pods around using these rules. The default is to spread pods evenly among the Availability Zones defined in the cluster. With a Karpenter-managed EKS cluster (like HeroDevs uses), there will usually be 3 AZs in a region where a cluster is deployed. If a constraint omits labelSelector, the chart injects selector labels. When the availability preset is enabled, it replaces custom zone and hostname constraints so each topology key appears only once. |
 | volumeMounts | list | `[]` | Additional volumes to mount |
 | volumes | list | `[]` | Additional volumes to create |
-
-----------------------------------------------
-Autogenerated from chart metadata using [helm-docs v1.14.2](https://github.com/norwoodj/helm-docs/releases/v1.14.2)

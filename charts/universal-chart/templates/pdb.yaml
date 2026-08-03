@@ -5,9 +5,10 @@
 {{- if eq $hasMinAvailable $hasMaxUnavailable }}
 {{- fail "podDisruptionBudget: set exactly one of minAvailable or maxUnavailable" }}
 {{- end }}
+{{- $horizontal := include "universal-chart.autoscaling.horizontal" . | fromYaml }}
 {{- $replicas := .Values.replicaCount | int }}
-{{- if .Values.autoscaling.enabled }}
-{{- $replicas = .Values.autoscaling.minReplicas | int }}
+{{- if $horizontal.enabled }}
+{{- $replicas = $horizontal.minReplicas | int }}
 {{- end }}
 {{- if $hasMinAvailable }}
 {{- $minimumPods := $pdb.minAvailable | int }}

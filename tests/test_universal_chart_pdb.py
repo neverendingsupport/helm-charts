@@ -38,6 +38,7 @@ def _pdb_values(
             "enabled": True,
             "minReplicas": autoscaling_min,
         }
+        values["resources"] = {"requests": {"cpu": "100m"}}
     return values
 
 
@@ -306,6 +307,41 @@ def test_pod_disruption_budget_uses_autoscaling_min_replicas(
     pdb = get_manifest(load_manifests(rendered), "PodDisruptionBudget")
 
     assert pdb["spec"]["minAvailable"] == 1
+
+
+def test_pod_disruption_budget_uses_horizontal_min_replicas(
+    helm_runner,
+) -> None:
+    """Use the preferred horizontal minimum for disruption validation."""
+
+    values = {
+        "replicaCount": 1,
+        "podDisruptionBudget": {
+            "enabled": True,
+            "minAvailable": 2,
+            "allowZeroDisruptions": True,
+        },
+        "autoscaling": {
+            "minReplicas": 1,
+            "horizontal": {
+                "enabled": True,
+                "minReplicas": 2,
+                "metrics": [
+                    {
+                        "type": "External",
+                        "external": {
+                            "metric": {"name": "queue_depth"},
+                            "target": {"type": "Value", "value": "10"},
+                        },
+                    }
+                ],
+            },
+        },
+    }
+    rendered = render_chart(helm_runner, CHART, values=values)
+    pdb = get_manifest(load_manifests(rendered), "PodDisruptionBudget")
+
+    assert pdb["spec"]["minAvailable"] == 2
 
 
 def test_pod_disruption_budget_is_not_rendered_when_disabled(

@@ -1,0 +1,28 @@
+{{- $vertical := .Values.autoscaling.vertical | default dict -}}
+{{- if $vertical.enabled -}}
+{{- include "universal-chart.autoscaling.validateVertical" (dict "root" . "vertical" $vertical) -}}
+{{- $updatePolicy := $vertical.updatePolicy | default dict -}}
+{{- $updateMode := $updatePolicy.updateMode | default "Off" -}}
+{{- $policies := $vertical.resourcePolicy.containerPolicies | default list -}}
+apiVersion: autoscaling.k8s.io/v1
+kind: VerticalPodAutoscaler
+metadata:
+  name: {{ include "universal-chart.fullname" . | quote }}
+  labels:
+    {{- include "universal-chart.labels" . | nindent 4 }}
+  {{- with $vertical.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  targetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: {{ include "universal-chart.fullname" . }}
+  updatePolicy:
+    updateMode: {{ $updateMode | quote }}
+    minReplicas: {{ $updatePolicy.minReplicas }}
+  resourcePolicy:
+    containerPolicies:
+      {{- toYaml $policies | nindent 6 }}
+{{- end }}

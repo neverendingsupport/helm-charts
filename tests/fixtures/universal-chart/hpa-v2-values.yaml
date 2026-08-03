@@ -1,0 +1,27 @@
+image:
+  repository: ghcr.io/example/app
+  tag: "1.2.3"
+
+autoscaling:
+  horizontal:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 12
+    metrics:
+      - type: Resource
+        resource:
+          name: cpu
+          target:
+            type: Utilization
+            averageUtilization: 70
+      - type: External
+        external:
+          metric:
+            name: queue_depth
+          target:
+            type: AverageValue
+            averageValue: "20"
+
+resources:
+  requests:
+    cpu: 100m

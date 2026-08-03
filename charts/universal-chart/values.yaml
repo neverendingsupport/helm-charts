@@ -340,6 +340,10 @@ service:
 
 # @schema
 # type: object
+# definitions:
+#   quantity:
+#     type: string
+#     pattern: ^[+-]?([0-9]+([.][0-9]*)?|[.][0-9]+)([eE][+-]?[0-9]+|[numkKMGTP]|[KMGTPE]i)?$
 # properties:
 #   enabled:
 #     type: boolean
@@ -766,18 +770,84 @@ revisionHistoryLimit: 3
 #     anyOf:
 #       - type: integer
 #         minimum: 1
+#         maximum: 100
 #       - type: "null"
 #   targetMemoryUtilizationPercentage:
 #     anyOf:
 #       - type: integer
 #         minimum: 1
+#         maximum: 100
 #       - type: "null"
 #   annotations:
 #     type: object
-#     additionalProperties: true
+#     additionalProperties:
+#       type: string
 #   behavior:
 #     type: object
-#     additionalProperties: true
+#     properties:
+#       scaleUp:
+#         type: object
+#         properties:
+#           stabilizationWindowSeconds:
+#             type: integer
+#             minimum: 0
+#             maximum: 3600
+#           selectPolicy:
+#             type: string
+#             enum: [Max, Min, Disabled]
+#           tolerance:
+#             $ref: "#/definitions/quantity"
+#           policies:
+#             type: array
+#             minItems: 1
+#             items:
+#               type: object
+#               required: [type, value, periodSeconds]
+#               properties:
+#                 type:
+#                   type: string
+#                   enum: [Percent, Pods]
+#                 value:
+#                   type: integer
+#                   minimum: 1
+#                 periodSeconds:
+#                   type: integer
+#                   minimum: 1
+#                   maximum: 1800
+#               additionalProperties: false
+#         additionalProperties: false
+#       scaleDown:
+#         type: object
+#         properties:
+#           stabilizationWindowSeconds:
+#             type: integer
+#             minimum: 0
+#             maximum: 3600
+#           selectPolicy:
+#             type: string
+#             enum: [Max, Min, Disabled]
+#           tolerance:
+#             $ref: "#/definitions/quantity"
+#           policies:
+#             type: array
+#             minItems: 1
+#             items:
+#               type: object
+#               required: [type, value, periodSeconds]
+#               properties:
+#                 type:
+#                   type: string
+#                   enum: [Percent, Pods]
+#                 value:
+#                   type: integer
+#                   minimum: 1
+#                 periodSeconds:
+#                   type: integer
+#                   minimum: 1
+#                   maximum: 1800
+#               additionalProperties: false
+#         additionalProperties: false
+#     additionalProperties: false
 #   hpaScalingRules:
 #     type: array
 #     items:
@@ -809,37 +879,488 @@ revisionHistoryLimit: 3
 #                 - Value
 #                 - AverageValue
 #             value:
-#               type: string
+#               $ref: "#/definitions/quantity"
 #             averageValue:
-#               type: string
+#               $ref: "#/definitions/quantity"
 #           additionalProperties: false
 #         groupName:
 #           type: string
 #         interval:
 #           type: string
 #       additionalProperties: false
+#   horizontal:
+#     type: object
+#     properties:
+#       enabled:
+#         type: boolean
+#       minReplicas:
+#         type: integer
+#         minimum: 1
+#       maxReplicas:
+#         type: integer
+#         minimum: 1
+#       annotations:
+#         type: object
+#         additionalProperties:
+#           type: string
+#       behavior:
+#         type: object
+#         properties:
+#           scaleUp:
+#             type: object
+#             properties:
+#               stabilizationWindowSeconds:
+#                 type: integer
+#                 minimum: 0
+#                 maximum: 3600
+#               selectPolicy:
+#                 type: string
+#                 enum: [Max, Min, Disabled]
+#               tolerance:
+#                 $ref: "#/definitions/quantity"
+#               policies:
+#                 type: array
+#                 minItems: 1
+#                 items:
+#                   type: object
+#                   required: [type, value, periodSeconds]
+#                   properties:
+#                     type:
+#                       type: string
+#                       enum: [Percent, Pods]
+#                     value:
+#                       type: integer
+#                       minimum: 1
+#                     periodSeconds:
+#                       type: integer
+#                       minimum: 1
+#                       maximum: 1800
+#                   additionalProperties: false
+#             additionalProperties: false
+#           scaleDown:
+#             type: object
+#             properties:
+#               stabilizationWindowSeconds:
+#                 type: integer
+#                 minimum: 0
+#                 maximum: 3600
+#               selectPolicy:
+#                 type: string
+#                 enum: [Max, Min, Disabled]
+#               tolerance:
+#                 $ref: "#/definitions/quantity"
+#               policies:
+#                 type: array
+#                 minItems: 1
+#                 items:
+#                   type: object
+#                   required: [type, value, periodSeconds]
+#                   properties:
+#                     type:
+#                       type: string
+#                       enum: [Percent, Pods]
+#                     value:
+#                       type: integer
+#                       minimum: 1
+#                     periodSeconds:
+#                       type: integer
+#                       minimum: 1
+#                       maximum: 1800
+#                   additionalProperties: false
+#             additionalProperties: false
+#         additionalProperties: false
+#       metrics:
+#         type: array
+#         items:
+#           oneOf:
+#             - type: object
+#               required: [type, resource]
+#               properties:
+#                 type:
+#                   const: Resource
+#                 resource:
+#                   type: object
+#                   required: [name, target]
+#                   properties:
+#                     name:
+#                       type: string
+#                       minLength: 1
+#                     target:
+#                       oneOf:
+#                         - type: object
+#                           required: [type, averageUtilization]
+#                           properties:
+#                             type:
+#                               const: Utilization
+#                             averageUtilization:
+#                               type: integer
+#                               minimum: 1
+#                           additionalProperties: false
+#                         - type: object
+#                           required: [type, averageValue]
+#                           properties:
+#                             type:
+#                               const: AverageValue
+#                             averageValue:
+#                               $ref: "#/definitions/quantity"
+#                           additionalProperties: false
+#                   additionalProperties: false
+#               additionalProperties: false
+#             - type: object
+#               required: [type, containerResource]
+#               properties:
+#                 type:
+#                   const: ContainerResource
+#                 containerResource:
+#                   type: object
+#                   required: [name, container, target]
+#                   properties:
+#                     name:
+#                       type: string
+#                       minLength: 1
+#                     container:
+#                       type: string
+#                       minLength: 1
+#                     target:
+#                       oneOf:
+#                         - type: object
+#                           required: [type, averageUtilization]
+#                           properties:
+#                             type:
+#                               const: Utilization
+#                             averageUtilization:
+#                               type: integer
+#                               minimum: 1
+#                           additionalProperties: false
+#                         - type: object
+#                           required: [type, averageValue]
+#                           properties:
+#                             type:
+#                               const: AverageValue
+#                             averageValue:
+#                               $ref: "#/definitions/quantity"
+#                           additionalProperties: false
+#                   additionalProperties: false
+#               additionalProperties: false
+#             - type: object
+#               required: [type, external]
+#               properties:
+#                 type:
+#                   const: External
+#                 external:
+#                   type: object
+#                   required: [metric, target]
+#                   properties:
+#                     metric:
+#                       type: object
+#                       required: [name]
+#                       properties:
+#                         name:
+#                           type: string
+#                           minLength: 1
+#                         selector:
+#                           type: object
+#                           properties:
+#                             matchLabels:
+#                               type: object
+#                               additionalProperties:
+#                                 type: string
+#                             matchExpressions:
+#                               type: array
+#                               items:
+#                                 type: object
+#                                 required: [key, operator]
+#                                 properties:
+#                                   key:
+#                                     type: string
+#                                     minLength: 1
+#                                   operator:
+#                                     type: string
+#                                     enum: [In, NotIn, Exists, DoesNotExist]
+#                                   values:
+#                                     type: array
+#                                     items:
+#                                       type: string
+#                                 additionalProperties: false
+#                           additionalProperties: false
+#                       additionalProperties: false
+#                     target:
+#                       oneOf:
+#                         - type: object
+#                           required: [type, value]
+#                           properties:
+#                             type:
+#                               const: Value
+#                             value:
+#                               $ref: "#/definitions/quantity"
+#                           additionalProperties: false
+#                         - type: object
+#                           required: [type, averageValue]
+#                           properties:
+#                             type:
+#                               const: AverageValue
+#                             averageValue:
+#                               $ref: "#/definitions/quantity"
+#                           additionalProperties: false
+#                   additionalProperties: false
+#               additionalProperties: false
+#             - type: object
+#               required: [type, object]
+#               properties:
+#                 type:
+#                   const: Object
+#                 object:
+#                   type: object
+#                   required: [describedObject, metric, target]
+#                   properties:
+#                     describedObject:
+#                       type: object
+#                       required: [apiVersion, kind, name]
+#                       properties:
+#                         apiVersion:
+#                           type: string
+#                           minLength: 1
+#                         kind:
+#                           type: string
+#                           minLength: 1
+#                         name:
+#                           type: string
+#                           minLength: 1
+#                       additionalProperties: false
+#                     metric:
+#                       type: object
+#                       required: [name]
+#                       properties:
+#                         name:
+#                           type: string
+#                           minLength: 1
+#                         selector:
+#                           type: object
+#                           properties:
+#                             matchLabels:
+#                               type: object
+#                               additionalProperties:
+#                                 type: string
+#                             matchExpressions:
+#                               type: array
+#                               items:
+#                                 type: object
+#                                 required: [key, operator]
+#                                 properties:
+#                                   key:
+#                                     type: string
+#                                     minLength: 1
+#                                   operator:
+#                                     type: string
+#                                     enum: [In, NotIn, Exists, DoesNotExist]
+#                                   values:
+#                                     type: array
+#                                     items:
+#                                       type: string
+#                                 additionalProperties: false
+#                           additionalProperties: false
+#                       additionalProperties: false
+#                     target:
+#                       oneOf:
+#                         - type: object
+#                           required: [type, value]
+#                           properties:
+#                             type:
+#                               const: Value
+#                             value:
+#                               $ref: "#/definitions/quantity"
+#                           additionalProperties: false
+#                         - type: object
+#                           required: [type, averageValue]
+#                           properties:
+#                             type:
+#                               const: AverageValue
+#                             averageValue:
+#                               $ref: "#/definitions/quantity"
+#                           additionalProperties: false
+#                   additionalProperties: false
+#               additionalProperties: false
+#             - type: object
+#               required: [type, pods]
+#               properties:
+#                 type:
+#                   const: Pods
+#                 pods:
+#                   type: object
+#                   required: [metric, target]
+#                   properties:
+#                     metric:
+#                       type: object
+#                       required: [name]
+#                       properties:
+#                         name:
+#                           type: string
+#                           minLength: 1
+#                         selector:
+#                           type: object
+#                           properties:
+#                             matchLabels:
+#                               type: object
+#                               additionalProperties:
+#                                 type: string
+#                             matchExpressions:
+#                               type: array
+#                               items:
+#                                 type: object
+#                                 required: [key, operator]
+#                                 properties:
+#                                   key:
+#                                     type: string
+#                                     minLength: 1
+#                                   operator:
+#                                     type: string
+#                                     enum: [In, NotIn, Exists, DoesNotExist]
+#                                   values:
+#                                     type: array
+#                                     items:
+#                                       type: string
+#                                 additionalProperties: false
+#                           additionalProperties: false
+#                       additionalProperties: false
+#                     target:
+#                       type: object
+#                       required: [type, averageValue]
+#                       properties:
+#                         type:
+#                           const: AverageValue
+#                         averageValue:
+#                           $ref: "#/definitions/quantity"
+#                       additionalProperties: false
+#                   additionalProperties: false
+#               additionalProperties: false
+#       prometheusScalingRules:
+#         type: array
+#         items:
+#           type: object
+#           required: [name, expr, target]
+#           properties:
+#             name:
+#               type: string
+#               pattern: ^[a-zA-Z_:][a-zA-Z0-9_:]*$
+#             expr:
+#               type: string
+#               minLength: 1
+#             labels:
+#               type: object
+#               additionalProperties:
+#                 type: string
+#             selector:
+#               type: object
+#               additionalProperties:
+#                 type: string
+#             target:
+#               type: object
+#               properties:
+#                 type:
+#                   type: string
+#                   enum: [Value, AverageValue]
+#                 value:
+#                   $ref: "#/definitions/quantity"
+#                 averageValue:
+#                   $ref: "#/definitions/quantity"
+#               additionalProperties: false
+#             groupName:
+#               type: string
+#             interval:
+#               type: string
+#           additionalProperties: false
+#     additionalProperties: false
+#   vertical:
+#     type: object
+#     properties:
+#       enabled:
+#         type: boolean
+#       annotations:
+#         type: object
+#         additionalProperties:
+#           type: string
+#       updatePolicy:
+#         type: object
+#         required: [updateMode, minReplicas]
+#         properties:
+#           updateMode:
+#             type: string
+#             enum: [Off, Initial, Recreate, InPlaceOrRecreate]
+#           minReplicas:
+#             type: integer
+#             minimum: 1
+#         additionalProperties: false
+#       resourcePolicy:
+#         type: object
+#         required: [containerPolicies]
+#         properties:
+#           containerPolicies:
+#             type: array
+#             items:
+#               type: object
+#               required: [containerName, controlledResources, controlledValues]
+#               properties:
+#                 containerName:
+#                   type: string
+#                   minLength: 1
+#                 mode:
+#                   type: string
+#                   enum: [Auto, "Off"]
+#                 minAllowed:
+#                   type: object
+#                   properties:
+#                     cpu:
+#                       $ref: "#/definitions/quantity"
+#                     memory:
+#                       $ref: "#/definitions/quantity"
+#                   additionalProperties: false
+#                 maxAllowed:
+#                   type: object
+#                   properties:
+#                     cpu:
+#                       $ref: "#/definitions/quantity"
+#                     memory:
+#                       $ref: "#/definitions/quantity"
+#                   additionalProperties: false
+#                 controlledResources:
+#                   type: array
+#                   uniqueItems: true
+#                   items:
+#                     type: string
+#                     enum: [cpu, memory]
+#                 controlledValues:
+#                   type: string
+#                   enum: [RequestsOnly, RequestsAndLimits]
+#               additionalProperties: false
+#         additionalProperties: false
+#     additionalProperties: false
+# additionalProperties: false
 # @schema
-# -- section for configuring autoscaling.
-# More information can be found here: https://kubernetes.io/docs/concepts/workloads/autoscaling/
+# -- autoscaling configures horizontal and vertical pod autoscaling. Prefer
+# `autoscaling.horizontal` for new HPA configurations. The legacy sibling HPA
+# keys remain supported; an explicitly supplied horizontal key overrides its
+# legacy equivalent.
 autoscaling:
-  # -- enable autoscaling
+  # -- enabled is the legacy HPA switch. Prefer `horizontal.enabled`.
   enabled: false
-  # -- miminum number of replicas to run
+  # -- minReplicas is the legacy HPA floor. Prefer `horizontal.minReplicas`.
   minReplicas: 1
-  # -- maximum number of replicas to run
+  # -- maxReplicas is the legacy HPA ceiling. Prefer `horizontal.maxReplicas`.
   maxReplicas: 10
-  # -- If CPU utilization of replicas exceeds this percentage of requested CPU, start a new replica
+  # -- targetCPUUtilizationPercentage is the legacy CPU utilization target.
+  # It requires `resources.requests.cpu`.
   targetCPUUtilizationPercentage: 80
-  # -- If Memory utilization of replicas exceeds this percentage of requested Memory, start a new replica
+  # -- targetMemoryUtilizationPercentage is the legacy memory utilization
+  # target. It requires `resources.requests.memory`.
   targetMemoryUtilizationPercentage: null
-  # -- Additional annotations to add to the HorizontalPodAutoscaler metadata.
+  # -- annotations are the legacy HPA annotations. Prefer
+  # `horizontal.annotations`.
   annotations: {}
-  # -- Optional HorizontalPodAutoscaler behavior defaults.
+  # -- behavior is the legacy autoscaling/v2 HPA behavior. Prefer
+  # `horizontal.behavior`.
   behavior: {}
-  # -- Prometheus-backed external metric scaling rules. Each rule generates a
-  # Prometheus recording rule labeled `hpa_metric: "true"` and adds an External
-  # metric to the chart-managed HPA. Set `targetCPUUtilizationPercentage: null`
-  # and `targetMemoryUtilizationPercentage: null` for external-only scaling.
+  # -- hpaScalingRules are the legacy Prometheus-backed scaling rules. Prefer
+  # `horizontal.prometheusScalingRules`.
   hpaScalingRules: []
   # - name: myapp_queue_depth
   #   expr: |
@@ -849,6 +1370,58 @@ autoscaling:
   #   target:
   #     type: AverageValue
   #     averageValue: "100"
+  # -- horizontal is the stable autoscaling/v2 HorizontalPodAutoscaler
+  # configuration. Explicit keys override legacy sibling keys; omitted keys
+  # inherit them.
+  horizontal: {}
+  # enabled: true
+  # minReplicas: 2
+  # maxReplicas: 10
+  # annotations: {}
+  # behavior: {}
+  # metrics:
+  #   - type: Resource
+  #     resource:
+  #       name: cpu
+  #       target:
+  #         type: Utilization
+  #         averageUtilization: 80
+  # prometheusScalingRules: []
+  # -- vertical configures VerticalPodAutoscaler. Enabling update mode `Off`
+  # creates recommendations without mutating pods. Active modes require a
+  # `maxAllowed` ceiling for every controlled resource.
+  vertical:
+    # -- enabled creates an autoscaling.k8s.io/v1 VerticalPodAutoscaler.
+    enabled: false
+    # -- annotations are added to VerticalPodAutoscaler metadata.
+    annotations: {}
+    # -- updatePolicy controls VPA mutation. `InPlaceOrRecreate` requires
+    # compatible cluster and VPA feature gates and may fall back to eviction.
+    updatePolicy:
+      # -- updateMode selects recommendation-only or active VPA behavior.
+      updateMode: "Off"
+      # -- minReplicas prevents active VPA from reducing available pods below
+      # this count during updates.
+      minReplicas: 2
+    # -- resourcePolicy defines per-container recommendation and mutation
+    # boundaries.
+    resourcePolicy:
+      # -- containerPolicies select controlled containers and resource bounds.
+      containerPolicies:
+        # -- containerName selects all containers by default.
+        - containerName: "*"
+          # -- mode enables recommendations for the selected containers.
+          mode: Auto
+          # -- controlledResources limits VPA to CPU and memory requests.
+          controlledResources:
+            - cpu
+            - memory
+          # -- controlledValues changes requests without changing limits.
+          controlledValues: RequestsOnly
+          # -- minAllowed optionally sets resource recommendation floors.
+          minAllowed: {}
+          # -- maxAllowed sets required ceilings before activating VPA.
+          maxAllowed: {}
 
 # -- Additional volumes to create
 volumes: []

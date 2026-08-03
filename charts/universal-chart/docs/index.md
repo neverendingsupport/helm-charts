@@ -21,8 +21,9 @@ Kubernetes primitives plus a small number of opinionated platform integrations.
   `Database`, `DbUser`, or one-off Jobs
 - optional `ServiceMonitor`, with public nginx ingress access to the metrics
   path blocked by default
-- first-class HPA scaling from Prometheus-backed external metrics through
-  `autoscaling.hpaScalingRules`
+- stable `autoscaling/v2` HorizontalPodAutoscaler (HPA) support for resource,
+  container, object, pod, and external metrics
+- recommendation-only and active VerticalPodAutoscaler (VPA) support
 - optional `PodDisruptionBudget` through `podDisruptionBudget`
 - optional Redis support
 - optional S3 bucket creation via ACK-backed resources
@@ -88,34 +89,13 @@ When the chart is used from Argo multi-source applications:
 Treat it as the final deploy-time override so nothing later in the stack can
 silently replace image tags or release pins.
 
-## Scaling From Prometheus Metrics
+## Autoscaling
 
-Use `autoscaling.hpaScalingRules` when a workload should scale from an
-application metric exposed through Prometheus and `prometheus-adapter`. Each
-entry creates a Prometheus recording rule labeled `hpa_metric: "true"` and adds
-an External metric to the chart-managed `HorizontalPodAutoscaler`.
-
-```yaml
-prometheusRule:
-  additionalLabels:
-    release: kube-prometheus-stack
-
-autoscaling:
-  enabled: true
-  targetCPUUtilizationPercentage: null
-  hpaScalingRules:
-    - name: myapp_queue_depth
-      expr: |
-        sum(
-          myapp_queue_messages_ready{namespace="myapp"}
-        )
-      target:
-        type: AverageValue
-        averageValue: "100"
-```
-
-Keep CPU or memory targets enabled to combine them with the external metric, or
-set both target fields to `null` for external-only scaling.
+Use the [Autoscaling guide](autoscaling.md) to select and configure fixed
+replicas, HPA, VPA recommendation mode, active VPA, or a compatible HPA and VPA
+combination. The guide includes cluster prerequisites, copy-ready values,
+verification commands, troubleshooting, migration from legacy HPA values, and
+rollback procedures.
 
 ## PodDisruptionBudget
 

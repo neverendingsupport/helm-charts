@@ -91,19 +91,24 @@ metadata:
     app.kubernetes.io/name: universal-chart
     app.kubernetes.io/instance: universal-chart
     app.kubernetes.io/managed-by: Helm
-  annotations:
-    argocd.argoproj.io/sync-wave: "10"
 spec:
   scaleTargetRef:
     apiVersion: apps/v1
     kind: Deployment
     name: universal-chart
   minReplicas: 2
-  maxReplicas: 4
+  maxReplicas: 12
   metrics:
     - resource:
         name: cpu
         target:
-          averageUtilization: 75
+          averageUtilization: 70
           type: Utilization
       type: Resource
+    - external:
+        metric:
+          name: queue_depth
+        target:
+          averageValue: "20"
+          type: AverageValue
+      type: External

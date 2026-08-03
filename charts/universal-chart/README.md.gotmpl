@@ -7,12 +7,57 @@
 
 ## Additional Information
 
-This is supposedly a universal helm chart for "simple" apps.  It has a couple
-of helpful extra features:
-* built-in support for loading env vars from an AWS Secret Manager secret
-* Bitnami redis chart
+`universal-chart` deploys application containers with standard Kubernetes
+workload, networking, secrets, observability, availability, and autoscaling
+primitives. The generated values reference below is the configuration source
+of truth. Task-focused guides are available in the
+[universal-chart documentation](https://github.com/neverendingsupport/helm-charts/tree/main/charts/universal-chart/docs).
 
-TODO: Explain how those work better
+## Autoscaling
+
+New HPA configurations use the stable Kubernetes `autoscaling/v2` interface
+under `autoscaling.horizontal`. CPU utilization requires a CPU request:
+
+```yaml
+image:
+  repository: ghcr.io/example/app
+  tag: "1.2.3"
+
+resources:
+  requests:
+    cpu: 100m
+
+autoscaling:
+  horizontal:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 10
+    metrics:
+      - type: Resource
+        resource:
+          name: cpu
+          target:
+            type: Utilization
+            averageUtilization: 80
+```
+
+For an existing application, merge this section into its values to start VPA
+adoption in recommendation-only mode:
+
+```yaml
+autoscaling:
+  vertical:
+    enabled: true
+    updatePolicy:
+      updateMode: "Off"
+      minReplicas: 2
+```
+
+Read the
+[autoscaling guide](https://github.com/neverendingsupport/helm-charts/blob/main/charts/universal-chart/docs/autoscaling.md)
+before activating VPA or using Prometheus-backed HPA metrics. It covers
+prerequisites, safety ceilings, HPA/VPA conflicts, verification,
+troubleshooting, and rollback.
 
 ## Pin application images by digest
 
