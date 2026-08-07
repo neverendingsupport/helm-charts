@@ -43,6 +43,7 @@ metadata:
     app.kubernetes.io/instance: universal-chart
     app.kubernetes.io/managed-by: Helm
 spec:
+  replicas: 1
   revisionHistoryLimit: 3
   selector:
     matchLabels:
@@ -69,9 +70,6 @@ spec:
             - name: http
               containerPort: 3000
               protocol: TCP
-          resources:
-            requests:
-              cpu: 100m
       topologySpreadConstraints:
         - labelSelector:
             matchLabels:
@@ -81,9 +79,9 @@ spec:
           topologyKey: topology.kubernetes.io/zone
           whenUnsatisfiable: ScheduleAnyway
 ---
-# Source: universal-chart/templates/hpa.yaml
-apiVersion: autoscaling/v2
-kind: HorizontalPodAutoscaler
+# Source: universal-chart/templates/vpa.yaml
+apiVersion: autoscaling.k8s.io/v1
+kind: VerticalPodAutoscaler
 metadata:
   name: "universal-chart"
   labels:
@@ -94,16 +92,22 @@ metadata:
   annotations:
     argocd.argoproj.io/sync-wave: "10"
 spec:
-  scaleTargetRef:
+  targetRef:
     apiVersion: apps/v1
     kind: Deployment
     name: universal-chart
-  minReplicas: 2
-  maxReplicas: 4
-  metrics:
-    - resource:
-        name: cpu
-        target:
-          averageUtilization: 75
-          type: Utilization
-      type: Resource
+  updatePolicy:
+    updateMode: "Off"
+    minReplicas: 2
+  resourcePolicy:
+    containerPolicies:
+      - containerName: '*'
+        controlledResources:
+        - cpu
+        - memory
+        controlledValues: RequestsOnly
+        maxAllowed: {}
+        minAllowed:
+          cpu: 50m
+          memory: 64Mi
+        mode: Auto
