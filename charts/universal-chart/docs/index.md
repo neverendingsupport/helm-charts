@@ -27,6 +27,7 @@ Kubernetes primitives plus a small number of opinionated platform integrations.
 - optional Redis support
 - optional S3 bucket creation via ACK-backed resources
 - extra volumes and mounts
+- sidecar containers through `extraContainers`, including native sidecars
 - spread helpers for AZ and spot-aware scheduling
 - `terminationGracePeriodSeconds` for workloads that need slower shutdown
 
@@ -62,6 +63,26 @@ intentionally expose metrics publicly. If the public route differs from the
 in-cluster scrape path, set `serviceMonitor.blockExternalIngress.path`. When
 both the block path and `serviceMonitor.path` are null, the block path defaults
 to `/metrics`, matching Prometheus' default scrape path.
+
+## Extra Containers
+
+Use `extraContainers` when the app needs a second container in the same pod:
+a queue worker from the app image, a proxy, or a metrics exporter. Entries
+inherit the main container's environment and volume mounts by default, and
+per-entry values are merged on top. Set `inheritEnv: false` for third-party
+images that shouldn't see the app's secrets. Set `nativeSidecar: true`
+(Kubernetes 1.28+) when the app depends on the sidecar at startup or
+shutdown.
+
+Two behaviors surprise people: a failing readiness probe on any container
+removes the whole pod from its Service, and CPU/memory autoscaling averages
+utilization across all containers, so an oversized sidecar request delays
+scale-up. The [Generated Reference](reference.md) covers both, with examples
+for exposing a sidecar port through `service.extraPorts` and
+`serviceMonitor.alternatePort`.
+
+A sidecar shares the pod's replica count and HPA. A worker that needs its own
+scaling is its own release of this chart, not a sidecar.
 
 ## Recommended Ownership Split
 
