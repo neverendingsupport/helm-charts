@@ -6,8 +6,8 @@ from typing import Any
 
 import pytest
 
-from .conftest import HelmTemplateError
 from .chart_test_utils import get_manifest
+from .conftest import HelmTemplateError
 from .universal_chart_test_utils import render_manifests
 
 SIDECAR_IMAGE = {"repository": "ghcr.io/example/sidecar", "tag": "9.9.9"}
@@ -292,9 +292,7 @@ def test_native_sidecar_precedes_legacy_init_containers(helm_runner) -> None:
             "extraContainers": [_sidecar(nativeSidecar=True)],
         },
     )
-    init_names = [
-        c["name"] for c in _pod_spec(manifests)["initContainers"]
-    ]
+    init_names = [c["name"] for c in _pod_spec(manifests)["initContainers"]]
 
     assert init_names == ["sidecar", "init-universal-chart-0"]
 
