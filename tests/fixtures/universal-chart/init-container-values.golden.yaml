@@ -60,7 +60,7 @@ spec:
       serviceAccountName: universal-chart
       containers:
         - name: universal-chart
-          env: &containerenv
+          env:
             # placeholder var so we can always make an env list
             - name: REDIS_ENABLED
               value: "false"
@@ -80,7 +80,10 @@ spec:
             - --no-progress
             - s3://{{ .s3_bucket }}/{{ .number }}
             - /app
-          env: *containerenv
+          env:
+            # placeholder var so we can always make an env list
+            - name: REDIS_ENABLED
+              value: "false"
       topologySpreadConstraints:
         - labelSelector:
             matchLabels:

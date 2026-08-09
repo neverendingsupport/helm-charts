@@ -1,0 +1,71 @@
+image:
+  repository: ghcr.io/example/app
+  tag: "1.2.3"
+extraEnvVars:
+  SHARED: base
+  OVERRIDE_ME: original
+awsEnvSecrets:
+  externalSecret:
+    secretPath: /example/app
+securityContext:
+  runAsNonRoot: true
+volumes:
+  - name: shared-scratch
+    emptyDir: {}
+volumeMounts:
+  - name: shared-scratch
+    mountPath: /scratch
+initContainers:
+  - image: amazon/aws-cli:latest
+    command:
+      - s3
+      - sync
+extraContainers:
+  # same-image companion process: inherits everything, overrides one env var
+  - name: worker
+    image:
+      repository: ghcr.io/example/app
+      tag: "1.2.3"
+    command: ["pnpm"]
+    args: ["run", "worker"]
+    env:
+      OVERRIDE_ME: overridden
+      WORKER_ONLY: "yes"
+    resources:
+      requests:
+        cpu: 50m
+        memory: 64Mi
+  # third-party helper: isolated from the app's env and mounts
+  - name: oauth2-proxy
+    image:
+      repository: quay.io/oauth2-proxy/oauth2-proxy
+      digest: sha256:0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+    inheritEnv: false
+    inheritVolumeMounts: false
+    envFromSecrets:
+      - proxy-creds
+    securityContext:
+      runAsUser: 2000
+    ports:
+      - name: proxy
+        containerPort: 4180
+    readinessProbe:
+      httpGet:
+        path: /ping
+        port: proxy
+    volumeMounts:
+      - name: shared-scratch
+        mountPath: /proxy-scratch
+  # native sidecar: starts before init containers and the main container
+  - name: sql-proxy
+    nativeSidecar: true
+    image:
+      repository: gcr.io/cloud-sql-connectors/cloud-sql-proxy
+      tag: "2.14.0"
+    inheritEnv: false
+    startupProbe:
+      httpGet:
+        path: /startup
+        port: 9801
+    extraContainerProps:
+      workingDir: /tmp

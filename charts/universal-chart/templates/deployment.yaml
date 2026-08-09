@@ -5,6 +5,35 @@ kind: Deployment
 {{- if and .Values.reloader.enabled (not (hasKey $deploymentAnnotations $reloadAnnotation)) }}
 {{- $_ := set $deploymentAnnotations $reloadAnnotation "true" }}
 {{- end }}
+{{- /* Detect whether the legacy initContainers block will render. */}}
+{{- $hasLegacyInit := false }}
+{{- with .Values.initContainers }}
+{{- if get (first .) "image" }}
+{{- $hasLegacyInit = true }}
+{{- end }}
+{{- end }}
+{{- /* Container names must be unique within the pod. Collect every name the
+chart generates, then fail fast on a collision instead of letting the API
+server reject the Deployment with a less helpful error. */}}
+{{- $containerNames := list .Chart.Name }}
+{{- if $hasLegacyInit }}
+{{- range $i, $_ := .Values.initContainers }}
+{{- $containerNames = append $containerNames (printf "init-%s-%d" $.Chart.Name $i) }}
+{{- end }}
+{{- end }}
+{{- $nativeSidecars := list }}
+{{- $regularSidecars := list }}
+{{- range .Values.extraContainers }}
+{{- if has .name $containerNames }}
+{{- fail (printf "extraContainers entry %q duplicates another container name in this pod (the main container is named %q and init containers are named init-%s-<index>); container names must be unique" .name $.Chart.Name $.Chart.Name) }}
+{{- end }}
+{{- $containerNames = append $containerNames .name }}
+{{- if .nativeSidecar }}
+{{- $nativeSidecars = append $nativeSidecars . }}
+{{- else }}
+{{- $regularSidecars = append $regularSidecars . }}
+{{- end }}
+{{- end }}
 metadata:
   name: {{ include "universal-chart.fullname" . }}
   labels:
@@ -47,50 +76,11 @@ spec:
       {{- end }}
       containers:
         - name: {{ .Chart.Name }}
-          env: &containerenv
-            # placeholder var so we can always make an env list
-            - name: REDIS_ENABLED
-              value: {{ .Values.redis.enabled | quote }}
-            {{- if .Values.redis.enabled }}
-            - name: REDIS_USERNAME
-              value: default # oddly hard-coded in chart
-            - name: REDIS_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: {{ template "redis.secretName" .Subcharts.redis }}
-                  key: {{ template "redis.secretPasswordKey" .Subcharts.redis }}
-            - name: REDIS_PORT
-              #value: {{ .Values.redis.master.service.ports.redis }}
-              value: {{ .Values.redis.master.containerPorts.redis | quote }}
-            - name: REDIS_HOST
-              value: {{ printf "%s-master" (include "common.names.fullname" .Subcharts.redis) }}
-            - name: REDIS_TLS
-              value: {{ .Values.redis.tls.enabled | quote }}
-            {{- end }}
-            {{- with .Values.extraEnvVars }}
-              {{- range $k, $v := . }}
-            - name: {{ $k }}
-              {{- if kindIs "map" $v }}
-              {{- toYaml $v | nindent 14 }}
-              {{- else }}
-              value: {{ $v | quote }}
-              {{- end }}
-              {{- end }}
-            {{- end }}
-          {{- if or .Values.awsEnvSecrets.externalSecret.secretPath .Values.extraEnvSecrets .Values.extraEnvConfigmaps }}
+          env:
+            {{- include "universal-chart.containerEnv" . | nindent 12 }}
+          {{- with include "universal-chart.containerEnvFrom" . | trim }}
           envFrom:
-            {{- if .Values.awsEnvSecrets.externalSecret.secretPath }}
-            - secretRef:
-                name: {{ .Values.awsEnvSecrets.env_secret_name }}
-            {{- end }}
-            {{- range .Values.extraEnvSecrets }}
-            - secretRef:
-                name: {{ . }}
-            {{- end }}
-            {{- range .Values.extraEnvConfigmaps }}
-            - configMapRef:
-                name: {{ . }}
-            {{- end }}
+            {{- . | nindent 12 }}
           {{- end }}
           {{- with .Values.securityContext }}
           securityContext:
@@ -130,11 +120,20 @@ spec:
           {{- with .Values.extraContainerProps }}
           {{- toYaml . | nindent 10 }}
           {{- end }}
+        {{- range $regularSidecars }}
+        {{- include "universal-chart.extraContainer" (dict "root" $ "container" .) | nindent 8 }}
+        {{- end }}
 
-      {{- with .Values.initContainers }}
-      {{- if get (first .) "image" }}
+      {{- if or $nativeSidecars $hasLegacyInit }}
       initContainers:
-        {{- range $i, $init := . }}
+        {{- /* Native sidecars render first so their startup probes gate the
+        legacy init containers; a migration that needs a proxy can rely on the
+        proxy being up before it runs. */}}
+        {{- range $nativeSidecars }}
+        {{- include "universal-chart.extraContainer" (dict "root" $ "container" . "native" true) | nindent 8 }}
+        {{- end }}
+        {{- if $hasLegacyInit }}
+        {{- range $i, $init := .Values.initContainers }}
         - name: init-{{ $.Chart.Name }}-{{ $i }}
           image: {{ $init.image }}
           {{- with $init.command }}
@@ -147,21 +146,11 @@ spec:
           volumeMounts:
             {{- toYaml . | nindent 12 }}
           {{- end }}
-          env: *containerenv
-          {{- if or $.Values.awsEnvSecrets.externalSecret.secretPath $.Values.extraEnvSecrets $.Values.extraEnvConfigmaps }}
+          env:
+            {{- include "universal-chart.containerEnv" $ | nindent 12 }}
+          {{- with include "universal-chart.containerEnvFrom" $ | trim }}
           envFrom:
-            {{- if $.Values.awsEnvSecrets.externalSecret.secretPath }}
-            - secretRef:
-                name: {{ $.Values.awsEnvSecrets.env_secret_name }}
-            {{- end }}
-            {{- range $.Values.extraEnvSecrets }}
-            - secretRef:
-                name: {{ . }}
-            {{- end }}
-            {{- range $.Values.extraEnvConfigmaps }}
-            - configMapRef:
-                name: {{ . }}
-            {{- end }}
+            {{- . | nindent 12 }}
           {{- end }}
           {{- with $.Values.securityContext }}
           securityContext:
@@ -171,7 +160,7 @@ spec:
           {{- toYaml . | nindent 10 }}
           {{- end }}
         {{- end }}
-      {{- end }}
+        {{- end }}
       {{- end }}
 
       {{- with .Values.volumes }}

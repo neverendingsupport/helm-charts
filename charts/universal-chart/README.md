@@ -129,6 +129,142 @@ deployment:
 
 An explicit annotation takes precedence even when `reloader.enabled` is true.
 
+## Extra containers (sidecars)
+
+Some apps need a second container in the same pod: a queue worker built from
+the app image, a proxy the app talks to over localhost, or a metrics exporter.
+`extraContainers` adds them. Each entry needs a unique `name` and an `image`
+with `repository` plus exactly one of `tag` or `digest` — the same rule as the
+main image. Every container in the pod uses the chart-wide `image.pullPolicy`.
+
+There are two common cases, and the defaults favor the first one.
+
+A **same-image companion** wants the app's environment. By default each entry
+inherits the main container's `env` and `envFrom` (one switch covers both) and
+its `volumeMounts`. Anything you set on the entry is merged on top and wins on
+conflict — env vars by name, mounts by `mountPath`:
+
+```yaml
+extraContainers:
+  - name: worker
+    image:
+      repository: ghcr.io/example/app
+      tag: "1.2.3"
+    command: ["pnpm"]
+    args: ["run", "worker"]
+    env:
+      ROLE: worker   # everything else comes from the main container
+```
+
+A **third-party helper** usually shouldn't see the app's secrets. Set
+`inheritEnv: false` and it gets only what you give it, through `env`,
+`envFromSecrets`, and `envFromConfigmaps`. The same idea applies to
+`inheritVolumeMounts: false`. An empty `securityContext` falls back to the
+top-level one; setting any field replaces it entirely, because a partially
+merged security context is hard to reason about:
+
+```yaml
+extraContainers:
+  - name: oauth2-proxy
+    image:
+      repository: quay.io/oauth2-proxy/oauth2-proxy
+      tag: v7.6.0
+    inheritEnv: false
+    envFromSecrets:
+      - proxy-creds
+    securityContext:
+      runAsUser: 2000
+    ports:
+      - name: proxy
+        containerPort: 4180
+```
+
+Each entry takes its own `resources`, probes (`startupProbe`,
+`livenessProbe`, `readinessProbe`), `ports`, `command`, and `args`. For
+container fields the chart doesn't model, such as `lifecycle` or
+`workingDir`, use `extraContainerProps`. Port names must be unique across the
+whole pod, so a sidecar port can't be called `http` or reuse a name from
+`extraContainerPorts`.
+
+> [!WARNING]
+> A failing `readinessProbe` on *any* container removes the whole pod from
+> its Service. That's useful when the app shouldn't get traffic before its
+> proxy is up, and painful when a flaky exporter probe takes down a healthy
+> app. Give a sidecar a readiness probe only when its readiness should gate
+> traffic.
+
+### Native sidecars
+
+Set `nativeSidecar: true` when the app depends on the sidecar at startup or
+shutdown — a database proxy is the classic case. The entry is rendered as an
+init container with `restartPolicy: Always`, so it starts before everything
+else, keeps running, and stops after the main container exits. The chart
+places native sidecars ahead of `initContainers` entries, and a native
+sidecar's `startupProbe` holds everything after it, so a migration init
+container can rely on the proxy being up before it runs.
+
+> [!WARNING]
+> Native sidecars need Kubernetes 1.28 or newer. The chart doesn't check the
+> cluster version; on an older cluster the pod is rejected at admission with
+> an error about `restartPolicy` on an init container.
+
+```yaml
+extraContainers:
+  - name: sql-proxy
+    nativeSidecar: true
+    inheritEnv: false
+    image:
+      repository: gcr.io/cloud-sql-connectors/cloud-sql-proxy
+      tag: "2.14.0"
+    startupProbe:
+      httpGet:
+        path: /startup
+        port: 9801
+```
+
+### Autoscaling with sidecars
+
+> [!WARNING]
+> The chart's CPU and memory autoscaling targets average utilization across
+> **all** containers in the pod. A sidecar with a generous request and low
+> usage drags the average down, so the app scales up later than it should.
+> Keep sidecar requests small relative to the main container, or scale on an
+> external metric through `autoscaling.hpaScalingRules` instead. If you need
+> scaling pinned to the main container by name (the `ContainerResource`
+> metric type), ask Infrastructure — it's a known follow-up.
+
+### Exposing a sidecar port
+
+Nothing new is needed. Point a Service port at the sidecar's named container
+port with `service.extraPorts`, and scrape it with
+`serviceMonitor.alternatePort`. A metrics exporter looks like this:
+
+```yaml
+extraContainers:
+  - name: exporter
+    image:
+      repository: ghcr.io/example/exporter
+      tag: "1.0.0"
+    inheritEnv: false
+    ports:
+      - name: exp-metrics
+        containerPort: 9187
+
+service:
+  extraPorts:
+    - name: exp-metrics
+      port: 9187
+      targetPort: exp-metrics
+
+serviceMonitor:
+  enabled: true
+  alternatePort: 9187
+```
+
+One thing `extraContainers` is not for: a second workload that scales on its
+own. Sidecars share the pod's replica count and HPA. A worker that needs its
+own scaling is its own release of this chart.
+
 ## Using The Chart
 
 Normally, you're going to want to distribute this chart via ArgoCD as an
@@ -300,6 +436,7 @@ helm template my-release . \
 | deployment.annotations | object | `{}` | extra annotations to add to the deployment resource's metadata. These annotations are key-value pairs attached directly to the Deployment resource. They can be used by external tooling, operators, or for tracking deployment metadata and events. For more info, see: https://kubernetes.io/docs/concepts/overview/working-with-objects/annotations/ |
 | extraContainerPorts | list | `[]` | extra ports to be exposed directly from pods (no service) |
 | extraContainerProps | object | `{}` | A dictionary of extra attributes to add to the container spec in the deployment. Elements will be directly added to the deployment's `spec.template.spec.containers` object. Note that adding an element already in the deployment template like `env` or `image` will cause undesirable behavior. |
+| extraContainers | list | `[]` | Additional long-running (sidecar) containers to run in the same pod as the main container. Each entry needs a unique `name` and an `image` with `repository` plus exactly one of `tag` or `digest` (the same rule as the main image). All containers share the chart-wide `image.pullPolicy`. By default every entry inherits the main container's environment (env and envFrom) and volume mounts; per-entry `env` and `volumeMounts` values are merged on top and win on conflicts (env by name, mounts by mountPath). Set `inheritEnv: false` or `inheritVolumeMounts: false` to start from a clean slate instead — recommended for third-party images that don't need the app's secrets. An empty `securityContext` inherits the top-level `securityContext`; a non-empty one replaces it entirely. Set `nativeSidecar: true` to render the entry as a native sidecar (an init container with `restartPolicy: Always`, Kubernetes 1.28+) that starts before init containers and the main container, and stops after them. Container port names must be unique across the whole pod, so sidecar port names cannot reuse `http` or names from `extraContainerPorts`. Use `extraContainerProps` for container fields the chart doesn't model, such as `lifecycle` or `workingDir`. |
 | extraEnvConfigmaps | list | `[]` | extra configmaps to load into environment |
 | extraEnvSecrets | list | `[]` | extra secrets to load into environment |
 | extraEnvVars | object | `{}` | additional environment variables and their values. Supports both simple string values and complex objects with valueFrom. |
@@ -396,6 +533,7 @@ helm template my-release . \
 | topologySpreadConstraints | list | `[{"maxSkew":1,"topologyKey":"topology.kubernetes.io/zone","whenUnsatisfiable":"ScheduleAnyway"}]` | When deploying with multiple replicas, spread pods around using these rules. The default is to spread pods evenly among the Availability Zones defined in the cluster. With a Karpenter-managed EKS cluster (like HeroDevs uses), there will usually be 3 AZs in a region where a cluster is deployed. If a constraint omits labelSelector, the chart injects selector labels. When the availability preset is enabled, it replaces custom zone and hostname constraints so each topology key appears only once. |
 | volumeMounts | list | `[]` | Additional volumes to mount |
 | volumes | list | `[]` | Additional volumes to create |
+
 
 ----------------------------------------------
 Autogenerated from chart metadata using [helm-docs v1.14.2](https://github.com/norwoodj/helm-docs/releases/v1.14.2)

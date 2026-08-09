@@ -128,6 +128,142 @@ deployment:
 
 An explicit annotation takes precedence even when `reloader.enabled` is true.
 
+## Extra containers (sidecars)
+
+Some apps need a second container in the same pod: a queue worker built from
+the app image, a proxy the app talks to over localhost, or a metrics exporter.
+`extraContainers` adds them. Each entry needs a unique `name` and an `image`
+with `repository` plus exactly one of `tag` or `digest` — the same rule as the
+main image. Every container in the pod uses the chart-wide `image.pullPolicy`.
+
+There are two common cases, and the defaults favor the first one.
+
+A **same-image companion** wants the app's environment. By default each entry
+inherits the main container's `env` and `envFrom` (one switch covers both) and
+its `volumeMounts`. Anything you set on the entry is merged on top and wins on
+conflict — env vars by name, mounts by `mountPath`:
+
+```yaml
+extraContainers:
+  - name: worker
+    image:
+      repository: ghcr.io/example/app
+      tag: "1.2.3"
+    command: ["pnpm"]
+    args: ["run", "worker"]
+    env:
+      ROLE: worker   # everything else comes from the main container
+```
+
+A **third-party helper** usually shouldn't see the app's secrets. Set
+`inheritEnv: false` and it gets only what you give it, through `env`,
+`envFromSecrets`, and `envFromConfigmaps`. The same idea applies to
+`inheritVolumeMounts: false`. An empty `securityContext` falls back to the
+top-level one; setting any field replaces it entirely, because a partially
+merged security context is hard to reason about:
+
+```yaml
+extraContainers:
+  - name: oauth2-proxy
+    image:
+      repository: quay.io/oauth2-proxy/oauth2-proxy
+      tag: v7.6.0
+    inheritEnv: false
+    envFromSecrets:
+      - proxy-creds
+    securityContext:
+      runAsUser: 2000
+    ports:
+      - name: proxy
+        containerPort: 4180
+```
+
+Each entry takes its own `resources`, probes (`startupProbe`,
+`livenessProbe`, `readinessProbe`), `ports`, `command`, and `args`. For
+container fields the chart doesn't model, such as `lifecycle` or
+`workingDir`, use `extraContainerProps`. Port names must be unique across the
+whole pod, so a sidecar port can't be called `http` or reuse a name from
+`extraContainerPorts`.
+
+> [!WARNING]
+> A failing `readinessProbe` on *any* container removes the whole pod from
+> its Service. That's useful when the app shouldn't get traffic before its
+> proxy is up, and painful when a flaky exporter probe takes down a healthy
+> app. Give a sidecar a readiness probe only when its readiness should gate
+> traffic.
+
+### Native sidecars
+
+Set `nativeSidecar: true` when the app depends on the sidecar at startup or
+shutdown — a database proxy is the classic case. The entry is rendered as an
+init container with `restartPolicy: Always`, so it starts before everything
+else, keeps running, and stops after the main container exits. The chart
+places native sidecars ahead of `initContainers` entries, and a native
+sidecar's `startupProbe` holds everything after it, so a migration init
+container can rely on the proxy being up before it runs.
+
+> [!WARNING]
+> Native sidecars need Kubernetes 1.28 or newer. The chart doesn't check the
+> cluster version; on an older cluster the pod is rejected at admission with
+> an error about `restartPolicy` on an init container.
+
+```yaml
+extraContainers:
+  - name: sql-proxy
+    nativeSidecar: true
+    inheritEnv: false
+    image:
+      repository: gcr.io/cloud-sql-connectors/cloud-sql-proxy
+      tag: "2.14.0"
+    startupProbe:
+      httpGet:
+        path: /startup
+        port: 9801
+```
+
+### Autoscaling with sidecars
+
+> [!WARNING]
+> The chart's CPU and memory autoscaling targets average utilization across
+> **all** containers in the pod. A sidecar with a generous request and low
+> usage drags the average down, so the app scales up later than it should.
+> Keep sidecar requests small relative to the main container, or scale on an
+> external metric through `autoscaling.hpaScalingRules` instead. If you need
+> scaling pinned to the main container by name (the `ContainerResource`
+> metric type), ask Infrastructure — it's a known follow-up.
+
+### Exposing a sidecar port
+
+Nothing new is needed. Point a Service port at the sidecar's named container
+port with `service.extraPorts`, and scrape it with
+`serviceMonitor.alternatePort`. A metrics exporter looks like this:
+
+```yaml
+extraContainers:
+  - name: exporter
+    image:
+      repository: ghcr.io/example/exporter
+      tag: "1.0.0"
+    inheritEnv: false
+    ports:
+      - name: exp-metrics
+        containerPort: 9187
+
+service:
+  extraPorts:
+    - name: exp-metrics
+      port: 9187
+      targetPort: exp-metrics
+
+serviceMonitor:
+  enabled: true
+  alternatePort: 9187
+```
+
+One thing `extraContainers` is not for: a second workload that scales on its
+own. Sidecars share the pod's replica count and HPA. A worker that needs its
+own scaling is its own release of this chart.
+
 ## Using The Chart
 
 Normally, you're going to want to distribute this chart via ArgoCD as an

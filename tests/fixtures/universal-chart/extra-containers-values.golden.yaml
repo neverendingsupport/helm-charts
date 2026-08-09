@@ -64,15 +64,111 @@ spec:
             # placeholder var so we can always make an env list
             - name: REDIS_ENABLED
               value: "false"
+            - name: OVERRIDE_ME
+              value: "original"
+            - name: SHARED
+              value: "base"
           envFrom:
             - secretRef:
                 name: aws-env
+          securityContext:
+            runAsNonRoot: true
           image: "ghcr.io/example/app:1.2.3"
           imagePullPolicy: Always
           ports:
             - name: http
               containerPort: 3000
               protocol: TCP
+          volumeMounts:
+            - mountPath: /scratch
+              name: shared-scratch
+        - name: worker
+          image: "ghcr.io/example/app:1.2.3"
+          imagePullPolicy: Always
+          command:
+            - pnpm
+          args:
+            - run
+            - worker
+          env:
+            - name: REDIS_ENABLED
+              value: "false"
+            - name: SHARED
+              value: base
+            - name: OVERRIDE_ME
+              value: overridden
+            - name: WORKER_ONLY
+              value: "yes"
+          envFrom:
+            - secretRef:
+                name: aws-env
+          securityContext:
+            runAsNonRoot: true
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+          volumeMounts:
+            - mountPath: /scratch
+              name: shared-scratch
+        - name: oauth2-proxy
+          image: "quay.io/oauth2-proxy/oauth2-proxy@sha256:0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+          imagePullPolicy: Always
+          envFrom:
+            - secretRef:
+                name: proxy-creds
+          securityContext:
+            runAsUser: 2000
+          ports:
+            - name: proxy
+              containerPort: 4180
+              protocol: TCP
+          readinessProbe:
+            httpGet:
+              path: /ping
+              port: proxy
+          volumeMounts:
+            - mountPath: /proxy-scratch
+              name: shared-scratch
+      initContainers:
+        - name: sql-proxy
+          image: "gcr.io/cloud-sql-connectors/cloud-sql-proxy:2.14.0"
+          imagePullPolicy: Always
+          restartPolicy: Always
+          securityContext:
+            runAsNonRoot: true
+          startupProbe:
+            httpGet:
+              path: /startup
+              port: 9801
+          volumeMounts:
+            - mountPath: /scratch
+              name: shared-scratch
+          workingDir: /tmp
+        - name: init-universal-chart-0
+          image: amazon/aws-cli:latest
+          command:
+            - s3
+            - sync
+          volumeMounts:
+            - mountPath: /scratch
+              name: shared-scratch
+          env:
+            # placeholder var so we can always make an env list
+            - name: REDIS_ENABLED
+              value: "false"
+            - name: OVERRIDE_ME
+              value: "original"
+            - name: SHARED
+              value: "base"
+          envFrom:
+            - secretRef:
+                name: aws-env
+          securityContext:
+            runAsNonRoot: true
+      volumes:
+        - emptyDir: {}
+          name: shared-scratch
       topologySpreadConstraints:
         - labelSelector:
             matchLabels:
@@ -100,5 +196,5 @@ spec:
   - extract:
       conversionStrategy: Default
       decodingStrategy: None
-      key: test/stage/secret
+      key: /example/app
       metadataPolicy: None

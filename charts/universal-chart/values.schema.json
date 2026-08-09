@@ -240,6 +240,290 @@
       "title": "extraContainerProps",
       "type": "object"
     },
+    "extraContainers": {
+      "description": "Additional long-running (sidecar) containers to run in the same pod as\nthe main container. Each entry needs a unique `name` and an `image` with\n`repository` plus exactly one of `tag` or `digest` (the same rule as the\nmain image). All containers share the chart-wide `image.pullPolicy`.\nBy default every entry inherits the main container's environment (env and\nenvFrom) and volume mounts; per-entry `env` and `volumeMounts` values are\nmerged on top and win on conflicts (env by name, mounts by mountPath). Set\n`inheritEnv: false` or `inheritVolumeMounts: false` to start from a clean\nslate instead — recommended for third-party images that don't need the\napp's secrets. An empty `securityContext` inherits the top-level\n`securityContext`; a non-empty one replaces it entirely. Set\n`nativeSidecar: true` to render the entry as a native sidecar (an init\ncontainer with `restartPolicy: Always`, Kubernetes 1.28+) that starts\nbefore init containers and the main container, and stops after them.\nContainer port names must be unique across the whole pod, so sidecar port\nnames cannot reuse `http` or names from `extraContainerPorts`. Use\n`extraContainerProps` for container fields the chart doesn't model, such\nas `lifecycle` or `workingDir`.",
+      "items": {
+        "additionalProperties": false,
+        "properties": {
+          "args": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "command": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "env": {
+            "additionalProperties": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "properties": {
+                    "valueFrom": {
+                      "anyOf": [
+                        {
+                          "properties": {
+                            "fieldRef": {
+                              "properties": {
+                                "fieldPath": {
+                                  "type": "string"
+                                }
+                              },
+                              "required": [
+                                "fieldPath"
+                              ],
+                              "type": "object"
+                            }
+                          },
+                          "required": [
+                            "fieldRef"
+                          ]
+                        },
+                        {
+                          "properties": {
+                            "secretKeyRef": {
+                              "properties": {
+                                "key": {
+                                  "type": "string"
+                                },
+                                "name": {
+                                  "type": "string"
+                                }
+                              },
+                              "required": [
+                                "name",
+                                "key"
+                              ],
+                              "type": "object"
+                            }
+                          },
+                          "required": [
+                            "secretKeyRef"
+                          ]
+                        }
+                      ],
+                      "type": "object"
+                    }
+                  },
+                  "required": [
+                    "valueFrom"
+                  ],
+                  "type": "object"
+                }
+              ]
+            },
+            "required": [],
+            "type": "object"
+          },
+          "envFromConfigmaps": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "envFromSecrets": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "extraContainerProps": {
+            "additionalProperties": true,
+            "required": [],
+            "type": "object"
+          },
+          "image": {
+            "additionalProperties": false,
+            "oneOf": [
+              {
+                "properties": {
+                  "digest": {
+                    "type": "null"
+                  },
+                  "tag": {
+                    "minLength": 1,
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "tag"
+                ]
+              },
+              {
+                "properties": {
+                  "digest": {
+                    "type": "string"
+                  },
+                  "tag": {
+                    "type": "null"
+                  }
+                },
+                "required": [
+                  "digest"
+                ]
+              }
+            ],
+            "properties": {
+              "digest": {
+                "pattern": "^sha256:[a-f0-9]{64}$",
+                "required": [],
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "repository": {
+                "minLength": 1,
+                "type": "string"
+              },
+              "tag": {
+                "minLength": 1,
+                "required": [],
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "repository"
+            ],
+            "type": "object"
+          },
+          "inheritEnv": {
+            "type": "boolean"
+          },
+          "inheritVolumeMounts": {
+            "type": "boolean"
+          },
+          "livenessProbe": {
+            "additionalProperties": true,
+            "required": [],
+            "type": "object"
+          },
+          "name": {
+            "minLength": 1,
+            "pattern": "^[a-z0-9]([-a-z0-9]*[a-z0-9])?$",
+            "type": "string"
+          },
+          "nativeSidecar": {
+            "type": "boolean"
+          },
+          "ports": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "containerPort": {
+                  "maximum": 65535,
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                "name": {
+                  "minLength": 1,
+                  "type": "string"
+                },
+                "protocol": {
+                  "enum": [
+                    "TCP",
+                    "UDP",
+                    "SCTP"
+                  ],
+                  "type": "string"
+                }
+              },
+              "required": [
+                "name",
+                "containerPort"
+              ],
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "readinessProbe": {
+            "additionalProperties": true,
+            "required": [],
+            "type": "object"
+          },
+          "resources": {
+            "additionalProperties": false,
+            "properties": {
+              "limits": {
+                "additionalProperties": false,
+                "properties": {
+                  "cpu": {
+                    "type": "string"
+                  },
+                  "memory": {
+                    "type": "string"
+                  }
+                },
+                "required": [],
+                "type": "object"
+              },
+              "requests": {
+                "additionalProperties": false,
+                "properties": {
+                  "cpu": {
+                    "type": "string"
+                  },
+                  "memory": {
+                    "type": "string"
+                  }
+                },
+                "required": [],
+                "type": "object"
+              }
+            },
+            "required": [],
+            "type": "object"
+          },
+          "securityContext": {
+            "additionalProperties": true,
+            "required": [],
+            "type": "object"
+          },
+          "startupProbe": {
+            "additionalProperties": true,
+            "required": [],
+            "type": "object"
+          },
+          "volumeMounts": {
+            "items": {
+              "additionalProperties": true,
+              "properties": {
+                "mountPath": {
+                  "minLength": 1,
+                  "type": "string"
+                },
+                "name": {
+                  "minLength": 1,
+                  "type": "string"
+                }
+              },
+              "required": [
+                "name",
+                "mountPath"
+              ],
+              "type": "object"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "name",
+          "image"
+        ],
+        "type": "object"
+      },
+      "title": "extraContainers",
+      "type": "array"
+    },
     "extraEnvConfigmaps": {
       "description": "extra configmaps to load into environment",
       "items": {

@@ -229,6 +229,218 @@ extraEnvConfigmaps: []
 # -- extra ports to be exposed directly from pods (no service)
 extraContainerPorts: []
 
+# @schema
+# type: array
+# items:
+#   type: object
+#   additionalProperties: false
+#   required:
+#     - name
+#     - image
+#   properties:
+#     name:
+#       type: string
+#       minLength: 1
+#       pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?$
+#     image:
+#       type: object
+#       additionalProperties: false
+#       required:
+#         - repository
+#       properties:
+#         repository:
+#           type: string
+#           minLength: 1
+#         tag:
+#           type:
+#             - string
+#             - "null"
+#           minLength: 1
+#         digest:
+#           type:
+#             - string
+#             - "null"
+#           pattern: ^sha256:[a-f0-9]{64}$
+#       oneOf:
+#         - properties:
+#             tag:
+#               type: string
+#               minLength: 1
+#             digest:
+#               type: "null"
+#           required:
+#             - tag
+#         - properties:
+#             tag:
+#               type: "null"
+#             digest:
+#               type: string
+#           required:
+#             - digest
+#     command:
+#       type: array
+#       items:
+#         type: string
+#     args:
+#       type: array
+#       items:
+#         type: string
+#     env:
+#       type: object
+#       additionalProperties:
+#         anyOf:
+#           - type: string
+#           - type: object
+#             required:
+#               - valueFrom
+#             properties:
+#               valueFrom:
+#                 type: object
+#                 anyOf:
+#                   - properties:
+#                       fieldRef:
+#                         type: object
+#                         properties:
+#                           fieldPath:
+#                             type: string
+#                         required:
+#                           - fieldPath
+#                     required:
+#                       - fieldRef
+#                   - properties:
+#                       secretKeyRef:
+#                         type: object
+#                         properties:
+#                           name:
+#                             type: string
+#                           key:
+#                             type: string
+#                         required:
+#                           - name
+#                           - key
+#                     required:
+#                       - secretKeyRef
+#     inheritEnv:
+#       type: boolean
+#     envFromSecrets:
+#       type: array
+#       items:
+#         type: string
+#     envFromConfigmaps:
+#       type: array
+#       items:
+#         type: string
+#     securityContext:
+#       type: object
+#       additionalProperties: true
+#     ports:
+#       type: array
+#       items:
+#         type: object
+#         additionalProperties: false
+#         required:
+#           - name
+#           - containerPort
+#         properties:
+#           name:
+#             type: string
+#             minLength: 1
+#           containerPort:
+#             type: integer
+#             minimum: 1
+#             maximum: 65535
+#           protocol:
+#             type: string
+#             enum:
+#               - TCP
+#               - UDP
+#               - SCTP
+#     startupProbe:
+#       type: object
+#       additionalProperties: true
+#     livenessProbe:
+#       type: object
+#       additionalProperties: true
+#     readinessProbe:
+#       type: object
+#       additionalProperties: true
+#     resources:
+#       type: object
+#       additionalProperties: false
+#       properties:
+#         limits:
+#           type: object
+#           additionalProperties: false
+#           properties:
+#             cpu:
+#               type: string
+#             memory:
+#               type: string
+#         requests:
+#           type: object
+#           additionalProperties: false
+#           properties:
+#             cpu:
+#               type: string
+#             memory:
+#               type: string
+#     volumeMounts:
+#       type: array
+#       items:
+#         type: object
+#         additionalProperties: true
+#         required:
+#           - name
+#           - mountPath
+#         properties:
+#           name:
+#             type: string
+#             minLength: 1
+#           mountPath:
+#             type: string
+#             minLength: 1
+#     inheritVolumeMounts:
+#       type: boolean
+#     nativeSidecar:
+#       type: boolean
+#     extraContainerProps:
+#       type: object
+#       additionalProperties: true
+# @schema
+# -- Additional long-running (sidecar) containers to run in the same pod as
+# the main container. Each entry needs a unique `name` and an `image` with
+# `repository` plus exactly one of `tag` or `digest` (the same rule as the
+# main image). All containers share the chart-wide `image.pullPolicy`.
+# By default every entry inherits the main container's environment (env and
+# envFrom) and volume mounts; per-entry `env` and `volumeMounts` values are
+# merged on top and win on conflicts (env by name, mounts by mountPath). Set
+# `inheritEnv: false` or `inheritVolumeMounts: false` to start from a clean
+# slate instead — recommended for third-party images that don't need the
+# app's secrets. An empty `securityContext` inherits the top-level
+# `securityContext`; a non-empty one replaces it entirely. Set
+# `nativeSidecar: true` to render the entry as a native sidecar (an init
+# container with `restartPolicy: Always`, Kubernetes 1.28+) that starts
+# before init containers and the main container, and stops after them.
+# Container port names must be unique across the whole pod, so sidecar port
+# names cannot reuse `http` or names from `extraContainerPorts`. Use
+# `extraContainerProps` for container fields the chart doesn't model, such
+# as `lifecycle` or `workingDir`.
+extraContainers: []
+# - name: oauth2-proxy
+#   image:
+#     repository: quay.io/oauth2-proxy/oauth2-proxy
+#     tag: v7.6.0
+#   inheritEnv: false
+#   args:
+#     - --http-address=0.0.0.0:4180
+#   ports:
+#     - name: proxy
+#       containerPort: 4180
+#   resources:
+#     requests:
+#       cpu: 10m
+#       memory: 32Mi
+
 # This section builds out the service account more information can be found here: https://kubernetes.io/docs/concepts/security/service-accounts/
 serviceAccount:
   # Specifies whether a service account should be created (things may go poorly if you set this to false)
