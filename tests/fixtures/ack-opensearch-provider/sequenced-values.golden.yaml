@@ -97,7 +97,7 @@ spec:
       serviceAccountName: ack-opensearch-provider-bootstrap
       containers:
         - name: bootstrap-secret
-          image: "registry.k8s.io/kubectl:v1.34.1@sha256:59bafa07ff3a6d4b417e7633ddb9d79a9606ca98bf64bac080b3e65748669250"
+          image: "alpine/k8s:1.34.1@sha256:ec714df3813b5405292860f8a1c55c5727bf8c33c88992f1e981efad8065547f"
           command:
             - /bin/sh
             - -ec
@@ -135,7 +135,7 @@ spec:
 
               password=""
               if [ "$secret_exists" = true ]; then
-                existing_password="$(kubectl get secret "$secret_name" -o jsonpath="{.data.${password_key}}" 2>/dev/null | base64 --decode || true)"
+                existing_password="$(kubectl get secret "$secret_name" -o jsonpath="{.data.${password_key}}" 2>/dev/null | base64 -d || true)"
                 if [ -n "$existing_password" ]; then
                   echo 'eyJtZXRhZGF0YSI6eyJhbm5vdGF0aW9ucyI6eyJyZWZsZWN0b3IudjEuazhzLmVtYmVyc3RhY2suY29tL3JlZmxlY3Rpb24tYWxsb3dlZCI6bnVsbCwicmVmbGVjdG9yLnYxLms4cy5lbWJlcnN0YWNrLmNvbS9yZWZsZWN0aW9uLWFsbG93ZWQtbmFtZXNwYWNlcyI6bnVsbCwicmVmbGVjdG9yLnYxLms4cy5lbWJlcnN0YWNrLmNvbS9yZWZsZWN0aW9uLWF1dG8tZW5hYmxlZCI6bnVsbCwicmVmbGVjdG9yLnYxLms4cy5lbWJlcnN0YWNrLmNvbS9yZWZsZWN0aW9uLWF1dG8tbmFtZXNwYWNlcyI6bnVsbH19fQ==' | base64 -d > /tmp/secret-metadata-patch.json
                   kubectl patch secret "$secret_name" --type merge --patch-file /tmp/secret-metadata-patch.json
@@ -210,7 +210,7 @@ spec:
       serviceAccountName: ack-opensearch-provider-bootstrap
       containers:
         - name: sync-connection
-          image: "registry.k8s.io/kubectl:v1.34.1@sha256:59bafa07ff3a6d4b417e7633ddb9d79a9606ca98bf64bac080b3e65748669250"
+          image: "alpine/k8s:1.34.1@sha256:ec714df3813b5405292860f8a1c55c5727bf8c33c88992f1e981efad8065547f"
           command:
             - /bin/sh
             - -ec
@@ -239,8 +239,8 @@ spec:
                 if [ -n "$endpoint" ]; then
                   url="${scheme}://${endpoint}:${port}"
                   auth_url="$url"
-                  username="$(kubectl get secret "$secret_name" -o jsonpath="{.data.${username_key}}" 2>/dev/null | base64 --decode || true)"
-                  password="$(kubectl get secret "$secret_name" -o jsonpath="{.data.${password_key}}" 2>/dev/null | base64 --decode || true)"
+                  username="$(kubectl get secret "$secret_name" -o jsonpath="{.data.${username_key}}" 2>/dev/null | base64 -d || true)"
+                  password="$(kubectl get secret "$secret_name" -o jsonpath="{.data.${password_key}}" 2>/dev/null | base64 -d || true)"
                   if [ "password" = "password" ] && [ -n "$username" ] && [ -n "$password" ]; then
                     auth_url="${scheme}://${username}:${password}@${endpoint}:${port}"
                   fi

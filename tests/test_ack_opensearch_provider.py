@@ -22,8 +22,8 @@ CURL_IMAGE = (
     "sha256:94e9e444bcba979c2ea12e27ae39bee4cd10bc7041a472c4727a558e213744e6"
 )
 KUBECTL_IMAGE = (
-    "registry.k8s.io/kubectl:v1.34.1@"
-    "sha256:59bafa07ff3a6d4b417e7633ddb9d79a9606ca98bf64bac080b3e65748669250"
+    "alpine/k8s:1.34.1@"
+    "sha256:ec714df3813b5405292860f8a1c55c5727bf8c33c88992f1e981efad8065547f"
 )
 
 
@@ -694,6 +694,33 @@ def test_sequenced_connection_renders_hook_jobs(helm_runner) -> None:
         sync_job["metadata"]["annotations"]["argocd.argoproj.io/sync-wave"]
         == "20"
     )
+
+
+def test_sequenced_connection_uses_portable_base64_decode(
+    helm_runner,
+) -> None:
+    """Ensure hook scripts use the BusyBox-compatible decode flag."""
+
+    rendered = render_chart(
+        helm_runner,
+        CHART,
+        values={
+            "sequencedConnection.enabled": True,
+            "auth.mode": "password",
+        },
+    )
+    jobs = [
+        manifest
+        for manifest in load_manifests(rendered)
+        if manifest.get("kind") == "Job"
+    ]
+    scripts = [
+        job["spec"]["template"]["spec"]["containers"][0]["args"][0]
+        for job in jobs
+    ]
+
+    assert all("base64 --decode" not in script for script in scripts)
+    assert sum(script.count("| base64 -d") for script in scripts) == 5
 
 
 def test_sequenced_connection_clears_removed_reflector_annotations(
