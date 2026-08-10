@@ -471,6 +471,40 @@ def test_sequenced_valkey_connection_uses_cache_keys(helm_runner) -> None:
     assert 'arn_key="CACHE_ARN"' in sync_script
 
 
+def test_sequenced_connection_uses_portable_base64_decode(
+    helm_runner,
+) -> None:
+    """Ensure hook scripts use the BusyBox-compatible decode flag."""
+
+    cases = [
+        {
+            "sequencedConnection.enabled": True,
+            "auth.mode": "password",
+        },
+        {
+            "sequencedConnection.enabled": True,
+            "auth.mode": "secretRef",
+            "auth.existingSecret.name": "cache-auth",
+            "auth.existingSecret.key": "password",
+        },
+    ]
+
+    for values in cases:
+        rendered = render_chart(helm_runner, CHART, values=values)
+        jobs = [
+            manifest
+            for manifest in load_manifests(rendered)
+            if manifest.get("kind") == "Job"
+        ]
+        scripts = [
+            job["spec"]["template"]["spec"]["containers"][0]["args"][0]
+            for job in jobs
+        ]
+
+        assert all("base64 --decode" not in script for script in scripts)
+        assert sum(script.count("| base64 -d") for script in scripts) == 5
+
+
 def test_sequenced_connection_clears_removed_reflector_annotations(
     helm_runner,
 ) -> None:
