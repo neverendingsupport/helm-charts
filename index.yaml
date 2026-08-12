@@ -88,6 +88,16 @@ entries:
     version: 0.0.1
   ack-opensearch-provider:
   - apiVersion: v2
+    created: "2026-08-12T17:51:01.362273672Z"
+    description: Helm chart to manage ACK OpenSearch domains and exported connection
+      secrets
+    digest: a4fa75f9f9fd577e33a272574829227fdd290d0a78fa7340d3faa8943789bc96
+    name: ack-opensearch-provider
+    type: application
+    urls:
+    - https://github.com/neverendingsupport/helm-charts/releases/download/ack-opensearch-provider-1.0.2/ack-opensearch-provider-1.0.2.tgz
+    version: 1.0.2
+  - apiVersion: v2
     created: "2026-08-10T16:57:53.123962539Z"
     description: Helm chart to manage ACK OpenSearch domains and exported connection
       secrets
@@ -877,4 +887,4 @@ entries:
     urls:
     - https://github.com/neverendingsupport/helm-charts/releases/download/universal-chart-1.0.0/universal-chart-1.0.0.tgz
     version: 1.0.0
-generated: "2026-08-12T17:50:29.552367734Z"
+generated: "2026-08-12T17:51:01.362402656Z"
