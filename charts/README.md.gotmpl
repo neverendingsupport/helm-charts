@@ -7,7 +7,7 @@
   It's ok to use `{{- -}}` after this define's end, though.  As long as this
   comment stays at the top, and the "end" on the next one remains as `{{- end
   }}`, we're good.
-  */ }}
+  */}}
 {{- define "helm-docs.versionFooter" -}}{{- end }}
 {{- /* define a template for the version badge */ -}}
-{{- define "chart.versionBadge" -}}![Chart Version](https://img.shields.io/github/v/release/neverendingsupport/helm-charts?filter={{ .Name }}-*&label=chart%20version&style=flat-square){{- end -}}
+{{- define "chart.versionBadge" -}}![Chart Version](https://img.shields.io/github/v/release/neverendingsupport/helm-charts?filter={{ .Name }}-*&label=chart%20version&style=flat-square) {{end -}}
