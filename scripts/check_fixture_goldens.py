@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""Check that every *-values*.yaml fixture has a matching golden file.
+"""Check that every values fixture has a matching golden file.
 
-For each chart in charts/, this verifies that:
-* tests/fixtures/<chart>/ exists, and
-* for every YAML file whose name contains '-values' and does not end
-  with '.golden.yaml', there is a sibling '<name>.golden.yaml'.
+The fixture naming rule lives in tests/fixture_layout.py so this hook and
+the test suite agree on what counts as a fixture. For each chart in
+charts/, this verifies that tests/fixtures/<chart>/ exists and that every
+values fixture in it has a sibling golden file.
 """
 
 from __future__ import annotations
@@ -12,44 +12,42 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
+REPO_ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(REPO_ROOT))
+
+from tests.fixture_layout import (  # noqa: E402  (needs sys.path above)
+    CHARTS_DIR,
+    FIXTURES_ROOT,
+    golden_for,
+    iter_values_fixtures,
+)
+
 
 def main() -> int:
-    """Check that every *-values*.yaml fixture has a matching golden file."""
-    repo_root = Path(__file__).resolve().parents[1]
-    charts_dir = repo_root / "charts"
-    fixtures_root = repo_root / "tests" / "fixtures"
-
+    """Check that every values fixture has a matching golden file."""
     errors: list[str] = []
 
-    for chart_dir in sorted(charts_dir.iterdir()):
+    for chart_dir in sorted(CHARTS_DIR.iterdir()):
         if not chart_dir.is_dir():
             continue
         if not (chart_dir / "Chart.yaml").is_file():
             continue
 
-        chart_name = chart_dir.name
-        fixture_dir = fixtures_root / chart_name
+        fixture_dir = FIXTURES_ROOT / chart_dir.name
 
         if not fixture_dir.is_dir():
             errors.append(
-                f"Missing fixtures directory for chart '{chart_name}': "
+                f"Missing fixtures directory for chart '{chart_dir.name}': "
                 f"{fixture_dir}"
             )
             continue
 
-        for yaml_file in sorted(fixture_dir.glob("*.yaml")):
-            name = yaml_file.name
-            if name.endswith(".golden.yaml"):
-                continue
-            if "-values" not in name:
-                continue
-
-            base = yaml_file.with_suffix("")  # drop .yaml
-            golden = base.with_suffix(".golden.yaml")
+        for values_file in iter_values_fixtures(fixture_dir):
+            golden = golden_for(values_file)
             if not golden.is_file():
                 errors.append(
                     "Missing golden file for fixture: "
-                    f"{yaml_file} (expected {golden})"
+                    f"{values_file} (expected {golden})"
                 )
 
     if errors:

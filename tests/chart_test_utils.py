@@ -11,12 +11,10 @@ from typing import TYPE_CHECKING, Any, Iterable, Mapping
 
 import yaml
 
+from .fixture_layout import CHARTS_DIR, FIXTURES_ROOT
+
 if TYPE_CHECKING:  # pragma: no cover - import only for typing
     from pytest_helm_charts.giantswarm.helm import HelmRunner
-
-REPO_ROOT = Path(__file__).resolve().parents[1]
-CHARTS_DIR = REPO_ROOT / "charts"
-FIXTURES_ROOT = REPO_ROOT / "tests" / "fixtures"
 
 
 @dataclass(frozen=True)

@@ -15,12 +15,19 @@ tests/fixtures/<chart>/
 
 Rules:
 
-- Any file matching `*-values*.yaml` is a **values fixture**.
+- A file whose name ends with `-values.yaml` is a **values fixture**.
 - Each must have a corresponding golden file:
 
 ```
 *-values.golden.yaml
 ```
+
+Any other YAML in a fixture directory is supporting input rather than a
+fixture, and needs no golden file. `legacy-compat.yaml` is the current
+example: one test loads it directly. The suffix is the whole rule, so
+`sequenced-values-v2.yaml` is not a fixture and nothing will render it.
+`tests/fixture_layout.py` holds that rule, and the hook, the test suite, and
+the regeneration script all read it from there.
 
 One module runs the golden tests for every chart. `tests/test_golden.py` walks
 the fixture directories, matches each one to a chart, and builds a test per

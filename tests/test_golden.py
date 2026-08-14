@@ -11,28 +11,17 @@ from pathlib import Path
 
 import pytest
 
-from .chart_test_utils import (
-    CHARTS_DIR,
-    FIXTURES_ROOT,
-    ChartContext,
-    assert_matches_golden,
-    render_chart,
-)
+from .chart_test_utils import ChartContext, assert_matches_golden, render_chart
+from .fixture_layout import golden_for, iter_fixture_dirs, iter_values_fixtures
 
 
 def discover_golden_pairs() -> list[tuple[str, Path, Path]]:
     """Return (chart_name, values_file, golden_file) for every fixture."""
 
     pairs: list[tuple[str, Path, Path]] = []
-    if not FIXTURES_ROOT.is_dir():
-        return pairs
-    for fixture_dir in sorted(FIXTURES_ROOT.iterdir()):
-        if not fixture_dir.is_dir():
-            continue
-        if not (CHARTS_DIR / fixture_dir.name / "Chart.yaml").is_file():
-            continue
-        for values_file in sorted(fixture_dir.glob("*-values.yaml")):
-            golden_file = values_file.with_suffix(".golden.yaml")
+    for fixture_dir in iter_fixture_dirs():
+        for values_file in iter_values_fixtures(fixture_dir):
+            golden_file = golden_for(values_file)
             if golden_file.exists():
                 pairs.append((fixture_dir.name, values_file, golden_file))
     return pairs
