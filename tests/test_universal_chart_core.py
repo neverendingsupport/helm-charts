@@ -6,7 +6,12 @@ from typing import Any
 
 import pytest
 
-from .chart_test_utils import get_manifest, get_primary_container, render_chart
+from .chart_test_utils import (
+    get_manifest,
+    get_primary_container,
+    manifests_by_name,
+    render_chart,
+)
 from .universal_chart_test_utils import CHART, render_manifests
 
 
@@ -195,19 +200,9 @@ def test_service_metadata_only_updates_primary_service(helm_runner) -> None:
             "serviceMonitor": {"alternatePort": 9090},
         },
     )
-    services = [
-        manifest for manifest in manifests if manifest.get("kind") == "Service"
-    ]
-    main_service = next(
-        service
-        for service in services
-        if service["metadata"]["name"] == CHART.release
-    )
-    metrics_service = next(
-        service
-        for service in services
-        if service["metadata"]["name"] == f"{CHART.release}-metrics"
-    )
+    services = manifests_by_name(manifests, "Service")
+    main_service = services[CHART.release]
+    metrics_service = services[f"{CHART.release}-metrics"]
 
     assert main_service["metadata"]["annotations"] == {
         "teleport.dev/name": "example-app",

@@ -22,6 +22,11 @@ Rules:
 *-values.golden.yaml
 ```
 
+One module runs the golden tests for every chart. `tests/test_golden.py` walks
+the fixture directories, matches each one to a chart, and builds a test per
+values/golden pair. So golden coverage needs nothing beyond the fixtures
+themselves. Don't add a per-chart golden module.
+
 ### Common Errors
 
 The `scripts/check_fixture_goldens.py` pre-commit hook may report:
