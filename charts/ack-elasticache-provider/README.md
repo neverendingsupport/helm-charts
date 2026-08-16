@@ -83,9 +83,9 @@ This chart follows the same provider pattern as the DocumentDB and OpenSearch ch
 | replicationGroupID | string | `nil` | ElastiCache replication group identifier from `ReplicationGroup.spec.replicationGroupID`. |
 | resourceName | string | `""` | Optional explicit ReplicationGroup metadata.name. Defaults to the chart fullname. |
 | securityGroupIDs | list | `[]` | VPC security group IDs from `ReplicationGroup.spec.securityGroupIDs`. |
-| sequencedConnection | object | `{"enabled":false,"kubectlImage":"alpine/k8s:1.34.1@sha256:ec714df3813b5405292860f8a1c55c5727bf8c33c88992f1e981efad8065547f","maxWaitSeconds":3600,"pollIntervalSeconds":15,"syncWave":20,"ttlSecondsAfterFinished":3600}` | Use Argo hook jobs to create a stable connection secret before sync and patch endpoint data after the ReplicationGroup becomes ready. |
+| sequencedConnection | object | `{"enabled":false,"kubectlImage":"alpine/k8s:1.36.2@sha256:44ef4942e171939b9c665a4a84beb80e2dcdb9a24330d4651cfdfd2e9deecc47","maxWaitSeconds":3600,"pollIntervalSeconds":15,"syncWave":20,"ttlSecondsAfterFinished":3600}` | Use Argo hook jobs to create a stable connection secret before sync and patch endpoint data after the ReplicationGroup becomes ready. |
 | sequencedConnection.enabled | bool | `false` | Enable Argo-hooked secret bootstrapping and connection-data syncing. |
-| sequencedConnection.kubectlImage | string | `"alpine/k8s:1.34.1@sha256:ec714df3813b5405292860f8a1c55c5727bf8c33c88992f1e981efad8065547f"` | kubectl image used by the sequencing jobs. |
+| sequencedConnection.kubectlImage | string | `"alpine/k8s:1.36.2@sha256:44ef4942e171939b9c665a4a84beb80e2dcdb9a24330d4651cfdfd2e9deecc47"` | kubectl image used by the sequencing jobs. |
 | sequencedConnection.maxWaitSeconds | int | `3600` | Maximum time to wait for the ReplicationGroup endpoint to appear. |
 | sequencedConnection.pollIntervalSeconds | int | `15` | Poll interval for waiting on the ReplicationGroup primary endpoint. |
 | sequencedConnection.syncWave | int | `20` | Sync wave used by the post-resource connection sync job. |
