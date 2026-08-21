@@ -1,0 +1,175 @@
+name: AWS Marketplace — Publish Helm chart to ECR
+
+on:
+  workflow_dispatch:
+    inputs:
+      chart_version:
+        description: Exact ingress-nginx chart version already published to the Marketplace GHCR namespace
+        required: true
+      dry_run:
+        description: Validate and upload the package without changing Marketplace ECR
+        type: boolean
+        default: true
+      mirror_images:
+        description: Rebuild certgen and mirror default-backend before publishing
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+  id-token: write
+  packages: read
+
+concurrency:
+  group: marketplace-helm-publish
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    name: Publish staged Marketplace chart
+    runs-on: ubuntu-latest
+    env:
+      AWS_REGION_IN: us-east-1
+      MARKETPLACE_REGISTRY: 709825985650.dkr.ecr.us-east-1.amazonaws.com
+      CHART_OCI_NAMESPACE: 709825985650.dkr.ecr.us-east-1.amazonaws.com/herodevs
+      CHART_VERSION: ${{ inputs.chart_version }}
+    steps:
+      # The release tag keeps image-mirroring inputs and validation scripts in
+      # lockstep with the exact staged package selected below.
+      - name: Checkout chart release
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          ref: ingress-nginx-${{ inputs.chart_version }}
+
+      - name: Set up Helm
+        uses: azure/setup-helm@1a275c3b69536ee54be43f2070a358922e12c8d4 # v4.3.1
+        with:
+          version: v3.19.0
+
+      - name: Authenticate Helm to GHCR
+        env:
+          GHCR_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          printf '%s' "$GHCR_PASSWORD" | helm registry login ghcr.io \
+            --username "${GITHUB_ACTOR}" --password-stdin
+
+      - name: Pull and validate exact staged package
+        run: |
+          if [[ ! "$CHART_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+([+-][0-9A-Za-z.-]+)?$ ]]; then
+            echo "Invalid chart version: $CHART_VERSION" >&2
+            exit 1
+          fi
+
+          package_dir="$RUNNER_TEMP/marketplace-package"
+          unpack_dir="$RUNNER_TEMP/marketplace-unpacked"
+          mkdir -p "$package_dir" "$unpack_dir"
+          helm pull \
+            "oci://ghcr.io/${{ github.repository_owner }}/marketplace-charts/ingress-nginx" \
+            --version "$CHART_VERSION" \
+            --destination "$package_dir"
+
+          package_path="$package_dir/ingress-nginx-${CHART_VERSION}.tgz"
+          [[ -f "$package_path" ]] || {
+            echo "Marketplace package not found: $package_path" >&2
+            exit 1
+          }
+          tar -xzf "$package_path" -C "$unpack_dir"
+
+          helm lint "$unpack_dir/ingress-nginx"
+          scripts/verify_marketplace_chart_images.sh \
+            "$unpack_dir/ingress-nginx" "$MARKETPLACE_REGISTRY"
+          scripts/verify_marketplace_serviceaccount.sh \
+            "$unpack_dir/ingress-nginx"
+
+          echo "MARKETPLACE_PACKAGE_PATH=$package_path" >> "$GITHUB_ENV"
+
+      - name: Upload validated package
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: ingress-nginx-marketplace-${{ inputs.chart_version }}
+          path: ${{ runner.temp }}/marketplace-package/ingress-nginx-${{ inputs.chart_version }}.tgz
+          if-no-files-found: error
+
+      - name: Dry-run summary
+        if: inputs.dry_run
+        run: echo "Validated ingress-nginx ${CHART_VERSION}; Marketplace ECR was not changed."
+
+      - name: Configure AWS credentials
+        if: ${{ !inputs.dry_run }}
+        uses: aws-actions/configure-aws-credentials@61815dcd50bd041e203e49132bacad1fd04d2708 # v5.1.1
+        with:
+          role-to-assume: ${{ vars.AWS_MARKETPLACE_OIDC_ROLE_ARN }}
+          role-session-name: ingress-nginx-marketplace-helm
+          aws-region: ${{ env.AWS_REGION_IN }}
+
+      - name: Authenticate to Marketplace ECR
+        if: ${{ !inputs.dry_run }}
+        run: |
+          password="$(aws ecr get-login-password --region "$AWS_REGION_IN")"
+          printf '%s' "$password" | helm registry login \
+            --username AWS --password-stdin "$MARKETPLACE_REGISTRY"
+          printf '%s' "$password" | docker login \
+            --username AWS --password-stdin "$MARKETPLACE_REGISTRY"
+
+      # Marketplace ECR tags are immutable. Avoid doing all image work only to
+      # discover at helm push that this chart version was already published.
+      - name: Fail fast if the chart version already exists
+        if: ${{ !inputs.dry_run }}
+        run: |
+          if helm show chart "oci://${CHART_OCI_NAMESPACE}/ingress-nginx" \
+            --version "$CHART_VERSION" >/dev/null 2>&1; then
+            echo "ERROR: ingress-nginx ${CHART_VERSION} already exists in Marketplace ECR" >&2
+            exit 1
+          fi
+
+      - name: Set up Docker Buildx
+        if: ${{ !inputs.dry_run }}
+        uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3.12.0
+
+      # certgen is rebuilt from its digest-pinned upstream layers with NES OCI
+      # identity. A byte-for-byte mirror inherits upstream ingress-nginx labels,
+      # which caused the Marketplace scanner to report controller CVEs against
+      # this unrelated utility. default-backend is mirrored after removing any
+      # buildx attestation entries that AWS cannot scan.
+      - name: Publish ancillary images
+        if: ${{ !inputs.dry_run && inputs.mirror_images }}
+        run: |
+          set -euo pipefail
+          source_values=charts/ingress-nginx/values.yaml
+          marketplace_values="$RUNNER_TEMP/marketplace-unpacked/ingress-nginx/values.yaml"
+
+          destination_repo() {
+            local path="$1" registry image
+            registry="$(yq -r "${path}.registry // \"\"" "$marketplace_values")"
+            image="$(yq -r "${path}.image // \"\"" "$marketplace_values")"
+            if [[ "$registry" != "$MARKETPLACE_REGISTRY" || -z "$image" || "$image" == "null" ]]; then
+              echo "ERROR: invalid Marketplace destination at ${path}" >&2
+              return 1
+            fi
+            printf '%s/%s' "$registry" "$image"
+          }
+
+          certgen_path='.controller.admissionWebhooks.patch.image'
+          certgen_repo="$(destination_repo "$certgen_path")"
+          certgen_tag="$(yq -r "${certgen_path}.tag // \"\"" "$marketplace_values")"
+          scripts/rebuild_marketplace_certgen.sh \
+            "$source_values" "$certgen_path" "$certgen_repo" registry.k8s.io "$certgen_tag"
+
+          defaultbackend_path='.defaultBackend.image'
+          defaultbackend_repo="$(destination_repo "$defaultbackend_path")"
+          scripts/mirror_marketplace_image.sh \
+            "$source_values" "$defaultbackend_path" "$defaultbackend_repo" registry.k8s.io
+
+      # This read-side gate also runs when mirroring is disabled. It checks the
+      # externally-published controller as well as both ancillary images before
+      # the immutable chart version is pushed.
+      - name: Verify Marketplace images exist and are scannable
+        if: ${{ !inputs.dry_run }}
+        run: scripts/verify_marketplace_images.sh "$RUNNER_TEMP/marketplace-unpacked/ingress-nginx"
+
+      - name: Push exact package to Marketplace ECR
+        if: ${{ !inputs.dry_run }}
+        run: |
+          helm push "$MARKETPLACE_PACKAGE_PATH" \
+            "oci://${CHART_OCI_NAMESPACE}"
+          echo "Published ingress-nginx ${CHART_VERSION} to ${CHART_OCI_NAMESPACE}/ingress-nginx"
