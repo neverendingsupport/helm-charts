@@ -23,7 +23,7 @@ repos:
   ########################################
   # generate values.schema.json from the annotations in values.yaml
   - repo: https://github.com/dadav/helm-schema
-    rev: 0.23.4
+    rev: 0.23.5
     hooks:
       - id: helm-schema
         name: Check universal chart schema
@@ -95,7 +95,7 @@ repos:
   ########################################
   # Format imports first
   - repo: https://github.com/pycqa/isort
-    rev: 9.0.0b2
+    rev: 9.0.1
     hooks:
       - id: isort
         args: ["--profile", "black", "--line-length", "80"]
@@ -120,7 +120,7 @@ repos:
 
   # Type-check
   - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v2.3.0
+    rev: v2.3.1
     hooks:
       - id: mypy
         language: python
@@ -131,7 +131,7 @@ repos:
   # misc
   ########################################
   - repo: https://github.com/alessandrojcm/commitlint-pre-commit-hook
-    rev: v9.24.0
+    rev: v9.26.0
     hooks:
       - id: commitlint
         stages: [commit-msg]
