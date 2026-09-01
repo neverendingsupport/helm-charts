@@ -1,0 +1,23 @@
+# AWS Marketplace distribution overlay.
+#
+# CI merges these values into a staged copy's values.yaml before packaging.
+# Every rendered image must resolve to an AWS Marketplace-managed ECR
+# repository so AWS can replicate the product across regions.
+controller:
+  image:
+    chroot: false
+    registry: 709825985650.dkr.ecr.us-east-1.amazonaws.com
+    image: herodevs/ingress-nginx-nes
+    digest: ""
+    digestChroot: ""
+  admissionWebhooks:
+    patch:
+      image:
+        registry: 709825985650.dkr.ecr.us-east-1.amazonaws.com
+        image: herodevs/ingress-nginx-nes-kube-webhook-certgen
+        digest: ""
+
+defaultBackend:
+  image:
+    registry: 709825985650.dkr.ecr.us-east-1.amazonaws.com
+    image: herodevs/ingress-nginx-nes-defaultbackend
