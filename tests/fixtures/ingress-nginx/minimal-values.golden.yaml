@@ -4,7 +4,7 @@ apiVersion: v1
 kind: ServiceAccount
 metadata:
   labels:
-    helm.sh/chart: ingress-nginx-0.0.9
+    helm.sh/chart: ingress-nginx-0.0.11
     app.kubernetes.io/name: ingress-nginx
     app.kubernetes.io/instance: ingress-nginx
     app.kubernetes.io/version: "v1.15.1-nes-1.15.7"
@@ -20,7 +20,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   labels:
-    helm.sh/chart: ingress-nginx-0.0.9
+    helm.sh/chart: ingress-nginx-0.0.11
     app.kubernetes.io/name: ingress-nginx
     app.kubernetes.io/instance: ingress-nginx
     app.kubernetes.io/version: "v1.15.1-nes-1.15.7"
@@ -36,7 +36,7 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
   labels:
-    helm.sh/chart: ingress-nginx-0.0.9
+    helm.sh/chart: ingress-nginx-0.0.11
     app.kubernetes.io/name: ingress-nginx
     app.kubernetes.io/instance: ingress-nginx
     app.kubernetes.io/version: "v1.15.1-nes-1.15.7"
@@ -120,7 +120,7 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
   labels:
-    helm.sh/chart: ingress-nginx-0.0.9
+    helm.sh/chart: ingress-nginx-0.0.11
     app.kubernetes.io/name: ingress-nginx
     app.kubernetes.io/instance: ingress-nginx
     app.kubernetes.io/version: "v1.15.1-nes-1.15.7"
@@ -141,7 +141,7 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
   labels:
-    helm.sh/chart: ingress-nginx-0.0.9
+    helm.sh/chart: ingress-nginx-0.0.11
     app.kubernetes.io/name: ingress-nginx
     app.kubernetes.io/instance: ingress-nginx
     app.kubernetes.io/version: "v1.15.1-nes-1.15.7"
@@ -235,7 +235,7 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
   labels:
-    helm.sh/chart: ingress-nginx-0.0.9
+    helm.sh/chart: ingress-nginx-0.0.11
     app.kubernetes.io/name: ingress-nginx
     app.kubernetes.io/instance: ingress-nginx
     app.kubernetes.io/version: "v1.15.1-nes-1.15.7"
@@ -258,7 +258,7 @@ apiVersion: v1
 kind: Service
 metadata:
   labels:
-    helm.sh/chart: ingress-nginx-0.0.9
+    helm.sh/chart: ingress-nginx-0.0.11
     app.kubernetes.io/name: ingress-nginx
     app.kubernetes.io/instance: ingress-nginx
     app.kubernetes.io/version: "v1.15.1-nes-1.15.7"
@@ -285,7 +285,7 @@ kind: Service
 metadata:
   annotations:
   labels:
-    helm.sh/chart: ingress-nginx-0.0.9
+    helm.sh/chart: ingress-nginx-0.0.11
     app.kubernetes.io/name: ingress-nginx
     app.kubernetes.io/instance: ingress-nginx
     app.kubernetes.io/version: "v1.15.1-nes-1.15.7"
@@ -297,7 +297,7 @@ metadata:
 spec:
   type: LoadBalancer
   ipFamilyPolicy: SingleStack
-  ipFamilies:
+  ipFamilies: 
     - IPv4
   ports:
     - name: http
@@ -320,7 +320,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   labels:
-    helm.sh/chart: ingress-nginx-0.0.9
+    helm.sh/chart: ingress-nginx-0.0.11
     app.kubernetes.io/name: ingress-nginx
     app.kubernetes.io/instance: ingress-nginx
     app.kubernetes.io/version: "v1.15.1-nes-1.15.7"
@@ -341,7 +341,7 @@ spec:
   template:
     metadata:
       labels:
-        helm.sh/chart: ingress-nginx-0.0.9
+        helm.sh/chart: ingress-nginx-0.0.11
         app.kubernetes.io/name: ingress-nginx
         app.kubernetes.io/instance: ingress-nginx
         app.kubernetes.io/version: "v1.15.1-nes-1.15.7"
@@ -354,12 +354,12 @@ spec:
         - name: controller
           image: registry.nes.herodevs.com/nes/ingress-nginx:v1.15.1-nes-1.15.7
           imagePullPolicy: IfNotPresent
-          lifecycle:
+          lifecycle: 
             preStop:
               exec:
                 command:
                 - /wait-shutdown
-          args:
+          args: 
             - /nginx-ingress-controller
             - --publish-service=$(POD_NAMESPACE)/ingress-nginx-controller
             - --election-id=ingress-nginx-leader
@@ -369,12 +369,12 @@ spec:
             - --validating-webhook=:8443
             - --validating-webhook-certificate=/usr/local/certificates/cert
             - --validating-webhook-key=/usr/local/certificates/key
-          securityContext:
+          securityContext: 
             runAsNonRoot: true
             runAsUser: 101
             runAsGroup: 82
             allowPrivilegeEscalation: false
-            seccompProfile:
+            seccompProfile: 
               type: RuntimeDefault
             capabilities:
               drop:
@@ -393,7 +393,7 @@ spec:
                   fieldPath: metadata.namespace
             - name: LD_PRELOAD
               value: /usr/local/lib/libmimalloc.so
-          livenessProbe:
+          livenessProbe: 
             failureThreshold: 5
             httpGet:
               path: /healthz
@@ -403,7 +403,7 @@ spec:
             periodSeconds: 10
             successThreshold: 1
             timeoutSeconds: 1
-          readinessProbe:
+          readinessProbe: 
             failureThreshold: 3
             httpGet:
               path: /healthz
@@ -427,11 +427,11 @@ spec:
             - name: webhook-cert
               mountPath: /usr/local/certificates/
               readOnly: true
-          resources:
+          resources: 
             requests:
               cpu: 100m
               memory: 90Mi
-      nodeSelector:
+      nodeSelector: 
         kubernetes.io/os: linux
       serviceAccountName: ingress-nginx
       automountServiceAccountToken: true
@@ -446,7 +446,7 @@ apiVersion: networking.k8s.io/v1
 kind: IngressClass
 metadata:
   labels:
-    helm.sh/chart: ingress-nginx-0.0.9
+    helm.sh/chart: ingress-nginx-0.0.11
     app.kubernetes.io/name: ingress-nginx
     app.kubernetes.io/instance: ingress-nginx
     app.kubernetes.io/version: "v1.15.1-nes-1.15.7"
@@ -457,10 +457,6 @@ metadata:
 spec:
   controller: k8s.io/ingress-nginx
 ---
-# Source: ingress-nginx/templates/controller-poddisruptionbudget.yaml
-# PDB is not supported for DaemonSets.
-# https://github.com/kubernetes/kubernetes/issues/108124
----
 # Source: ingress-nginx/templates/admission-webhooks/validating-webhook.yaml
 # before changing this value, check the required kubernetes version
 # https://kubernetes.io/docs/reference/access-authn-authz/extensible-admission-controllers/#prerequisites
@@ -469,7 +465,7 @@ kind: ValidatingWebhookConfiguration
 metadata:
   annotations:
   labels:
-    helm.sh/chart: ingress-nginx-0.0.9
+    helm.sh/chart: ingress-nginx-0.0.11
     app.kubernetes.io/name: ingress-nginx
     app.kubernetes.io/instance: ingress-nginx
     app.kubernetes.io/version: "v1.15.1-nes-1.15.7"
@@ -501,6 +497,10 @@ webhooks:
         port: 443
         path: /networking/v1/ingresses
 ---
+# Source: ingress-nginx/templates/controller-poddisruptionbudget.yaml
+# PDB is not supported for DaemonSets.
+# https://github.com/kubernetes/kubernetes/issues/108124
+---
 # Source: ingress-nginx/templates/admission-webhooks/job-patch/serviceaccount.yaml
 apiVersion: v1
 kind: ServiceAccount
@@ -511,7 +511,7 @@ metadata:
     "helm.sh/hook": pre-install,pre-upgrade,post-install,post-upgrade
     "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
   labels:
-    helm.sh/chart: ingress-nginx-0.0.9
+    helm.sh/chart: ingress-nginx-0.0.11
     app.kubernetes.io/name: ingress-nginx
     app.kubernetes.io/instance: ingress-nginx
     app.kubernetes.io/version: "v1.15.1-nes-1.15.7"
@@ -529,7 +529,7 @@ metadata:
     "helm.sh/hook": pre-install,pre-upgrade,post-install,post-upgrade
     "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
   labels:
-    helm.sh/chart: ingress-nginx-0.0.9
+    helm.sh/chart: ingress-nginx-0.0.11
     app.kubernetes.io/name: ingress-nginx
     app.kubernetes.io/instance: ingress-nginx
     app.kubernetes.io/version: "v1.15.1-nes-1.15.7"
@@ -554,7 +554,7 @@ metadata:
     "helm.sh/hook": pre-install,pre-upgrade,post-install,post-upgrade
     "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
   labels:
-    helm.sh/chart: ingress-nginx-0.0.9
+    helm.sh/chart: ingress-nginx-0.0.11
     app.kubernetes.io/name: ingress-nginx
     app.kubernetes.io/instance: ingress-nginx
     app.kubernetes.io/version: "v1.15.1-nes-1.15.7"
@@ -580,7 +580,7 @@ metadata:
     "helm.sh/hook": pre-install,pre-upgrade,post-install,post-upgrade
     "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
   labels:
-    helm.sh/chart: ingress-nginx-0.0.9
+    helm.sh/chart: ingress-nginx-0.0.11
     app.kubernetes.io/name: ingress-nginx
     app.kubernetes.io/instance: ingress-nginx
     app.kubernetes.io/version: "v1.15.1-nes-1.15.7"
@@ -606,7 +606,7 @@ metadata:
     "helm.sh/hook": pre-install,pre-upgrade,post-install,post-upgrade
     "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
   labels:
-    helm.sh/chart: ingress-nginx-0.0.9
+    helm.sh/chart: ingress-nginx-0.0.11
     app.kubernetes.io/name: ingress-nginx
     app.kubernetes.io/instance: ingress-nginx
     app.kubernetes.io/version: "v1.15.1-nes-1.15.7"
@@ -632,7 +632,7 @@ metadata:
     "helm.sh/hook": pre-install,pre-upgrade
     "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
   labels:
-    helm.sh/chart: ingress-nginx-0.0.9
+    helm.sh/chart: ingress-nginx-0.0.11
     app.kubernetes.io/name: ingress-nginx
     app.kubernetes.io/instance: ingress-nginx
     app.kubernetes.io/version: "v1.15.1-nes-1.15.7"
@@ -645,7 +645,7 @@ spec:
     metadata:
       name: ingress-nginx-admission-create
       labels:
-        helm.sh/chart: ingress-nginx-0.0.9
+        helm.sh/chart: ingress-nginx-0.0.11
         app.kubernetes.io/name: ingress-nginx
         app.kubernetes.io/instance: ingress-nginx
         app.kubernetes.io/version: "v1.15.1-nes-1.15.7"
@@ -667,7 +667,7 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.namespace
-          securityContext:
+          securityContext: 
             allowPrivilegeEscalation: false
             capabilities:
               drop:
@@ -681,7 +681,7 @@ spec:
       restartPolicy: OnFailure
       serviceAccountName: ingress-nginx-admission
       automountServiceAccountToken: true
-      nodeSelector:
+      nodeSelector: 
         kubernetes.io/os: linux
 ---
 # Source: ingress-nginx/templates/admission-webhooks/job-patch/job-patchWebhook.yaml
@@ -694,7 +694,7 @@ metadata:
     "helm.sh/hook": post-install,post-upgrade
     "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
   labels:
-    helm.sh/chart: ingress-nginx-0.0.9
+    helm.sh/chart: ingress-nginx-0.0.11
     app.kubernetes.io/name: ingress-nginx
     app.kubernetes.io/instance: ingress-nginx
     app.kubernetes.io/version: "v1.15.1-nes-1.15.7"
@@ -707,7 +707,7 @@ spec:
     metadata:
       name: ingress-nginx-admission-patch
       labels:
-        helm.sh/chart: ingress-nginx-0.0.9
+        helm.sh/chart: ingress-nginx-0.0.11
         app.kubernetes.io/name: ingress-nginx
         app.kubernetes.io/instance: ingress-nginx
         app.kubernetes.io/version: "v1.15.1-nes-1.15.7"
@@ -731,7 +731,7 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.namespace
-          securityContext:
+          securityContext: 
             allowPrivilegeEscalation: false
             capabilities:
               drop:
@@ -745,5 +745,5 @@ spec:
       restartPolicy: OnFailure
       serviceAccountName: ingress-nginx-admission
       automountServiceAccountToken: true
-      nodeSelector:
+      nodeSelector: 
         kubernetes.io/os: linux
