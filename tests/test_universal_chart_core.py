@@ -9,6 +9,7 @@ import pytest
 from .chart_test_utils import (
     get_manifest,
     get_primary_container,
+    load_manifests,
     manifests_by_name,
     render_chart,
 )
@@ -101,6 +102,40 @@ def test_resources_render_requested_limits(
     )
 
     assert container["resources"] == expected
+
+
+def test_extra_container_props_can_supply_resources(helm_runner) -> None:
+    """Treat legacy extra container resources as the effective requirements."""
+
+    expected = {"requests": {"cpu": "100m", "memory": "128Mi"}}
+    container = get_primary_container(
+        render_manifests(
+            helm_runner,
+            values={"extraContainerProps": {"resources": expected}},
+        )
+    )
+
+    assert container["resources"] == expected
+
+
+def test_extra_container_props_resources_override_top_level_resources(
+    helm_runner,
+) -> None:
+    """Preserve the historical precedence without duplicate YAML keys."""
+
+    expected = {"requests": {"memory": "128Mi"}}
+    rendered = render_chart(
+        helm_runner,
+        CHART,
+        values={
+            "resources": {"requests": {"cpu": "250m"}},
+            "extraContainerProps": {"resources": expected},
+        },
+    )
+    container = get_primary_container(load_manifests(rendered))
+
+    assert container["resources"] == expected
+    assert rendered.count("\n          resources:") == 1
 
 
 @pytest.mark.parametrize(

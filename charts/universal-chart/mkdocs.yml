@@ -2,6 +2,8 @@ site_name: universal-chart
 docs_dir: docs
 nav:
   - Overview: index.md
+  - Autoscaling: autoscaling.md
+  - Autosizing: autosizing.md
   - Generated Reference: reference.md
 plugins:
   - techdocs-core

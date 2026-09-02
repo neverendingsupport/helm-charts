@@ -1,8 +1,32 @@
-{{- if .Values.autoscaling.enabled }}
-{{- $fullname := include "universal-chart.fullname" . }}
-{{- $hpaRules := default list .Values.autoscaling.hpaScalingRules }}
-{{- $hasHpa := or .Values.autoscaling.targetCPUUtilizationPercentage .Values.autoscaling.targetMemoryUtilizationPercentage (gt (len $hpaRules) 0) }}
-{{- if $hasHpa }}
-{{- include "universal-chart.hpa" (dict "root" . "name" $fullname "rules" $hpaRules) }}
-{{- end }}
+{{- $autoscaling := include "universal-chart.autoscaling.effective" . | fromYaml -}}
+{{- include "universal-chart.autoscaling.validate" (dict "root" . "config" $autoscaling) -}}
+{{- if $autoscaling.enabled }}
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: {{ include "universal-chart.fullname" . | quote }}
+  labels:
+    {{- include "universal-chart.labels" . | nindent 4 }}
+  {{- with $autoscaling.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: {{ include "universal-chart.fullname" . }}
+  minReplicas: {{ $autoscaling.minReplicas }}
+  maxReplicas: {{ $autoscaling.maxReplicas }}
+  {{- with $autoscaling.behavior }}
+  behavior:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  metrics:
+    {{- with $autoscaling.metrics }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+    {{- range $index, $rule := $autoscaling.hpaScalingRules }}
+    {{- include "universal-chart.autoscaling.prometheusMetric" (dict "rule" $rule "index" $index) | nindent 4 }}
+    {{- end }}
 {{- end }}

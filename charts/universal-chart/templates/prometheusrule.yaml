@@ -1,4 +1,4 @@
-{{- $hpaScalingRules := default list .Values.autoscaling.hpaScalingRules }}
+{{- $hpaScalingRules := .Values.autoscaling.hpaScalingRules | default list }}
 {{- $hasHpaScalingRules := and .Values.autoscaling.enabled (gt (len $hpaScalingRules) 0) }}
 {{- $hasConfiguredRules := and .Values.prometheusRule.enabled (or .Values.prometheusRule.groups .Values.prometheusRule.rules) }}
 {{- if or $hasConfiguredRules $hasHpaScalingRules }}

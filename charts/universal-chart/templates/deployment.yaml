@@ -1,6 +1,9 @@
 apiVersion: apps/v1
 kind: Deployment
 {{- $deploymentAnnotations := deepCopy (.Values.deployment.annotations | default dict) }}
+{{- $containerResources := include "universal-chart.containerResources" . | fromYaml }}
+{{- $extraContainerProps := deepCopy (.Values.extraContainerProps | default dict) }}
+{{- $_ := unset $extraContainerProps "resources" }}
 {{- $reloadAnnotation := "reloader.stakater.com/auto" }}
 {{- if and .Values.reloader.enabled (not (hasKey $deploymentAnnotations $reloadAnnotation)) }}
 {{- $_ := set $deploymentAnnotations $reloadAnnotation "true" }}
@@ -119,7 +122,7 @@ spec:
           readinessProbe:
             {{- toYaml . | nindent 12 }}
           {{- end }}
-          {{- with .Values.resources }}
+          {{- with $containerResources }}
           resources:
             {{- toYaml . | nindent 12 }}
           {{- end }}
@@ -127,7 +130,7 @@ spec:
           volumeMounts:
             {{- toYaml . | nindent 12 }}
           {{- end }}
-          {{- with .Values.extraContainerProps }}
+          {{- with $extraContainerProps }}
           {{- toYaml . | nindent 10 }}
           {{- end }}
 
