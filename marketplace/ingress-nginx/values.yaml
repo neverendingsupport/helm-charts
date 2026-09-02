@@ -8,6 +8,11 @@ controller:
     chroot: false
     registry: 709825985650.dkr.ecr.us-east-1.amazonaws.com
     image: herodevs/ingress-nginx-nes
+    # Marketplace ECR tags are immutable and undeletable. The bare
+    # v1.15.1-nes-1.15.7 tag there predates the OCI-identity relabeling and
+    # fails the AWS scan with a false-positive CVE mapped from upstream
+    # labels; -2 is the clean respin the published preview version uses.
+    tag: v1.15.1-nes-1.15.7-2
     digest: ""
     digestChroot: ""
   admissionWebhooks:
