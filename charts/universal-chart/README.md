@@ -96,6 +96,71 @@ See the
 [Kubernetes topology spread documentation](https://kubernetes.io/docs/concepts/scheduling-eviction/topology-spread-constraints/)
 for the scheduler's full constraint behavior.
 
+## Control rollouts and shutdown
+
+The chart leaves Deployment strategy and timing fields unset by default, so
+existing applications keep Kubernetes' defaults. Set a rolling strategy when
+you need explicit capacity limits during an update:
+
+```yaml
+deployment:
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  minReadySeconds: 15
+  progressDeadlineSeconds: 300
+```
+
+With `maxUnavailable: 0`, an old pod remains available until a replacement is
+ready. This only protects a mixed-version rollout when the old and new
+application versions can run at the same time. The readiness probe decides
+when a new pod is ready, and `minReadySeconds` requires it to stay ready before
+the Deployment counts it as available. `progressDeadlineSeconds` must be
+greater than `minReadySeconds`; Kubernetes reports a stalled rollout after the
+deadline but does not roll it back automatically. An omitted progress deadline
+defaults to 600 seconds, so set a larger explicit deadline when
+`minReadySeconds` is 600 or more.
+
+Use `Recreate` when two application versions cannot safely overlap:
+
+```yaml
+deployment:
+  strategy:
+    type: Recreate
+```
+
+Recreate stops the old ReplicaSet before starting the new version. That avoids
+mixed versions, but it causes an availability gap even when the Deployment has
+multiple replicas.
+
+Configure a main-container lifecycle hook for graceful draining or cleanup:
+
+```yaml
+lifecycle:
+  preStop:
+    exec:
+      command: ["/app/drain"]
+
+terminationGracePeriodSeconds: 45
+```
+
+The termination grace period starts before `preStop` runs. Budget enough time
+for both the hook and the application to exit after receiving its stop signal.
+The lifecycle schema accepts one `exec`, `httpGet`, or `sleep` action per
+`postStart` or `preStop` handler. The `sleep` action requires Kubernetes 1.29
+or newer, and a zero-second sleep requires Kubernetes 1.33 or newer; use an
+`exec` action on older clusters.
+
+Existing `extraContainerProps.lifecycle` values remain supported. Do not set
+that field and the structured `lifecycle` value together; the chart rejects
+the ambiguous configuration instead of emitting duplicate YAML keys.
+
+See the Kubernetes documentation for
+[Deployment strategies and rollout status](https://kubernetes.io/docs/concepts/workloads/controllers/deployment/)
+and [container lifecycle hooks](https://kubernetes.io/docs/concepts/containers/container-lifecycle-hooks/).
+
 ## Reload environment inputs
 
 Kubernetes reads `envFrom` values when a container starts. Updating a Secret or
@@ -298,6 +363,9 @@ helm template my-release . \
 | awsEnvSecrets.externalSecret.secretStoreRef.kind | string | `"SecretStore"` | Is the store in this namespace or cluster-wide? |
 | awsEnvSecrets.externalSecret.secretStoreRef.name | string | `"aws-secrets-manager"` | name of the secret store; aws-secret-manager is usually right |
 | deployment.annotations | object | `{}` | extra annotations to add to the deployment resource's metadata. These annotations are key-value pairs attached directly to the Deployment resource. They can be used by external tooling, operators, or for tracking deployment metadata and events. For more info, see: https://kubernetes.io/docs/concepts/overview/working-with-objects/annotations/ |
+| deployment.minReadySeconds | string | `nil` | Minimum number of seconds a ready pod must remain ready before the Deployment considers it available. Null preserves the Kubernetes default. |
+| deployment.progressDeadlineSeconds | string | `nil` | Seconds without rollout progress before Kubernetes marks the Deployment stalled. This must be greater than `minReadySeconds`. Null uses the Kubernetes default of 600 seconds. |
+| deployment.strategy | string | `nil` | Optional Deployment update strategy. Use `RollingUpdate` to control how many old and new pods overlap, or `Recreate` to stop every old pod before starting the new version. Null preserves Kubernetes' default strategy. |
 | extraContainerPorts | list | `[]` | extra ports to be exposed directly from pods (no service) |
 | extraContainerProps | object | `{}` | A dictionary of extra attributes to add to the container spec in the deployment. Elements will be directly added to the deployment's `spec.template.spec.containers` object. Note that adding an element already in the deployment template like `env` or `image` will cause undesirable behavior. |
 | extraEnvConfigmaps | list | `[]` | extra configmaps to load into environment |
@@ -320,6 +388,7 @@ helm template my-release . \
 | initContainers[0].command | list | `[]` | the command to run in the init container This overrides the command in the container.  Leave it empty to just run the container's default command. |
 | initContainers[0].extraContainerProps | object | `{}` | a map of additional properties for the init container.  This can technically be any values from the spec, though reusing image, command, securityContext, volumes, env, or envFrom might cause unexpected behavior. |
 | initContainers[0].image | string | `nil` | the image to run on init if this is left as null or a false-ish value, the initContainers section of the deploment will be skipped |
+| lifecycle | object | `{}` | Main-container lifecycle hooks. A handler must set exactly one of `exec`, `httpGet`, or `sleep`. Keep a preStop hook shorter than `terminationGracePeriodSeconds` so the process still has time to exit. |
 | livenessProbe | string | `nil` | Configure a liveness probe to detect hung or dead containers. The liveness probe determines if a container is still running and healthy. If the liveness probe fails, Kubernetes will restart the container. This is useful for detecting situations where the application is running but unable to make progress (e.g., deadlocked). The liveness probe runs throughout the container's lifetime. More information can be found here: https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/ Example configuration:   livenessProbe:     httpGet:       path: /internal/health       port: http     initialDelaySeconds: 30     periodSeconds: 10 |
 | nameOverride | string | `""` |  |
 | nodeSelector | object | `{}` | Select specific nodes to run upon Normally this should be an empty map |

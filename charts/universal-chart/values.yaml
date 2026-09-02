@@ -72,6 +72,63 @@ deployment:
   # deployment metadata and events. For more info, see:
   # https://kubernetes.io/docs/concepts/overview/working-with-objects/annotations/
   annotations: {}
+  # @schema
+  # oneOf:
+  #   - type: "null"
+  #   - type: object
+  #     additionalProperties: false
+  #     properties:
+  #       type:
+  #         const: RollingUpdate
+  #       rollingUpdate:
+  #         type: object
+  #         additionalProperties: false
+  #         properties:
+  #           maxSurge:
+  #             anyOf:
+  #               - type: integer
+  #                 minimum: 0
+  #               - type: string
+  #                 pattern: ^[0-9]+%$
+  #           maxUnavailable:
+  #             anyOf:
+  #               - type: integer
+  #                 minimum: 0
+  #               - type: string
+  #                 pattern: ^[0-9]+%$
+  #     required:
+  #       - type
+  #   - type: object
+  #     additionalProperties: false
+  #     properties:
+  #       type:
+  #         const: Recreate
+  #     required:
+  #       - type
+  # @schema
+  # -- Optional Deployment update strategy. Use `RollingUpdate` to control how
+  # many old and new pods overlap, or `Recreate` to stop every old pod before
+  # starting the new version. Null preserves Kubernetes' default strategy.
+  strategy: null
+  # @schema
+  # anyOf:
+  #   - type: integer
+  #     minimum: 0
+  #   - type: "null"
+  # @schema
+  # -- Minimum number of seconds a ready pod must remain ready before the
+  # Deployment considers it available. Null preserves the Kubernetes default.
+  minReadySeconds: null
+  # @schema
+  # anyOf:
+  #   - type: integer
+  #     minimum: 1
+  #   - type: "null"
+  # @schema
+  # -- Seconds without rollout progress before Kubernetes marks the Deployment
+  # stalled. This must be greater than `minReadySeconds`. Null uses the
+  # Kubernetes default of 600 seconds.
+  progressDeadlineSeconds: null
 
 # @schema
 # type: object
@@ -672,6 +729,85 @@ readinessProbe:
   # httpGet:
   #   path: /
   #   port: http
+
+# @schema
+# type: object
+# propertyNames:
+#   enum:
+#     - postStart
+#     - preStop
+# additionalProperties:
+#   type: object
+#   additionalProperties: false
+#   minProperties: 1
+#   maxProperties: 1
+#   properties:
+#     exec:
+#       type: object
+#       additionalProperties: false
+#       properties:
+#         command:
+#           type: array
+#           minItems: 1
+#           items:
+#             type: string
+#       required:
+#         - command
+#     httpGet:
+#       type: object
+#       additionalProperties: false
+#       properties:
+#         host:
+#           type: string
+#         httpHeaders:
+#           type: array
+#           items:
+#             type: object
+#             additionalProperties: false
+#             properties:
+#               name:
+#                 type: string
+#                 minLength: 1
+#               value:
+#                 type: string
+#             required:
+#               - name
+#               - value
+#         path:
+#           type: string
+#           pattern: ^/.*
+#         port:
+#           anyOf:
+#             - type: integer
+#               minimum: 1
+#               maximum: 65535
+#             - type: string
+#               minLength: 1
+#               maxLength: 15
+#               allOf:
+#                 - pattern: ^[a-z0-9]([a-z0-9]|-[a-z0-9])*$
+#                 - pattern: "[a-z]"
+#         scheme:
+#           type: string
+#           enum:
+#             - HTTP
+#             - HTTPS
+#       required:
+#         - port
+#     sleep:
+#       type: object
+#       additionalProperties: false
+#       properties:
+#         seconds:
+#           type: integer
+#           minimum: 0
+#       required:
+#         - seconds
+# @schema
+# -- Main-container lifecycle hooks. A handler must set exactly one of `exec`,
+# `httpGet`, or `sleep`. Keep a preStop hook shorter than
+# `terminationGracePeriodSeconds` so the process still has time to exit.
+lifecycle: {}
 
 # -- set a fixed number of replicas in the deployment
 # This value is ignored if autoscaling is enabled

@@ -1,3 +1,22 @@
+{{- if and .Values.lifecycle (hasKey .Values.extraContainerProps "lifecycle") }}
+{{- fail "Set either lifecycle or extraContainerProps.lifecycle, not both. Prefer lifecycle for new configurations." }}
+{{- end }}
+{{- $progressDeadline := 600 }}
+{{- if ne .Values.deployment.progressDeadlineSeconds nil }}
+{{- $progressDeadline = int .Values.deployment.progressDeadlineSeconds }}
+{{- end }}
+{{- if and (ne .Values.deployment.minReadySeconds nil) (le $progressDeadline (int .Values.deployment.minReadySeconds)) }}
+{{- fail "deployment.progressDeadlineSeconds must be greater than deployment.minReadySeconds." }}
+{{- end }}
+{{- $strategy := .Values.deployment.strategy | default dict }}
+{{- if eq (get $strategy "type") "RollingUpdate" }}
+{{- $rollingUpdate := get $strategy "rollingUpdate" | default dict }}
+{{- $maxSurgeIsZero := and (hasKey $rollingUpdate "maxSurge") (regexMatch "^0+%?$" (toString (get $rollingUpdate "maxSurge"))) }}
+{{- $maxUnavailableIsZero := and (hasKey $rollingUpdate "maxUnavailable") (regexMatch "^0+%?$" (toString (get $rollingUpdate "maxUnavailable"))) }}
+{{- if and $maxSurgeIsZero $maxUnavailableIsZero }}
+{{- fail "deployment.strategy.rollingUpdate cannot set both maxSurge and maxUnavailable to zero." }}
+{{- end }}
+{{- end }}
 apiVersion: apps/v1
 kind: Deployment
 {{- $deploymentAnnotations := deepCopy (.Values.deployment.annotations | default dict) }}
@@ -18,6 +37,16 @@ spec:
   replicas: {{ .Values.replicaCount }}
   {{- end }}
   revisionHistoryLimit: {{ .Values.revisionHistoryLimit }}
+  {{- with .Values.deployment.strategy }}
+  strategy:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  {{- if ne .Values.deployment.minReadySeconds nil }}
+  minReadySeconds: {{ .Values.deployment.minReadySeconds }}
+  {{- end }}
+  {{- if ne .Values.deployment.progressDeadlineSeconds nil }}
+  progressDeadlineSeconds: {{ .Values.deployment.progressDeadlineSeconds }}
+  {{- end }}
   selector:
     matchLabels:
       {{- include "universal-chart.selectorLabels" . | nindent 6 }}
@@ -117,6 +146,10 @@ spec:
           {{- end }}
           {{- with .Values.readinessProbe }}
           readinessProbe:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.lifecycle }}
+          lifecycle:
             {{- toYaml . | nindent 12 }}
           {{- end }}
           {{- with .Values.resources }}
