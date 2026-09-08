@@ -1,6 +1,213 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "additionalProperties": false,
+  "definitions": {
+    "networkPolicyPeer": {
+      "additionalProperties": false,
+      "minProperties": 1,
+      "not": {
+        "anyOf": [
+          {
+            "required": [
+              "ipBlock",
+              "podSelector"
+            ]
+          },
+          {
+            "required": [
+              "ipBlock",
+              "namespaceSelector"
+            ]
+          }
+        ],
+        "required": []
+      },
+      "properties": {
+        "ipBlock": {
+          "additionalProperties": false,
+          "properties": {
+            "cidr": {
+              "minLength": 1,
+              "type": "string"
+            },
+            "except": {
+              "items": {
+                "minLength": 1,
+                "type": "string"
+              },
+              "type": "array"
+            }
+          },
+          "required": [
+            "cidr"
+          ],
+          "type": "object"
+        },
+        "namespaceSelector": {
+          "$ref": "#/definitions/networkPolicySelector",
+          "required": []
+        },
+        "podSelector": {
+          "$ref": "#/definitions/networkPolicySelector",
+          "required": []
+        }
+      },
+      "required": [],
+      "type": "object"
+    },
+    "networkPolicyPeers": {
+      "items": {
+        "$ref": "#/definitions/networkPolicyPeer",
+        "required": []
+      },
+      "type": "array"
+    },
+    "networkPolicyPorts": {
+      "items": {
+        "additionalProperties": false,
+        "if": {
+          "required": [
+            "endPort"
+          ]
+        },
+        "properties": {
+          "endPort": {
+            "maximum": 65535,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "port": {
+            "anyOf": [
+              {
+                "maximum": 65535,
+                "minimum": 1,
+                "type": "integer"
+              },
+              {
+                "allOf": [
+                  {
+                    "pattern": "[a-z]",
+                    "required": []
+                  }
+                ],
+                "maxLength": 15,
+                "not": {
+                  "pattern": "--",
+                  "required": []
+                },
+                "pattern": "^[a-z0-9]([-a-z0-9]*[a-z0-9])?$",
+                "type": "string"
+              }
+            ],
+            "required": []
+          },
+          "protocol": {
+            "enum": [
+              "TCP",
+              "UDP",
+              "SCTP"
+            ],
+            "required": []
+          }
+        },
+        "required": [],
+        "then": {
+          "properties": {
+            "port": {
+              "type": "integer"
+            }
+          },
+          "required": [
+            "port"
+          ]
+        },
+        "type": "object"
+      },
+      "type": "array"
+    },
+    "networkPolicySelector": {
+      "additionalProperties": false,
+      "properties": {
+        "matchExpressions": {
+          "items": {
+            "additionalProperties": false,
+            "oneOf": [
+              {
+                "properties": {
+                  "operator": {
+                    "enum": [
+                      "In",
+                      "NotIn"
+                    ],
+                    "required": []
+                  },
+                  "values": {
+                    "minItems": 1,
+                    "required": []
+                  }
+                },
+                "required": [
+                  "values"
+                ]
+              },
+              {
+                "properties": {
+                  "operator": {
+                    "enum": [
+                      "Exists",
+                      "DoesNotExist"
+                    ],
+                    "required": []
+                  },
+                  "values": {
+                    "maxItems": 0,
+                    "required": []
+                  }
+                },
+                "required": []
+              }
+            ],
+            "properties": {
+              "key": {
+                "minLength": 1,
+                "type": "string"
+              },
+              "operator": {
+                "enum": [
+                  "In",
+                  "NotIn",
+                  "Exists",
+                  "DoesNotExist"
+                ],
+                "required": []
+              },
+              "values": {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              }
+            },
+            "required": [
+              "key",
+              "operator"
+            ],
+            "type": "object"
+          },
+          "type": "array"
+        },
+        "matchLabels": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "required": [],
+          "type": "object"
+        }
+      },
+      "required": [],
+      "type": "object"
+    }
+  },
   "properties": {
     "affinity": {
       "additionalProperties": true,
@@ -764,6 +971,143 @@
       "description": "This is to override the chart name.",
       "title": "nameOverride",
       "type": "string"
+    },
+    "networkPolicy": {
+      "additionalProperties": false,
+      "description": "Optional NetworkPolicy for application pods. Enabling it isolates both\ndirections; only the configured rules (and other matching policies) allow\ntraffic. Requires a network plugin that enforces NetworkPolicy.",
+      "properties": {
+        "applicationIngress": {
+          "additionalProperties": false,
+          "description": "Allow selected peers to reach the main Service's target ports.\nThe separate metrics Service is not included; use an ingress rule for it.",
+          "if": {
+            "properties": {
+              "enabled": {
+                "const": true,
+                "required": []
+              }
+            },
+            "required": [
+              "enabled"
+            ]
+          },
+          "properties": {
+            "enabled": {
+              "default": false,
+              "description": "Add application ingress independently of DNS egress.",
+              "title": "enabled",
+              "type": "boolean"
+            },
+            "from": {
+              "$ref": "#/definitions/networkPolicyPeers",
+              "required": []
+            }
+          },
+          "required": [],
+          "then": {
+            "properties": {
+              "from": {
+                "minItems": 1,
+                "required": []
+              }
+            },
+            "required": [
+              "from"
+            ]
+          },
+          "title": "applicationIngress",
+          "type": "object"
+        },
+        "dnsEgress": {
+          "additionalProperties": false,
+          "description": "Allow TCP and UDP port 53 to explicit DNS peers. No cluster labels are assumed.",
+          "if": {
+            "properties": {
+              "enabled": {
+                "const": true,
+                "required": []
+              }
+            },
+            "required": [
+              "enabled"
+            ]
+          },
+          "properties": {
+            "enabled": {
+              "default": false,
+              "description": "Add DNS egress independently of application ingress.",
+              "title": "enabled",
+              "type": "boolean"
+            },
+            "to": {
+              "$ref": "#/definitions/networkPolicyPeers",
+              "required": []
+            }
+          },
+          "required": [],
+          "then": {
+            "properties": {
+              "to": {
+                "minItems": 1,
+                "required": []
+              }
+            },
+            "required": [
+              "to"
+            ]
+          },
+          "title": "dnsEgress",
+          "type": "object"
+        },
+        "egress": {
+          "description": "Additional native egress rules, for example database access. An empty\nrule `{}` allows all egress; omitted or empty `to`/`ports` are unrestricted.",
+          "items": {
+            "additionalProperties": false,
+            "properties": {
+              "ports": {
+                "$ref": "#/definitions/networkPolicyPorts",
+                "required": []
+              },
+              "to": {
+                "$ref": "#/definitions/networkPolicyPeers",
+                "required": []
+              }
+            },
+            "required": [],
+            "type": "object"
+          },
+          "title": "egress",
+          "type": "array"
+        },
+        "enabled": {
+          "default": false,
+          "description": "Create the application NetworkPolicy. Disabled preserves existing networking.",
+          "title": "enabled",
+          "type": "boolean"
+        },
+        "ingress": {
+          "description": "Additional native ingress rules, for example monitoring peers. An empty\nrule `{}` allows all ingress; omitted or empty `from`/`ports` are unrestricted.",
+          "items": {
+            "additionalProperties": false,
+            "properties": {
+              "from": {
+                "$ref": "#/definitions/networkPolicyPeers",
+                "required": []
+              },
+              "ports": {
+                "$ref": "#/definitions/networkPolicyPorts",
+                "required": []
+              }
+            },
+            "required": [],
+            "type": "object"
+          },
+          "title": "ingress",
+          "type": "array"
+        }
+      },
+      "required": [],
+      "title": "networkPolicy",
+      "type": "object"
     },
     "nodeSelector": {
       "additionalProperties": true,
