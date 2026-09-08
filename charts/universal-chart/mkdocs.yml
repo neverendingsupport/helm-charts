@@ -2,6 +2,7 @@ site_name: universal-chart
 docs_dir: docs
 nav:
   - Overview: index.md
+  - Network access: network-policy.md
   - Generated Reference: reference.md
 plugins:
   - techdocs-core

@@ -1,0 +1,49 @@
+{{- $policy := .Values.networkPolicy | default dict -}}
+{{- if $policy.enabled -}}
+{{- $ingress := $policy.ingress | default list -}}
+{{- $egress := $policy.egress | default list -}}
+{{- range $direction, $rules := dict "ingress" $ingress "egress" $egress -}}
+{{- range $index, $rule := $rules -}}
+{{- range $rule.ports -}}
+{{- if and (hasKey . "endPort") (lt (int .endPort) (int .port)) -}}
+{{- fail (printf "networkPolicy.%s[%d]: endPort must be greater than or equal to port" $direction $index) -}}
+{{- end -}}
+{{- end -}}
+{{- end -}}
+{{- end -}}
+{{- if ($policy.applicationIngress | default dict).enabled -}}
+{{- if empty $policy.applicationIngress.from -}}
+{{- fail "networkPolicy.applicationIngress.from must contain at least one peer" -}}
+{{- end -}}
+{{- $ports := list (dict "port" "http" "protocol" "TCP") -}}
+{{- range .Values.service.extraPorts -}}
+{{- /* Match the Service's unquoted YAML scalar, including legacy numeric strings. */ -}}
+{{- $target := get (fromYaml (printf "port: %v" (default .port .targetPort))) "port" -}}
+{{- $ports = append $ports (dict "port" (default .port $target) "protocol" (default "TCP" .protocol)) -}}
+{{- end -}}
+{{- $ingress = prepend $ingress (dict "from" $policy.applicationIngress.from "ports" $ports) -}}
+{{- end -}}
+{{- if ($policy.dnsEgress | default dict).enabled -}}
+{{- if empty $policy.dnsEgress.to -}}
+{{- fail "networkPolicy.dnsEgress.to must contain at least one peer" -}}
+{{- end -}}
+{{- $ports := list (dict "port" 53 "protocol" "UDP") (dict "port" 53 "protocol" "TCP") -}}
+{{- $egress = prepend $egress (dict "to" $policy.dnsEgress.to "ports" $ports) -}}
+{{- end -}}
+{{- /* Keep all generated rules in one policy with explicit isolation types. */}}
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "universal-chart.fullname" . }}
+  labels:
+    {{- include "universal-chart.labels" . | nindent 4 }}
+spec:
+  podSelector:
+    matchLabels:
+      {{- include "universal-chart.selectorLabels" . | nindent 6 }}
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress: {{- toYaml $ingress | nindent 4 }}
+  egress: {{- toYaml $egress | nindent 4 }}
+{{- end }}

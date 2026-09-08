@@ -193,6 +193,17 @@ deployment:
 
 An explicit annotation takes precedence even when `reloader.enabled` is true.
 
+## Restrict application network access
+
+NetworkPolicy support is disabled by default. Enabling it isolates application
+pods in both directions; configure allowed ingress, DNS, and dependency traffic
+before rollout. The chart uses its application selector and Service target
+ports, with explicit peer rules for your cluster.
+
+See [Restrict application network access](network-policy.md) for a complete
+example covering ingress controllers, DNS, monitoring, and an external database,
+plus validation and rollback steps.
+
 ## Using The Chart
 
 Normally, you're going to want to distribute this chart via ArgoCD as an
