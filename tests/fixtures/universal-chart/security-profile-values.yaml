@@ -1,0 +1,24 @@
+image:
+  repository: example.com/app
+  tag: "1.0"
+
+securityProfile:
+  enabled: true
+
+podSecurityContext:
+  runAsUser: 10001
+  runAsGroup: 10001
+  fsGroup: 10001
+
+securityContext:
+  readOnlyRootFilesystem: true
+
+volumes:
+  - name: tmp
+    emptyDir: {}
+volumeMounts:
+  - name: tmp
+    mountPath: /tmp
+
+initContainers:
+  - image: example.com/init:1.0
