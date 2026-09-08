@@ -193,6 +193,44 @@ deployment:
 
 An explicit annotation takes precedence even when `reloader.enabled` is true.
 
+## Restricted security profile
+
+For Linux applications that can run without root privileges, enable the profile
+in your existing application values:
+
+```yaml
+securityProfile:
+  enabled: true
+```
+
+The profile sets pod `runAsNonRoot: true` and `seccompProfile.type: RuntimeDefault`.
+The main and init containers get `allowPrivilegeEscalation: false` and
+`capabilities.drop: [ALL]`. Root filesystems remain writable unless you set
+`securityContext.readOnlyRootFilesystem: true` and provide writable mounts.
+Helm cannot inspect images: each image must declare a nonzero numeric user or
+support a nonzero UID supplied through its security context. Root-only images
+will fail to start with the profile defaults.
+
+`serviceAccount.automount` now defaults to `null`. For chart-created accounts,
+it resolves to `true` when the profile is disabled and `false` when enabled;
+explicit booleans win. With the profile enabled, that choice also applies
+directly to the pod, including when it uses an existing account. With the
+profile disabled, existing accounts retain their own policy. Remove an
+inherited `automount: true` if you want the profile to disable token mounting.
+
+For Helm CLI upgrades, `--reuse-values` can also carry forward the old implicit
+`automount: true`. Use `--reset-then-reuse-values` when adopting the profile,
+and clear any explicit token override you no longer need. See the migration
+guide for the upgrade commands.
+
+Explicit `podSecurityContext` and `securityContext` fields override the profile
+defaults. This is a configurable baseline, not a guarantee of admission under
+Kubernetes' Restricted Pod Security Standard. The profile is disabled by
+default; existing deployments keep their rendered defaults.
+
+See the [security profile migration guide](security-profile.md)
+for image checks, writable mounts, API access, and rollout verification.
+
 ## Using The Chart
 
 Normally, you're going to want to distribute this chart via ArgoCD as an

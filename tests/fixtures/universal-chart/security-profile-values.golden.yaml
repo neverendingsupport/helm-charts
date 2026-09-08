@@ -1,0 +1,113 @@
+---
+# Source: universal-chart/templates/serviceaccount.yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: universal-chart
+  labels:
+    helm.sh/chart: universal-chart-0.0.0-a.placeholder
+    app.kubernetes.io/name: universal-chart
+    app.kubernetes.io/instance: universal-chart
+    app.kubernetes.io/managed-by: Helm
+automountServiceAccountToken: false
+---
+# Source: universal-chart/templates/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: universal-chart
+  labels:
+    helm.sh/chart: universal-chart-0.0.0-a.placeholder
+    app.kubernetes.io/name: universal-chart
+    app.kubernetes.io/instance: universal-chart
+    app.kubernetes.io/managed-by: Helm
+spec:
+  type: ClusterIP
+  ports:
+    - port: 3000
+      targetPort: http
+      protocol: TCP
+      name: http
+  selector:
+    app.kubernetes.io/name: universal-chart
+    app.kubernetes.io/instance: universal-chart
+---
+# Source: universal-chart/templates/deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: universal-chart
+  labels:
+    helm.sh/chart: universal-chart-0.0.0-a.placeholder
+    app.kubernetes.io/name: universal-chart
+    app.kubernetes.io/instance: universal-chart
+    app.kubernetes.io/managed-by: Helm
+spec:
+  replicas: 1
+  revisionHistoryLimit: 3
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: universal-chart
+      app.kubernetes.io/instance: universal-chart
+  template:
+    metadata:
+      labels:
+        helm.sh/chart: universal-chart-0.0.0-a.placeholder
+        app.kubernetes.io/name: universal-chart
+        app.kubernetes.io/instance: universal-chart
+        app.kubernetes.io/managed-by: Helm
+    spec:
+      serviceAccountName: universal-chart
+      automountServiceAccountToken: false
+      securityContext:
+        fsGroup: 10001
+        runAsGroup: 10001
+        runAsNonRoot: true
+        runAsUser: 10001
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: universal-chart
+          env: &containerenv
+            # placeholder var so we can always make an env list
+            - name: REDIS_ENABLED
+              value: "false"
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+              - ALL
+            readOnlyRootFilesystem: true
+          image: "example.com/app:1.0"
+          imagePullPolicy: Always
+          ports:
+            - name: http
+              containerPort: 3000
+              protocol: TCP
+          volumeMounts:
+            - mountPath: /tmp
+              name: tmp
+      initContainers:
+        - name: init-universal-chart-0
+          image: example.com/init:1.0
+          volumeMounts:
+            - mountPath: /tmp
+              name: tmp
+          env: *containerenv
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+              - ALL
+            readOnlyRootFilesystem: true
+      volumes:
+        - emptyDir: {}
+          name: tmp
+      topologySpreadConstraints:
+        - labelSelector:
+            matchLabels:
+              app.kubernetes.io/instance: universal-chart
+              app.kubernetes.io/name: universal-chart
+          maxSkew: 1
+          topologyKey: topology.kubernetes.io/zone
+          whenUnsatisfiable: ScheduleAnyway
