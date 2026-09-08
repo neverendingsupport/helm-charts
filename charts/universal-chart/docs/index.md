@@ -24,6 +24,7 @@ Kubernetes primitives plus a small number of opinionated platform integrations.
 - first-class HPA scaling from Prometheus-backed external metrics through
   `autoscaling.hpaScalingRules`
 - optional `PodDisruptionBudget` through `podDisruptionBudget`
+- opt-in [NetworkPolicy](network-policy.md) with explicit ingress and egress rules
 - optional Redis support
 - optional S3 bucket creation via ACK-backed resources
 - extra volumes and mounts
