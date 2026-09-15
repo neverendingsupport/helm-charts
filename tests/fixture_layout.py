@@ -10,6 +10,10 @@ with ``-values.yaml``. Its golden output sits beside it under the same
 stem with ``.golden.yaml``. Any other YAML in a fixture directory is
 supporting input rather than a fixture: ``legacy-compat.yaml`` feeds a
 single test and has no golden of its own.
+
+The rule holds in both directions. A golden file whose ``-values.yaml``
+source is missing is an orphan: nothing renders or compares it, so it
+looks like coverage while silently rotting.
 """
 
 from __future__ import annotations
@@ -30,10 +34,24 @@ def is_values_fixture(path: Path) -> bool:
     return path.name.endswith(VALUES_SUFFIX)
 
 
+def is_golden_file(path: Path) -> bool:
+    """Return whether the path names a golden file."""
+
+    return path.name.endswith(".golden.yaml")
+
+
 def golden_for(values_file: Path) -> Path:
     """Return the golden file that belongs to a values fixture."""
 
     return values_file.with_suffix(".golden.yaml")
+
+
+def values_for(golden_file: Path) -> Path:
+    """Return the values fixture a golden file was rendered from."""
+
+    return golden_file.with_name(
+        golden_file.name[: -len(".golden.yaml")] + ".yaml"
+    )
 
 
 def iter_fixture_dirs() -> list[Path]:
@@ -57,6 +75,24 @@ def iter_values_fixtures(fixture_dir: Path) -> list[Path]:
     )
 
 
+def iter_orphan_goldens(fixture_dir: Path) -> list[Path]:
+    """Return golden files in one directory that no values fixture owns.
+
+    A golden is orphaned when its source name is not a values fixture
+    (``ingress.golden.yaml`` would pair with ``ingress.yaml``, which the
+    suffix rule rejects) or when that source file does not exist.
+    """
+
+    return sorted(
+        path
+        for path in fixture_dir.glob("*.yaml")
+        if is_golden_file(path)
+        and not (
+            is_values_fixture(values_for(path)) and values_for(path).is_file()
+        )
+    )
+
+
 __all__ = [
     "CHARTS_DIR",
     "FIXTURES_ROOT",
@@ -64,7 +100,10 @@ __all__ = [
     "REPO_ROOT",
     "VALUES_SUFFIX",
     "golden_for",
+    "is_golden_file",
     "is_values_fixture",
     "iter_fixture_dirs",
+    "iter_orphan_goldens",
     "iter_values_fixtures",
+    "values_for",
 ]
