@@ -397,6 +397,190 @@ service:
 
 # @schema
 # type: object
+# additionalProperties: false
+# definitions:
+#   networkPolicySelector:
+#     type: object
+#     additionalProperties: false
+#     properties:
+#       matchLabels:
+#         type: object
+#         additionalProperties:
+#           type: string
+#       matchExpressions:
+#         type: array
+#         items:
+#           type: object
+#           additionalProperties: false
+#           required: [key, operator]
+#           properties:
+#             key:
+#               type: string
+#               minLength: 1
+#             operator:
+#               enum: [In, NotIn, Exists, DoesNotExist]
+#             values:
+#               type: array
+#               items:
+#                 type: string
+#           oneOf:
+#             - properties:
+#                 operator:
+#                   enum: [In, NotIn]
+#                 values:
+#                   minItems: 1
+#               required: [values]
+#             - properties:
+#                 operator:
+#                   enum: [Exists, DoesNotExist]
+#                 values:
+#                   maxItems: 0
+#   networkPolicyPeer:
+#     type: object
+#     additionalProperties: false
+#     minProperties: 1
+#     properties:
+#       podSelector:
+#         $ref: "#/definitions/networkPolicySelector"
+#       namespaceSelector:
+#         $ref: "#/definitions/networkPolicySelector"
+#       ipBlock:
+#         type: object
+#         additionalProperties: false
+#         required: [cidr]
+#         properties:
+#           cidr:
+#             type: string
+#             minLength: 1
+#           except:
+#             type: array
+#             items:
+#               type: string
+#               minLength: 1
+#     not:
+#       anyOf:
+#         - required: [ipBlock, podSelector]
+#         - required: [ipBlock, namespaceSelector]
+#   networkPolicyPeers:
+#     type: array
+#     items:
+#       $ref: "#/definitions/networkPolicyPeer"
+#   networkPolicyPorts:
+#     type: array
+#     items:
+#       type: object
+#       additionalProperties: false
+#       properties:
+#         protocol:
+#           enum: [TCP, UDP, SCTP]
+#         port:
+#           anyOf:
+#             - type: integer
+#               minimum: 1
+#               maximum: 65535
+#             - type: string
+#               maxLength: 15
+#               pattern: '^[a-z0-9]([-a-z0-9]*[a-z0-9])?$'
+#               allOf:
+#                 - pattern: '[a-z]'
+#               not:
+#                 pattern: '--'
+#         endPort:
+#           type: integer
+#           minimum: 1
+#           maximum: 65535
+#       if:
+#         required: [endPort]
+#       then:
+#         required: [port]
+#         properties:
+#           port:
+#             type: integer
+# @schema
+# -- Optional NetworkPolicy for application pods. Enabling it isolates both
+# directions; only the configured rules (and other matching policies) allow
+# traffic. Requires a network plugin that enforces NetworkPolicy.
+networkPolicy:
+  # -- Create the application NetworkPolicy. Disabled preserves existing networking.
+  enabled: false
+  # @schema
+  # type: object
+  # additionalProperties: false
+  # if:
+  #   properties:
+  #     enabled:
+  #       const: true
+  #   required: [enabled]
+  # then:
+  #   required: [from]
+  #   properties:
+  #     from:
+  #       minItems: 1
+  # @schema
+  # -- Allow selected peers to reach the main Service's target ports.
+  # The separate metrics Service is not included; use an ingress rule for it.
+  applicationIngress:
+    # -- Add application ingress independently of DNS egress.
+    enabled: false
+    # @schema
+    # $ref: "#/definitions/networkPolicyPeers"
+    # @schema
+    # -- Source peers. Required when enabled. An empty namespaceSelector matches all namespaces.
+    from: []
+  # @schema
+  # type: object
+  # additionalProperties: false
+  # if:
+  #   properties:
+  #     enabled:
+  #       const: true
+  #   required: [enabled]
+  # then:
+  #   required: [to]
+  #   properties:
+  #     to:
+  #       minItems: 1
+  # @schema
+  # -- Allow TCP and UDP port 53 to explicit DNS peers. No cluster labels are assumed.
+  dnsEgress:
+    # -- Add DNS egress independently of application ingress.
+    enabled: false
+    # @schema
+    # $ref: "#/definitions/networkPolicyPeers"
+    # @schema
+    # -- Destination peers. Required when enabled. Select the cluster's DNS pods or resolver CIDR.
+    to: []
+  # @schema
+  # type: array
+  # items:
+  #   type: object
+  #   additionalProperties: false
+  #   properties:
+  #     from:
+  #       $ref: "#/definitions/networkPolicyPeers"
+  #     ports:
+  #       $ref: "#/definitions/networkPolicyPorts"
+  # @schema
+  # -- Additional native ingress rules, for example monitoring peers. An empty
+  # rule `{}` allows all ingress; omitted or empty `from`/`ports` are unrestricted.
+  ingress: []
+  # @schema
+  # type: array
+  # items:
+  #   type: object
+  #   additionalProperties: false
+  #   properties:
+  #     to:
+  #       $ref: "#/definitions/networkPolicyPeers"
+  #     ports:
+  #       $ref: "#/definitions/networkPolicyPorts"
+  # @schema
+  # -- Additional native egress rules, for example database access. An empty
+  # rule `{}` allows all egress; omitted or empty `to`/`ports` are unrestricted.
+  egress: []
+
+# @schema
+# type: object
 # properties:
 #   enabled:
 #     type: boolean

@@ -1,0 +1,229 @@
+---
+# Source: universal-chart/templates/networkpolicy.yaml
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: universal-chart
+  labels:
+    helm.sh/chart: universal-chart-0.0.0-a.placeholder
+    app.kubernetes.io/name: universal-chart
+    app.kubernetes.io/instance: universal-chart
+    app.kubernetes.io/managed-by: Helm
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: universal-chart
+      app.kubernetes.io/instance: universal-chart
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    - from:
+      - namespaceSelector:
+          matchLabels:
+            kubernetes.io/metadata.name: ingress-nginx
+        podSelector:
+          matchLabels:
+            app.kubernetes.io/component: controller
+      ports:
+      - port: http
+        protocol: TCP
+    - from:
+      - namespaceSelector:
+          matchLabels:
+            kubernetes.io/metadata.name: monitoring
+        podSelector:
+          matchLabels:
+            app.kubernetes.io/name: prometheus
+      ports:
+      - port: 9090
+        protocol: TCP
+  egress:
+    - ports:
+      - port: 53
+        protocol: UDP
+      - port: 53
+        protocol: TCP
+      to:
+      - namespaceSelector:
+          matchLabels:
+            kubernetes.io/metadata.name: kube-system
+        podSelector:
+          matchLabels:
+            k8s-app: kube-dns
+    - ports:
+      - port: 5432
+        protocol: TCP
+      to:
+      - ipBlock:
+          cidr: 192.0.2.10/32
+---
+# Source: universal-chart/templates/serviceaccount.yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: universal-chart
+  labels:
+    helm.sh/chart: universal-chart-0.0.0-a.placeholder
+    app.kubernetes.io/name: universal-chart
+    app.kubernetes.io/instance: universal-chart
+    app.kubernetes.io/managed-by: Helm
+automountServiceAccountToken: true
+---
+# Source: universal-chart/templates/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: universal-chart
+  labels:
+    helm.sh/chart: universal-chart-0.0.0-a.placeholder
+    app.kubernetes.io/name: universal-chart
+    app.kubernetes.io/instance: universal-chart
+    app.kubernetes.io/managed-by: Helm
+spec:
+  type: ClusterIP
+  ports:
+    - port: 8080
+      targetPort: http
+      protocol: TCP
+      name: http
+  selector:
+    app.kubernetes.io/name: universal-chart
+    app.kubernetes.io/instance: universal-chart
+---
+# Source: universal-chart/templates/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: universal-chart-metrics
+  labels:
+    helm.sh/chart: universal-chart-0.0.0-a.placeholder
+    app.kubernetes.io/name: universal-chart
+    app.kubernetes.io/instance: universal-chart
+    app.kubernetes.io/managed-by: Helm
+spec:
+  type: ClusterIP
+  ports:
+    - port: 9090
+      targetPort: 9090
+      protocol: TCP
+      name: metrics
+  selector:
+    app.kubernetes.io/name: universal-chart
+    app.kubernetes.io/instance: universal-chart
+---
+# Source: universal-chart/templates/deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: universal-chart
+  labels:
+    helm.sh/chart: universal-chart-0.0.0-a.placeholder
+    app.kubernetes.io/name: universal-chart
+    app.kubernetes.io/instance: universal-chart
+    app.kubernetes.io/managed-by: Helm
+spec:
+  replicas: 1
+  revisionHistoryLimit: 3
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: universal-chart
+      app.kubernetes.io/instance: universal-chart
+  template:
+    metadata:
+      labels:
+        helm.sh/chart: universal-chart-0.0.0-a.placeholder
+        app.kubernetes.io/name: universal-chart
+        app.kubernetes.io/instance: universal-chart
+        app.kubernetes.io/managed-by: Helm
+    spec:
+      serviceAccountName: universal-chart
+      containers:
+        - name: universal-chart
+          env: &containerenv
+            # placeholder var so we can always make an env list
+            - name: REDIS_ENABLED
+              value: "false"
+          image: "ghcr.io/example/app:1.2.3"
+          imagePullPolicy: Always
+          ports:
+            - name: http
+              containerPort: 8080
+              protocol: TCP
+      topologySpreadConstraints:
+        - labelSelector:
+            matchLabels:
+              app.kubernetes.io/instance: universal-chart
+              app.kubernetes.io/name: universal-chart
+          maxSkew: 1
+          topologyKey: topology.kubernetes.io/zone
+          whenUnsatisfiable: ScheduleAnyway
+---
+# Source: universal-chart/templates/ingress.yaml
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: universal-chart
+  labels:
+    helm.sh/chart: universal-chart-0.0.0-a.placeholder
+    app.kubernetes.io/name: universal-chart
+    app.kubernetes.io/instance: universal-chart
+    app.kubernetes.io/managed-by: Helm
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: "app.example.com"
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: universal-chart
+                port:
+                  number: 8080
+---
+# Source: universal-chart/templates/metrics-block-ingress.yaml
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: universal-chart-metrics-block
+  labels:
+    helm.sh/chart: universal-chart-0.0.0-a.placeholder
+    app.kubernetes.io/name: universal-chart
+    app.kubernetes.io/instance: universal-chart
+    app.kubernetes.io/managed-by: Helm
+  annotations:
+    nginx.ingress.kubernetes.io/denylist-source-range: "0.0.0.0/0,::/0"
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: "app.example.com"
+      http:
+        paths:
+          - path: /metrics
+            pathType: Prefix
+            backend:
+              service:
+                name: universal-chart
+                port:
+                  number: 8080
+---
+# Source: universal-chart/templates/servicemonitor.yaml
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: universal-chart
+  labels:
+    helm.sh/chart: universal-chart-0.0.0-a.placeholder
+    app.kubernetes.io/name: universal-chart
+    app.kubernetes.io/instance: universal-chart
+    app.kubernetes.io/managed-by: Helm
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: universal-chart
+      app.kubernetes.io/instance: universal-chart
+  endpoints:
+    - port: metrics
+      path: /metrics
