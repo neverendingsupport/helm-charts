@@ -9,23 +9,25 @@ import sys
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
-CHARTS_DIR = REPO_ROOT / "charts"
-FIXTURES_ROOT = REPO_ROOT / "tests" / "fixtures"
+sys.path.insert(0, str(REPO_ROOT))
+
+from tests.fixture_layout import (  # noqa: E402  (needs sys.path above)
+    CHARTS_DIR,
+    FIXTURES_ROOT,
+    golden_for,
+    iter_fixture_dirs,
+    iter_values_fixtures,
+)
 
 
 def iter_fixture_values() -> list[tuple[str, Path, Path]]:
     """Yield (chart_name, chart_dir, values_file) tuples for every fixture."""
 
     fixtures: list[tuple[str, Path, Path]] = []
-    for fixture_dir in sorted(FIXTURES_ROOT.iterdir()):
-        if not fixture_dir.is_dir():
-            continue
-        chart_name = fixture_dir.name
-        chart_dir = CHARTS_DIR / chart_name
-        if not chart_dir.is_dir():
-            continue
-        for values_file in sorted(fixture_dir.glob("*-values.yaml")):
-            fixtures.append((chart_name, chart_dir, values_file))
+    for fixture_dir in iter_fixture_dirs():
+        chart_dir = CHARTS_DIR / fixture_dir.name
+        for values_file in iter_values_fixtures(fixture_dir):
+            fixtures.append((fixture_dir.name, chart_dir, values_file))
     return fixtures
 
 
@@ -43,7 +45,7 @@ def regenerate_all() -> None:
         )
 
     for chart_name, chart_dir, values_file in fixtures:
-        golden_file = values_file.with_suffix(".golden.yaml")
+        golden_file = golden_for(values_file)
         command = [
             helm_binary,
             "template",

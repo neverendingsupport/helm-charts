@@ -20,17 +20,45 @@ repository's default Python.
 
 ## Adding a golden file test
 
-1. Pick the chart fixture directory under `tests/fixtures/` (for example,
-   `tests/fixtures/universal-chart`).
-2. Create a new values file in that directory.  Follow the existing pattern of
-   naming files `something-values.yaml` so they are automatically picked up by
-   the test suite and golden generator.
-3. Run `make golden-files` from the repository root.  The helper script renders
-   every values file with Helm and rewrites the matching `.golden.yaml` outputs.
-4. Verify the diff, then commit the updated values and golden files together.
+One module covers every chart. `tests/test_golden.py` walks `tests/fixtures/`,
+matches each directory against a chart in `charts/`, and builds one test per
+`*-values.yaml` and `*-values.golden.yaml` pair. You don't write a golden
+module for a new chart. Add the fixtures and the suite picks them up.
 
-That's it—pytest will automatically discover the new golden pair, and CI will
-exercise it on every pull request.
+1. Pick the chart's fixture directory under `tests/fixtures/`, for example
+   `tests/fixtures/universal-chart`.
+2. Add a values file there. Name it `<case>-values.yaml`; the test suite and
+   the golden generator both match on that `-values.yaml` suffix.
+3. Run `make golden-files` from the repository root. It renders every values
+   file with Helm and rewrites the matching `.golden.yaml` output.
+4. Check the diff, then commit the values and golden files together.
+
+CI runs every discovered pair on each pull request.
+
+### How golden comparison works
+
+`assert_matches_golden` in `tests/chart_test_utils.py` doesn't compare the
+rendered output and the golden file as one ordered string. It splits both into
+documents and keys each one by its `# Source:` template, `kind`, and
+`metadata.name`, then compares the documents whose keys match.
+
+Two things follow. The order Helm renders templates in stops mattering. And a
+failure names each missing, unexpected, or changed document and gives a unified
+diff for that document alone, so you see which resource drifted instead of
+reading a diff of the whole file.
+
+Inside a document the comparison stays byte-for-byte on indentation and
+content. It ignores whitespace at the end of a line, because the
+`trailing-whitespace` pre-commit hook strips that from golden files on disk
+while some templates still emit it — the vendored ingress-nginx chart renders
+`nodeSelector: ` with a trailing space. Without that allowance those charts
+could never match their goldens.
+
+When a render produces several manifests of one kind, ask for one with
+`get_manifest(manifests, kind, name=...)`, or take the whole set with
+`manifests_by_name(manifests, kind)`. A kind-only `get_manifest` call raises
+when the kind is ambiguous, so a test can't quietly assert against whichever
+manifest happened to render first.
 
 ## Helm lint and linter values
 

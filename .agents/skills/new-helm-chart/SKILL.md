@@ -30,7 +30,9 @@ Ask these before editing files:
 2. Add or update `Chart.yaml`, `values.yaml`, templates, and any chart-local
    `README.md.gotmpl` needed by `helm-docs`.
 3. Add the fixture scaffold under `tests/fixtures/<chart>/`, including at least
-   `minimal-values.yaml`.
+   `minimal-values.yaml`. `tests/test_golden.py` picks up every
+   `<case>-values.yaml` and its golden file automatically, so don't write a
+   per-chart golden module.
 4. Create `charts/<chart>/linter_values.yaml` as a symlink to
    `../../tests/fixtures/<chart>/minimal-values.yaml`.
 5. Add the Backstage/TechDocs scaffold in the same change:

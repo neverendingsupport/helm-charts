@@ -1,34 +1,37 @@
 {
-  // Schema reference retained for validation and editor support.
-  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "extends": [
-    "config:recommended",
-    // Enable updates to pre-commit hooks, which are off by default.
-    // ":enablePreCommit" // not actually needed, since precommit.ci updates
+  $schema: 'https://docs.renovatebot.com/renovate-schema.json',
+  extends: [
+    'config:recommended',
   ],
-  "customManagers": [
+  customManagers: [
     {
-      "customType": "regex",
-      "description": "Update digest-pinned ACK helper image references.",
-      "fileMatch": ["^charts/ack-.+/values\\.ya?ml$"],
-      "matchStrings": [
-        "\\S+:\\s+\\S+:(?<currentValue>[^@\\s]+)@(?<currentDigest>sha256:[a-f0-9]+)\\s+# renovate: datasource=(?<datasource>[a-z-]+) depName=(?<depName>\\S+) versioning=(?<versioning>\\S+)"
-      ]
-    }
+      customType: 'regex',
+      description: 'Update digest-pinned ACK helper image references.',
+      managerFilePatterns: [
+        '/^charts/ack-.+/values\\.ya?ml$/',
+      ],
+      matchStrings: [
+        '\\S+:\\s+\\S+:(?<currentValue>[^@\\s]+)@(?<currentDigest>sha256:[a-f0-9]+)\\s+# renovate: datasource=(?<datasource>[a-z-]+) depName=(?<depName>\\S+) versioning=(?<versioning>\\S+)',
+      ],
+    },
   ],
-  "postUpgradeTasks": {
-    "commands": ["python scripts/regenerate_golden_files.py"],
-    "fileFilters": ["tests/fixtures/**/*.golden.yaml"],
-    "executionMode": "branch"
+  postUpgradeTasks: {
+    commands: [
+      'python scripts/regenerate_golden_files.py',
+    ],
+    fileFilters: [
+      'tests/fixtures/**/*.golden.yaml',
+    ],
+    executionMode: 'branch',
   },
-  // Allow Renovate to merge PRs automatically when policy and checks allow it.
-  "automerge": true,
-  "automergeType": "pr",
-  "packageRules": [
+  automerge: true,
+  automergeType: 'pr',
+  packageRules: [
     {
-      // Ensure GitHub Actions are pinned to digest SHAs for supply-chain integrity.
-      "matchManagers": ["github-actions"],
-      "pinDigests": true
-    }
-  ]
+      matchManagers: [
+        'github-actions',
+      ],
+      pinDigests: true,
+    },
+  ],
 }

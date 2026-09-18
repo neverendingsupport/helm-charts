@@ -10,6 +10,7 @@ from .chart_test_utils import (
     ChartContext,
     get_manifest,
     load_manifests,
+    manifests_by_name,
     render_chart,
 )
 
@@ -353,7 +354,7 @@ def test_sequenced_connection_renders_hook_jobs(helm_runner) -> None:
     service_account = get_manifest(manifests, "ServiceAccount")
     role = get_manifest(manifests, "Role")
     role_binding = get_manifest(manifests, "RoleBinding")
-    jobs = [m for m in manifests if m.get("kind") == "Job"]
+    jobs = manifests_by_name(manifests, "Job")
 
     assert all(m.get("kind") != "Secret" for m in manifests)
     assert all(m.get("kind") != "FieldExport" for m in manifests)
@@ -389,16 +390,8 @@ def test_sequenced_connection_renders_hook_jobs(helm_runner) -> None:
     )
     assert len(jobs) == 2
 
-    bootstrap_job = next(
-        job
-        for job in jobs
-        if job["metadata"]["name"].endswith("bootstrap-secret")
-    )
-    sync_job = next(
-        job
-        for job in jobs
-        if job["metadata"]["name"].endswith("sync-connection")
-    )
+    bootstrap_job = jobs[f"{CHART.release}-bootstrap-secret"]
+    sync_job = jobs[f"{CHART.release}-sync-connection"]
 
     bootstrap_script = bootstrap_job["spec"]["template"]["spec"]["containers"][
         0
@@ -438,23 +431,15 @@ def test_sequenced_valkey_connection_uses_cache_keys(helm_runner) -> None:
     )
     manifests = load_manifests(rendered)
     replication_group = get_manifest(manifests, "ReplicationGroup")
-    jobs = [m for m in manifests if m.get("kind") == "Job"]
+    jobs = manifests_by_name(manifests, "Job")
 
     assert replication_group["spec"]["authToken"] == {
         "name": "cache-connection",
         "key": "CACHE_PASSWORD",
     }
 
-    bootstrap_job = next(
-        job
-        for job in jobs
-        if job["metadata"]["name"].endswith("bootstrap-secret")
-    )
-    sync_job = next(
-        job
-        for job in jobs
-        if job["metadata"]["name"].endswith("sync-connection")
-    )
+    bootstrap_job = jobs[f"{CHART.release}-bootstrap-secret"]
+    sync_job = jobs[f"{CHART.release}-sync-connection"]
 
     bootstrap_script = bootstrap_job["spec"]["template"]["spec"]["containers"][
         0
@@ -469,6 +454,40 @@ def test_sequenced_valkey_connection_uses_cache_keys(helm_runner) -> None:
     assert 'url_key="CACHE_URL"' in sync_script
     assert 'auth_url_key="CACHE_AUTH_URL"' in sync_script
     assert 'arn_key="CACHE_ARN"' in sync_script
+
+
+def test_sequenced_connection_uses_portable_base64_decode(
+    helm_runner,
+) -> None:
+    """Ensure hook scripts use the BusyBox-compatible decode flag."""
+
+    cases = [
+        {
+            "sequencedConnection.enabled": True,
+            "auth.mode": "password",
+        },
+        {
+            "sequencedConnection.enabled": True,
+            "auth.mode": "secretRef",
+            "auth.existingSecret.name": "cache-auth",
+            "auth.existingSecret.key": "password",
+        },
+    ]
+
+    for values in cases:
+        rendered = render_chart(helm_runner, CHART, values=values)
+        jobs = [
+            manifest
+            for manifest in load_manifests(rendered)
+            if manifest.get("kind") == "Job"
+        ]
+        scripts = [
+            job["spec"]["template"]["spec"]["containers"][0]["args"][0]
+            for job in jobs
+        ]
+
+        assert all("base64 --decode" not in script for script in scripts)
+        assert sum(script.count("| base64 -d") for script in scripts) == 5
 
 
 def test_sequenced_connection_clears_removed_reflector_annotations(
@@ -486,11 +505,8 @@ def test_sequenced_connection_clears_removed_reflector_annotations(
         },
     )
     manifests = load_manifests(rendered)
-    bootstrap_job = next(
-        job
-        for job in manifests
-        if job.get("kind") == "Job"
-        and job["metadata"]["name"].endswith("bootstrap-secret")
+    bootstrap_job = get_manifest(
+        manifests, "Job", name=f"{CHART.release}-bootstrap-secret"
     )
     bootstrap_script = bootstrap_job["spec"]["template"]["spec"]["containers"][
         0

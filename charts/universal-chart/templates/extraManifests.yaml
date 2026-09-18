@@ -1,6 +1,6 @@
 {{- with .Values.extraManifests }}
 {{- range . }}
 ---
-{{- toYaml . }}
+{{ toYaml . }}
 {{- end }}
 {{- end }}

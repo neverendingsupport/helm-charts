@@ -6,7 +6,7 @@ from typing import Any
 
 import pytest
 
-from .chart_test_utils import get_manifest, render_chart
+from .chart_test_utils import get_manifest, manifests_by_name, render_chart
 from .conftest import HelmTemplateError
 from .universal_chart_test_utils import (
     CHART,
@@ -91,15 +91,9 @@ def test_metrics_service_renders_when_alternate_port_is_set(
         helm_runner,
         values={"serviceMonitor": {"alternatePort": 9090}},
     )
-    services = [item for item in manifests if item.get("kind") == "Service"]
-    main = next(
-        item for item in services if item["metadata"]["name"] == CHART.release
-    )
-    metrics = next(
-        item
-        for item in services
-        if item["metadata"]["name"] == f"{CHART.release}-metrics"
-    )
+    services = manifests_by_name(manifests, "Service")
+    main = services[CHART.release]
+    metrics = services[f"{CHART.release}-metrics"]
 
     assert len(services) == 2
     assert metrics["spec"]["type"] == "ClusterIP"

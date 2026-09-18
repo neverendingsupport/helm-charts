@@ -74,3 +74,32 @@ jobs:
 
       - name: Helm lint
         run: pre-commit run helmlint --all-files
+
+  marketplace-chart-validation:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+
+      # AWS validates Marketplace charts with Helm 3.19 or later. Keep this
+      # lane independent from the repository's general Helm toolchain.
+      - name: Set up Helm
+        uses: azure/setup-helm@1a275c3b69536ee54be43f2070a358922e12c8d4 # v4.3.1
+        with:
+          version: v3.19.0
+
+      - name: Stage and validate AWS Marketplace chart
+        env:
+          MARKETPLACE_REGISTRY: 709825985650.dkr.ecr.us-east-1.amazonaws.com
+        run: |
+          yq --version
+          stage_root="$RUNNER_TEMP/marketplace-chart"
+          scripts/stage_marketplace_chart.sh \
+            charts/ingress-nginx \
+            marketplace/ingress-nginx/values.yaml \
+            "$stage_root"
+          helm lint "$stage_root/ingress-nginx"
+          scripts/verify_marketplace_chart_images.sh \
+            "$stage_root/ingress-nginx" "$MARKETPLACE_REGISTRY"
+          scripts/verify_marketplace_serviceaccount.sh \
+            "$stage_root/ingress-nginx"

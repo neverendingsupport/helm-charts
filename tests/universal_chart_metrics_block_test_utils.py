@@ -4,17 +4,15 @@ from __future__ import annotations
 
 from typing import Any
 
+from .chart_test_utils import manifests_by_name
+
 
 def ingresses_by_name(
     manifests: list[dict[str, Any]],
 ) -> dict[str, dict[str, Any]]:
     """Return ingress manifests keyed by name."""
 
-    return {
-        item["metadata"]["name"]: item
-        for item in manifests
-        if item.get("kind") == "Ingress"
-    }
+    return manifests_by_name(manifests, "Ingress")
 
 
 def nginx_ingress_values(

@@ -1,0 +1,22 @@
+image:
+  repository: ghcr.io/example/app
+  tag: "1.2.3"
+
+deployment:
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 2
+      maxUnavailable: 25%
+  minReadySeconds: 15
+  progressDeadlineSeconds: 300
+
+lifecycle:
+  preStop:
+    exec:
+      command:
+        - /bin/sh
+        - -c
+        - sleep 10
+
+terminationGracePeriodSeconds: 45

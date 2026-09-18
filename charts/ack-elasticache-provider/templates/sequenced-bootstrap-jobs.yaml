@@ -132,7 +132,7 @@ spec:
               password=""
               {{- if eq $auth.mode "password" }}
               if [ "$secret_exists" = true ]; then
-                existing_password="$(kubectl get secret "$secret_name" -o jsonpath="{.data.${password_key}}" 2>/dev/null | base64 --decode || true)"
+                existing_password="$(kubectl get secret "$secret_name" -o jsonpath="{.data.${password_key}}" 2>/dev/null | base64 -d || true)"
                 if [ -n "$existing_password" ]; then
 {{- if and $secretMetadataPatch (ne $secretMetadataPatch "{}") }}
                   echo '{{ $secretMetadataPatch | b64enc }}' | base64 -d > /tmp/secret-metadata-patch.json
@@ -154,7 +154,7 @@ spec:
               fi
               {{- else }}
               if [ "$secret_exists" = true ]; then
-                existing_password="$(kubectl get secret "$secret_name" -o jsonpath="{.data.${password_key}}" 2>/dev/null | base64 --decode || true)"
+                existing_password="$(kubectl get secret "$secret_name" -o jsonpath="{.data.${password_key}}" 2>/dev/null | base64 -d || true)"
                 if [ -n "$existing_password" ]; then
 {{- if and $secretMetadataPatch (ne $secretMetadataPatch "{}") }}
                   echo '{{ $secretMetadataPatch | b64enc }}' | base64 -d > /tmp/secret-metadata-patch.json
@@ -256,8 +256,8 @@ spec:
                 if [ -n "$endpoint" ] && [ -n "$port" ]; then
                   url="${scheme}://${endpoint}:${port}"
                   auth_url="$url"
-                  username="$(kubectl get secret "$secret_name" -o jsonpath="{.data.${username_key}}" 2>/dev/null | base64 --decode || true)"
-                  password="$(kubectl get secret "$secret_name" -o jsonpath="{.data.${password_key}}" 2>/dev/null | base64 --decode || true)"
+                  username="$(kubectl get secret "$secret_name" -o jsonpath="{.data.${username_key}}" 2>/dev/null | base64 -d || true)"
+                  password="$(kubectl get secret "$secret_name" -o jsonpath="{.data.${password_key}}" 2>/dev/null | base64 -d || true)"
                   if [ "{{ $auth.mode }}" = "password" ] && [ -n "$username" ] && [ -n "$password" ]; then
                     auth_url="${scheme}://${username}:${password}@${endpoint}:${port}"
                   fi
