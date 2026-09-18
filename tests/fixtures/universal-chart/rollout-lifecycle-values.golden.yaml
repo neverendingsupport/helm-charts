@@ -68,7 +68,7 @@ spec:
       terminationGracePeriodSeconds: 45
       containers:
         - name: universal-chart
-          env: &containerenv
+          env:
             # placeholder var so we can always make an env list
             - name: REDIS_ENABLED
               value: "false"
