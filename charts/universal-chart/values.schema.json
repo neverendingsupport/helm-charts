@@ -1,6 +1,15 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "additionalProperties": false,
+  "definitions": {
+    "serviceAccountAutomount": {
+      "required": [],
+      "type": [
+        "boolean",
+        "null"
+      ]
+    }
+  },
   "properties": {
     "affinity": {
       "additionalProperties": true,
@@ -592,7 +601,7 @@
               },
               "extraContainerProps": {
                 "additionalProperties": true,
-                "description": "a map of additional properties for the init container.  This can\ntechnically be any values from the spec, though reusing image, command,\nsecurityContext, volumes, env, or envFrom might cause unexpected behavior.",
+                "description": "a map of additional properties for the init container.  This can\ntechnically be any values from the spec, though reusing image, command,\nvolumes, env, or envFrom might cause unexpected behavior. With the security\nprofile enabled, securityContext merges over the shared container context;\nwithout it, reusing securityContext can produce duplicate YAML keys.",
                 "not": {
                   "enum": [
                     "image",
@@ -855,6 +864,7 @@
     },
     "podSecurityContext": {
       "additionalProperties": true,
+      "description": "podSecurityContext overrides the restricted profile's pod defaults when\nenabled. Without the profile, these values render unchanged.",
       "required": [],
       "title": "podSecurityContext",
       "type": "object"
@@ -1162,8 +1172,24 @@
     },
     "securityContext": {
       "additionalProperties": true,
+      "description": "securityContext overrides the restricted profile's container defaults for\nthe main and init containers. Set readOnlyRootFilesystem here after adding\nwritable volumes for the paths your images need.",
       "required": [],
       "title": "securityContext",
+      "type": "object"
+    },
+    "securityProfile": {
+      "additionalProperties": false,
+      "description": "securityProfile provides an opt-in restricted baseline for Linux workloads.\nExplicit security contexts can relax it; this is not an admission policy.",
+      "properties": {
+        "enabled": {
+          "default": false,
+          "description": "enabled applies non-root execution, RuntimeDefault seccomp, no privilege\nescalation, dropped capabilities, and disables automatic API token mounting.\nImages must support a nonzero numeric UID. Root filesystems stay writable\nunless securityContext.readOnlyRootFilesystem is set to true.",
+          "title": "enabled",
+          "type": "boolean"
+        }
+      },
+      "required": [],
+      "title": "securityProfile",
       "type": "object"
     },
     "service": {
@@ -1259,10 +1285,8 @@
           "type": "object"
         },
         "automount": {
-          "default": true,
-          "description": "Automatically mount a ServiceAccount's API credentials",
-          "title": "automount",
-          "type": "boolean"
+          "$ref": "#/definitions/serviceAccountAutomount",
+          "required": []
         },
         "create": {
           "default": true,

@@ -177,7 +177,9 @@ initContainers:
     # @schema
     # -- a map of additional properties for the init container.  This can
     # technically be any values from the spec, though reusing image, command,
-    # securityContext, volumes, env, or envFrom might cause unexpected behavior.
+    # volumes, env, or envFrom might cause unexpected behavior. With the security
+    # profile enabled, securityContext merges over the shared container context;
+    # without it, reusing securityContext can produce duplicate YAML keys.
     extraContainerProps: {}
 
 # Describes an AWS secretmanager secret which will define env vars
@@ -290,8 +292,18 @@ extraContainerPorts: []
 serviceAccount:
   # Specifies whether a service account should be created (things may go poorly if you set this to false)
   create: true
-  # Automatically mount a ServiceAccount's API credentials
-  automount: true
+  # A referenced type avoids helm-schema inferring the string "null" as default.
+  # @schema
+  # definitions:
+  #   serviceAccountAutomount:
+  #     type: [boolean, "null"]
+  # $ref: "#/definitions/serviceAccountAutomount"
+  # @schema
+  # -- (bool or null) automount configures token mounting on generated accounts;
+  # with the profile enabled it also configures the pod. Null selects true when
+  # disabled and false when enabled; explicit booleans win. With the profile
+  # disabled, existing accounts retain their own policy.
+  automount: null
   # @schema
   # type: object
   # additionalProperties: true
@@ -323,6 +335,8 @@ podLabels: {}
 # type: object
 # additionalProperties: true
 # @schema
+# -- podSecurityContext overrides the restricted profile's pod defaults when
+# enabled. Without the profile, these values render unchanged.
 podSecurityContext: {}
   # fsGroup: 2000
 
@@ -330,6 +344,9 @@ podSecurityContext: {}
 # type: object
 # additionalProperties: true
 # @schema
+# -- securityContext overrides the restricted profile's container defaults for
+# the main and init containers. Set readOnlyRootFilesystem here after adding
+# writable volumes for the paths your images need.
 securityContext: {}
   # capabilities:
   #   drop:
@@ -337,6 +354,19 @@ securityContext: {}
   # readOnlyRootFilesystem: true
   # runAsNonRoot: true
   # runAsUser: 1000
+
+# @schema
+# type: object
+# additionalProperties: false
+# @schema
+# -- securityProfile provides an opt-in restricted baseline for Linux workloads.
+# Explicit security contexts can relax it; this is not an admission policy.
+securityProfile:
+  # -- enabled applies non-root execution, RuntimeDefault seccomp, no privilege
+  # escalation, dropped capabilities, and disables automatic API token mounting.
+  # Images must support a nonzero numeric UID. Root filesystems stay writable
+  # unless securityContext.readOnlyRootFilesystem is set to true.
+  enabled: false
 
 # -- A "service" is basically a named port which follows a pod or pods; you
 # should always use a service when networking in k8s.

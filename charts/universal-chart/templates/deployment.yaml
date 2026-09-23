@@ -1,3 +1,4 @@
+{{- $restricted := (.Values.securityProfile | default dict).enabled }}
 {{- if and .Values.lifecycle (hasKey .Values.extraContainerProps "lifecycle") }}
 {{- fail "Set either lifecycle or extraContainerProps.lifecycle, not both. Prefer lifecycle for new configurations." }}
 {{- end }}
@@ -67,10 +68,13 @@ spec:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       serviceAccountName: {{ include "universal-chart.serviceAccountName" . }}
+      {{- if $restricted }}
+      automountServiceAccountToken: {{ include "universal-chart.automountServiceAccountToken" . }}
+      {{- end }}
       {{- if ne .Values.terminationGracePeriodSeconds nil }}
       terminationGracePeriodSeconds: {{ .Values.terminationGracePeriodSeconds }}
       {{- end }}
-      {{- with .Values.podSecurityContext }}
+      {{- with (include "universal-chart.podSecurityContext" . | fromYaml) }}
       securityContext:
         {{- toYaml . | nindent 8 }}
       {{- end }}
@@ -121,7 +125,7 @@ spec:
                 name: {{ . }}
             {{- end }}
           {{- end }}
-          {{- with .Values.securityContext }}
+          {{- with (include "universal-chart.containerSecurityContext" (dict "root" . "extraProps" (.Values.extraContainerProps | default dict)) | fromYaml) }}
           securityContext:
             {{- toYaml . | nindent 12 }}
           {{- end }}
@@ -160,7 +164,11 @@ spec:
           volumeMounts:
             {{- toYaml . | nindent 12 }}
           {{- end }}
-          {{- with .Values.extraContainerProps }}
+          {{- $extraProps := .Values.extraContainerProps }}
+          {{- if $restricted }}
+          {{- $extraProps = omit ($extraProps | default dict) "securityContext" }}
+          {{- end }}
+          {{- with $extraProps }}
           {{- toYaml . | nindent 10 }}
           {{- end }}
 
@@ -196,11 +204,15 @@ spec:
                 name: {{ . }}
             {{- end }}
           {{- end }}
-          {{- with $.Values.securityContext }}
+          {{- with (include "universal-chart.containerSecurityContext" (dict "root" $ "extraProps" ($init.extraContainerProps | default dict)) | fromYaml) }}
           securityContext:
             {{- toYaml . | nindent 12 }}
           {{- end }}
-          {{- with $init.extraContainerProps }}
+          {{- $initExtraProps := $init.extraContainerProps }}
+          {{- if $restricted }}
+          {{- $initExtraProps = omit ($initExtraProps | default dict) "securityContext" }}
+          {{- end }}
+          {{- with $initExtraProps }}
           {{- toYaml . | nindent 10 }}
           {{- end }}
         {{- end }}
