@@ -68,6 +68,7 @@ jobs:
     permissions:
       contents: write
       packages: write
+      actions: write   # dispatches marketplace-release.yml for ingress-nginx
     strategy:
       fail-fast: false
       # Avoid race conditions when updating the GitHub Pages site.
@@ -237,3 +238,23 @@ jobs:
           # new marketplace-charts/ingress-nginx package is public in GitHub.
           helm push "$MARKETPLACE_PACKAGE_PATH" \
             "oci://ghcr.io/${{ github.repository_owner }}/marketplace-charts"
+
+      # Chain the Marketplace ECR publish onto a newly published chart version
+      # instead of a manual dispatch after every release. marketplace-release.yml
+      # pulls the exact staged package pushed above, fails fast if this chart
+      # version already exists in Marketplace ECR (tags are immutable), and
+      # verifies the controller image is already there — ingress-nginx-nes's
+      # release workflow pushes it after its NES registry release is verified,
+      # so merge the chart PR only once that release run is green.
+      - name: Publish Marketplace chart to ECR
+        if: matrix.chart == 'ingress-nginx' && steps.version.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CHART_VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          gh workflow run marketplace-release.yml \
+            --ref "ingress-nginx-${CHART_VERSION}" \
+            -f chart_version="${CHART_VERSION}" \
+            -f dry_run=false \
+            -f mirror_images=true
+          echo "Dispatched marketplace-release.yml for ingress-nginx ${CHART_VERSION}"
