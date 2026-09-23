@@ -65,18 +65,18 @@ This chart follows the same provider pattern as the DocumentDB and ElastiCache c
 | reflector.allowedNamespaces | list | `[]` | Namespaces allowed to pull/reflect this secret. |
 | reflector.pushNamespaces | list | `[]` | Namespaces to push reflected secrets into. |
 | resourceName | string | `""` | Optional explicit Domain metadata.name. Defaults to the chart fullname. |
-| securityBootstrap | object | `{"activeDeadlineSeconds":600,"backoffLimit":3,"enabled":false,"image":"curlimages/curl:8.12.1@sha256:94e9e444bcba979c2ea12e27ae39bee4cd10bc7041a472c4727a558e213744e6","kubectlImage":"alpine/k8s:1.34.1@sha256:ec714df3813b5405292860f8a1c55c5727bf8c33c88992f1e981efad8065547f","ttlSecondsAfterFinished":3600}` | Bootstrap OpenSearch security roles and role mappings using the admin credential. |
+| securityBootstrap | object | `{"activeDeadlineSeconds":600,"backoffLimit":3,"enabled":false,"image":"curlimages/curl:8.12.1@sha256:94e9e444bcba979c2ea12e27ae39bee4cd10bc7041a472c4727a558e213744e6","kubectlImage":"alpine/k8s:1.36.2@sha256:44ef4942e171939b9c665a4a84beb80e2dcdb9a24330d4651cfdfd2e9deecc47","ttlSecondsAfterFinished":3600}` | Bootstrap OpenSearch security roles and role mappings using the admin credential. |
 | securityBootstrap.activeDeadlineSeconds | int | `600` | Maximum runtime for the bootstrap job. |
 | securityBootstrap.backoffLimit | int | `3` | Retry count for the bootstrap job. |
 | securityBootstrap.enabled | bool | `false` | Enable the security bootstrap job. |
 | securityBootstrap.image | string | `"curlimages/curl:8.12.1@sha256:94e9e444bcba979c2ea12e27ae39bee4cd10bc7041a472c4727a558e213744e6"` | Image used for the security API calls. |
-| securityBootstrap.kubectlImage | string | `"alpine/k8s:1.34.1@sha256:ec714df3813b5405292860f8a1c55c5727bf8c33c88992f1e981efad8065547f"` | kubectl image used to wait for the domain endpoint and admin secret data. |
+| securityBootstrap.kubectlImage | string | `"alpine/k8s:1.36.2@sha256:44ef4942e171939b9c665a4a84beb80e2dcdb9a24330d4651cfdfd2e9deecc47"` | kubectl image used to wait for the domain endpoint and admin secret data. |
 | securityBootstrap.ttlSecondsAfterFinished | int | `3600` | TTL for the completed bootstrap job. |
 | securityRoleMappings | list | `[]` | OpenSearch security role mappings that bind backend identities to OpenSearch roles, including built-in roles. Optionally create metadata-only connection secrets for SigV4/IRSA clients. |
 | securityRoles | list | `[]` | OpenSearch security roles to create or update. |
-| sequencedConnection | object | `{"enabled":false,"kubectlImage":"alpine/k8s:1.34.1@sha256:ec714df3813b5405292860f8a1c55c5727bf8c33c88992f1e981efad8065547f","maxWaitSeconds":3600,"pollIntervalSeconds":15,"syncWave":20,"ttlSecondsAfterFinished":3600}` | Use Argo hook jobs to create a stable connection secret before sync and patch endpoint data after the Domain becomes ready. |
+| sequencedConnection | object | `{"enabled":false,"kubectlImage":"alpine/k8s:1.36.2@sha256:44ef4942e171939b9c665a4a84beb80e2dcdb9a24330d4651cfdfd2e9deecc47","maxWaitSeconds":3600,"pollIntervalSeconds":15,"syncWave":20,"ttlSecondsAfterFinished":3600}` | Use Argo hook jobs to create a stable connection secret before sync and patch endpoint data after the Domain becomes ready. |
 | sequencedConnection.enabled | bool | `false` | Enable Argo-hooked secret bootstrapping and connection-data syncing. |
-| sequencedConnection.kubectlImage | string | `"alpine/k8s:1.34.1@sha256:ec714df3813b5405292860f8a1c55c5727bf8c33c88992f1e981efad8065547f"` | kubectl image used by the sequencing jobs. |
+| sequencedConnection.kubectlImage | string | `"alpine/k8s:1.36.2@sha256:44ef4942e171939b9c665a4a84beb80e2dcdb9a24330d4651cfdfd2e9deecc47"` | kubectl image used by the sequencing jobs. |
 | sequencedConnection.maxWaitSeconds | int | `3600` | Maximum time to wait for the Domain endpoint to appear. |
 | sequencedConnection.pollIntervalSeconds | int | `15` | Poll interval for waiting on the Domain endpoint. |
 | sequencedConnection.syncWave | int | `20` | Sync wave used by the post-resource connection sync job. |
