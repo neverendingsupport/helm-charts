@@ -1,10 +1,14 @@
 #!/usr/bin/env python3
-"""Check that every values fixture has a matching golden file.
+"""Check that values fixtures and golden files pair up one-to-one.
 
 The fixture naming rule lives in tests/fixture_layout.py so this hook and
 the test suite agree on what counts as a fixture. For each chart in
-charts/, this verifies that tests/fixtures/<chart>/ exists and that every
-values fixture in it has a sibling golden file.
+charts/, this verifies that tests/fixtures/<chart>/ exists, that every
+values fixture in it has a sibling golden file, and that every golden
+file has a values fixture (an orphaned golden is never rendered, so it
+only looks like coverage). It then checks the reverse: every directory
+under tests/fixtures/ names a chart that still exists, because the golden
+tests skip a directory whose chart is gone.
 """
 
 from __future__ import annotations
@@ -19,12 +23,15 @@ from tests.fixture_layout import (  # noqa: E402  (needs sys.path above)
     CHARTS_DIR,
     FIXTURES_ROOT,
     golden_for,
+    iter_orphan_fixture_dirs,
+    iter_orphan_goldens,
     iter_values_fixtures,
+    values_for,
 )
 
 
 def main() -> int:
-    """Check that every values fixture has a matching golden file."""
+    """Check that fixtures and goldens pair up in both directions."""
     errors: list[str] = []
 
     for chart_dir in sorted(CHARTS_DIR.iterdir()):
@@ -49,6 +56,20 @@ def main() -> int:
                     "Missing golden file for fixture: "
                     f"{values_file} (expected {golden})"
                 )
+
+        for golden in iter_orphan_goldens(fixture_dir):
+            errors.append(
+                f"Orphaned golden file: {golden} "
+                f"(no values fixture {values_for(golden).name}; "
+                "delete it or add the fixture)"
+            )
+
+    for fixture_dir in iter_orphan_fixture_dirs():
+        errors.append(
+            f"Orphaned fixtures directory: {fixture_dir} "
+            f"(no chart at {CHARTS_DIR / fixture_dir.name / 'Chart.yaml'}; "
+            "delete it or restore the chart)"
+        )
 
     if errors:
         for msg in errors:
