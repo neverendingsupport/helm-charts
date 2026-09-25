@@ -40,6 +40,13 @@ The `scripts/check_fixture_goldens.py` pre-commit hook may report:
 
 - `Missing fixtures directory for chart 'X': tests/fixtures/X`
 - `Missing golden file for fixture: tests/fixtures/X/foo-values.yaml (expected tests/fixtures/X/foo-values.golden.yaml)`
+- `Orphaned golden file: tests/fixtures/X/foo.golden.yaml (no values fixture foo.yaml; delete it or add the fixture)`
+- `Orphaned fixtures directory: tests/fixtures/X (no chart at charts/X/Chart.yaml; delete it or restore the chart)`
+
+The hook checks the pairing in both directions: every values fixture needs a
+golden, every golden needs a values fixture, every chart needs a fixtures
+directory, and every fixtures directory needs a chart. An orphan on either
+side is never rendered, so it looks like coverage without being any.
 
 ### How agents should fix these
 
@@ -57,6 +64,15 @@ The `scripts/check_fixture_goldens.py` pre-commit hook may report:
    ```
 
 4. Ensure the filenames match exactly.
+5. For an **orphaned golden file**, decide which side is wrong. If the values
+   fixture was renamed or deleted on purpose, delete the golden. If the golden
+   is the one that should exist, add the `<name>-values.yaml` it names and
+   regenerate. A golden whose name does not end in `-values.golden.yaml` can
+   never pair with anything under the suffix rule; rename it to the
+   `<name>-values` form or delete it.
+6. For an **orphaned fixtures directory**, the chart it belonged to has been
+   deleted or renamed. Delete the directory, or move it to the chart's new
+   name. Do not add a `Chart.yaml` just to satisfy the hook.
 
 ## 2. Minimal Values Files and Helm Lint
 
