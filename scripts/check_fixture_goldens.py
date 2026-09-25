@@ -6,7 +6,9 @@ the test suite agree on what counts as a fixture. For each chart in
 charts/, this verifies that tests/fixtures/<chart>/ exists, that every
 values fixture in it has a sibling golden file, and that every golden
 file has a values fixture (an orphaned golden is never rendered, so it
-only looks like coverage).
+only looks like coverage). It then checks the reverse: every directory
+under tests/fixtures/ names a chart that still exists, because the golden
+tests skip a directory whose chart is gone.
 """
 
 from __future__ import annotations
@@ -21,6 +23,7 @@ from tests.fixture_layout import (  # noqa: E402  (needs sys.path above)
     CHARTS_DIR,
     FIXTURES_ROOT,
     golden_for,
+    iter_orphan_fixture_dirs,
     iter_orphan_goldens,
     iter_values_fixtures,
     values_for,
@@ -60,6 +63,13 @@ def main() -> int:
                 f"(no values fixture {values_for(golden).name}; "
                 "delete it or add the fixture)"
             )
+
+    for fixture_dir in iter_orphan_fixture_dirs():
+        errors.append(
+            f"Orphaned fixtures directory: {fixture_dir} "
+            f"(no chart at {CHARTS_DIR / fixture_dir.name / 'Chart.yaml'}; "
+            "delete it or restore the chart)"
+        )
 
     if errors:
         for msg in errors:
