@@ -28,6 +28,18 @@ yq eval-all 'select(fileIndex == 0) * select(fileIndex == 1)' \
   "${SOURCE_CHART}/values.yaml" "$OVERLAY" > "$MERGED_VALUES"
 mv "$MERGED_VALUES" "${STAGED_CHART}/values.yaml"
 
+# The Marketplace controller is the release this chart ships: the appVersion,
+# which ingress-nginx-nes release.yml pushes to Marketplace ECR under the same
+# tag. Set it here rather than pinning it in the overlay, where it went stale.
+# verify_marketplace_images.sh then fails the release if that tag is missing.
+APP_VERSION="$(yq -r '.appVersion // ""' "${STAGED_CHART}/Chart.yaml")"
+if ! [[ "$APP_VERSION" =~ ^[A-Za-z0-9_][A-Za-z0-9._-]{0,127}$ ]]; then
+  echo "ERROR: chart appVersion is not a valid image tag: '${APP_VERSION}'" >&2
+  exit 1
+fi
+V="$APP_VERSION" yq -i '.controller.image.tag = strenv(V)' \
+  "${STAGED_CHART}/values.yaml"
+
 # The upstream certgen tag may already exist in immutable Marketplace ECR from
 # an older byte-for-byte mirror. The Marketplace variant is rebuilt with NES
 # OCI identity so scanners do not mistake the utility for the ingress

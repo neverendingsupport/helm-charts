@@ -98,6 +98,15 @@ jobs:
             charts/ingress-nginx \
             marketplace/ingress-nginx/values.yaml \
             "$stage_root"
+          # The Marketplace controller must be the release the chart ships
+          # (Chart.yaml appVersion). A hard-coded overlay pin went stale and
+          # left Marketplace charts 0.0.14 and 0.0.15 on the 1.15.7 controller.
+          staged_tag="$(yq -r '.controller.image.tag' "$stage_root/ingress-nginx/values.yaml")"
+          app_version="$(yq -r '.appVersion' "$stage_root/ingress-nginx/Chart.yaml")"
+          if [[ "$staged_tag" != "$app_version" ]]; then
+            echo "::error::staged Marketplace controller tag ${staged_tag} is not the chart appVersion ${app_version}"
+            exit 1
+          fi
           helm lint "$stage_root/ingress-nginx"
           scripts/verify_marketplace_chart_images.sh \
             "$stage_root/ingress-nginx" "$MARKETPLACE_REGISTRY"
