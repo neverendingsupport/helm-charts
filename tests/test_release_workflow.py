@@ -1,9 +1,12 @@
 """Tests for the chart release workflow contract."""
 
+import subprocess
 from pathlib import Path
 from typing import Any
 
 import yaml
+
+RELEASE_PATHS_SCRIPT = "scripts/chart_release_paths.sh"
 
 
 def release_steps() -> list[dict[str, Any]]:
@@ -24,7 +27,7 @@ def test_release_workflow_uses_chart_scoped_semantic_version_action() -> None:
     )
     inputs = version_step["with"]
     assert inputs["tag_prefix"] == "${{ matrix.chart }}-"
-    assert inputs["change_path"] == "charts/${{ matrix.chart }}"
+    assert inputs["change_path"] == "${{ steps.paths.outputs.paths }}"
     assert inputs["major_pattern"] == "#major"
     assert inputs["minor_pattern"] == "#minor"
     assert inputs["ignore_commits_pattern"] == "#none"
@@ -101,3 +104,54 @@ def test_release_workflow_keeps_chart_releaser_integration() -> None:
         'cr upload -o "$owner" -r "$repo" -c "$GITHUB_SHA"'
         in publish_step["run"]
     )
+
+
+def chart_release_paths(chart: str) -> list[str]:
+    """Run the release-paths script for one chart."""
+    result = subprocess.run(
+        ["bash", RELEASE_PATHS_SCRIPT, chart],
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    return result.stdout.split()
+
+
+def test_chart_release_paths_cover_marketplace_inputs_for_ingress_nginx() -> (
+    None
+):
+    """The Marketplace variant ships with ingress-nginx, so its inputs count."""
+    assert chart_release_paths("ingress-nginx") == [
+        "charts/ingress-nginx",
+        "marketplace/ingress-nginx",
+        "scripts/stage_marketplace_chart.sh",
+    ]
+    for chart in sorted(p.name for p in Path("charts").iterdir() if p.is_dir()):
+        paths = chart_release_paths(chart)
+        assert paths[0] == f"charts/{chart}"
+        if chart != "ingress-nginx":
+            assert paths == [f"charts/{chart}"]
+        for path in paths:
+            assert Path(path).exists(), f"{chart}: {path} does not exist"
+
+
+def test_release_paths_drive_filter_version_and_notes() -> None:
+    """Change detection, versioning and notes must use the same path set."""
+    workflow_path = Path(".github/workflows/release.yml")
+    workflow = yaml.safe_load(workflow_path.read_text(encoding="utf-8"))
+    detect_steps = workflow["jobs"]["detect-changes"]["steps"]
+    filters_step = next(s for s in detect_steps if s.get("id") == "filters")
+    assert RELEASE_PATHS_SCRIPT in filters_step["run"]
+
+    steps = release_steps()
+    ids = [step.get("id") for step in steps]
+    paths_step = steps[ids.index("paths")]
+    assert ids.index("paths") < ids.index("version")
+    assert RELEASE_PATHS_SCRIPT in paths_step["run"]
+    assert '"${{ matrix.chart }}"' in paths_step["run"]
+
+    notes_step = next(
+        step for step in steps if step.get("name") == "Generate release notes"
+    )
+    assert RELEASE_PATHS_SCRIPT in notes_step["run"]
+    assert '"charts/${{ matrix.chart }}"' not in notes_step["run"]
