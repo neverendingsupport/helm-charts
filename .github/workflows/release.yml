@@ -46,6 +46,13 @@ jobs:
           for chart in charts/*; do
             [[ -d "$chart" ]] || continue
             printf "%s:\n  - '%s/**'\n" "$(basename "$chart")" "$chart"
+            # The ingress-nginx release also packages the AWS Marketplace
+            # variant, staged from these inputs; keep in sync with the
+            # change_path of "Resolve chart release version".
+            if [[ "$(basename "$chart")" == "ingress-nginx" ]]; then
+              printf "  - 'marketplace/ingress-nginx/**'\n"
+              printf "  - 'scripts/stage_marketplace_chart.sh'\n"
+            fi
           done >"$filters_file"
 
           echo "file=$filters_file" >>"$GITHUB_OUTPUT"
@@ -95,7 +102,11 @@ jobs:
         uses: PaulHatch/semantic-version@9f72830310d5ed81233b641ee59253644cd8a8fc # v6.0.2
         with:
           tag_prefix: "${{ matrix.chart }}-"
-          change_path: "charts/${{ matrix.chart }}"
+          # Space-separated paths whose commits move the chart's version. For
+          # ingress-nginx this includes the Marketplace staging inputs, so a
+          # Marketplace-only fix cuts a new version (#225 did not, because
+          # Marketplace ECR chart tags are immutable and 0.0.15 was taken).
+          change_path: "${{ matrix.chart == 'ingress-nginx' && 'charts/ingress-nginx marketplace/ingress-nginx scripts/stage_marketplace_chart.sh' || format('charts/{0}', matrix.chart) }}"
           major_pattern: "#major"
           minor_pattern: "#minor"
           ignore_commits_pattern: "#none"
