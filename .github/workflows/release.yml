@@ -45,14 +45,16 @@ jobs:
           filters_file="$RUNNER_TEMP/chart-filters.yml"
           for chart in charts/*; do
             [[ -d "$chart" ]] || continue
-            printf "%s:\n  - '%s/**'\n" "$(basename "$chart")" "$chart"
-            # The ingress-nginx release also packages the AWS Marketplace
-            # variant, staged from these inputs; keep in sync with the
-            # change_path of "Resolve chart release version".
-            if [[ "$(basename "$chart")" == "ingress-nginx" ]]; then
-              printf "  - 'marketplace/ingress-nginx/**'\n"
-              printf "  - 'scripts/stage_marketplace_chart.sh'\n"
-            fi
+            name="$(basename "$chart")"
+            printf "%s:\n" "$name"
+            # Same path set as the release job's version and notes.
+            while read -r path; do
+              if [[ -d "$path" ]]; then
+                printf "  - '%s/**'\n" "$path"
+              else
+                printf "  - '%s'\n" "$path"
+              fi
+            done < <(scripts/chart_release_paths.sh "$name")
           done >"$filters_file"
 
           echo "file=$filters_file" >>"$GITHUB_OUTPUT"
@@ -97,16 +99,21 @@ jobs:
         with:
           version: v3.19.0
 
+      - name: Resolve chart release paths
+        id: paths
+        run: |
+          paths="$(scripts/chart_release_paths.sh "${{ matrix.chart }}" | paste -sd ' ' -)"
+          echo "paths=$paths" >> "$GITHUB_OUTPUT"
+
       - name: Resolve chart release version
         id: version
         uses: PaulHatch/semantic-version@9f72830310d5ed81233b641ee59253644cd8a8fc # v6.0.2
         with:
           tag_prefix: "${{ matrix.chart }}-"
-          # Space-separated paths whose commits move the chart's version. For
-          # ingress-nginx this includes the Marketplace staging inputs, so a
-          # Marketplace-only fix cuts a new version (#225 did not, because
-          # Marketplace ECR chart tags are immutable and 0.0.15 was taken).
-          change_path: "${{ matrix.chart == 'ingress-nginx' && 'charts/ingress-nginx marketplace/ingress-nginx scripts/stage_marketplace_chart.sh' || format('charts/{0}', matrix.chart) }}"
+          # Space-separated paths from scripts/chart_release_paths.sh; for
+          # ingress-nginx they include the Marketplace staging inputs, so a
+          # Marketplace-only fix cuts a new version.
+          change_path: "${{ steps.paths.outputs.paths }}"
           major_pattern: "#major"
           minor_pattern: "#minor"
           ignore_commits_pattern: "#none"
@@ -189,8 +196,9 @@ jobs:
           if git rev-parse --verify --quiet "refs/tags/$last_tag" >/dev/null; then
             log_args+=("${last_tag}..HEAD")
           fi
+          mapfile -t paths < <(scripts/chart_release_paths.sh "${{ matrix.chart }}")
           changes=$(git log "${log_args[@]}" --pretty=format:'- %s (%h)' -- \
-            "charts/${{ matrix.chart }}")
+            "${paths[@]}")
           {
             echo "## Changes"
             if [[ -n "$changes" ]]; then
