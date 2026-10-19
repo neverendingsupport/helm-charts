@@ -117,7 +117,9 @@ def chart_release_paths(chart: str) -> list[str]:
     return result.stdout.split()
 
 
-def test_chart_release_paths_cover_marketplace_inputs_for_ingress_nginx() -> None:
+def test_chart_release_paths_cover_marketplace_inputs_for_ingress_nginx() -> (
+    None
+):
     """The Marketplace variant ships with ingress-nginx, so its inputs count."""
     assert chart_release_paths("ingress-nginx") == [
         "charts/ingress-nginx",
