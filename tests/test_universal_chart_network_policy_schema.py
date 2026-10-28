@@ -13,8 +13,15 @@ from .universal_chart_test_utils import CHART
         {"enabled": "true"},
         {"enabled": 1},
         {"unknown": True},
-        {"applicationIngress": {"enabled": True}},
-        {"dnsEgress": {"enabled": True}},
+        {"applicationIngress": {"enabled": True, "from": []}},
+        {"dnsEgress": {"enabled": True, "to": []}},
+        {"metricsIngress": {"enabled": True}},
+        {"policyTypes": []},
+        {"policyTypes": ["Ingress", "Ingress"]},
+        {"policyTypes": ["Invalid"]},
+        {"policyTypes": "Ingress"},
+        {"labels": {"team": 123}},
+        {"annotations": {"setting": True}},
         {"dnsEgress": {"enabled": "false"}},
         {"applicationIngress": {"from": [{}]}},
         {"dnsEgress": {"to": [{"namespace": "kube-system"}]}},
@@ -139,7 +146,12 @@ def test_network_policy_rejects_reversed_port_range(helm_runner, direction):
 
 
 @pytest.mark.parametrize(
-    "helper,peers", [("applicationIngress", "from"), ("dnsEgress", "to")]
+    "helper,peers",
+    [
+        ("applicationIngress", "from"),
+        ("dnsEgress", "to"),
+        ("metricsIngress", "from"),
+    ],
 )
 @pytest.mark.parametrize("null_peers", [False, True])
 def test_network_policy_helpers_fail_closed_without_schema(
@@ -160,5 +172,10 @@ def test_network_policy_helpers_fail_closed_without_schema(
             chart=str(CHART.chart_dir),
             values_files=[str(CHART.default_values_file)],
             values=values,
-            extra_args=["--skip-schema-validation"],
+            extra_args=["--skip-schema-validation"]
+            + (
+                []
+                if null_peers
+                else ["--set-json", f"networkPolicy.{helper}.{peers}=[]"]
+            ),
         )

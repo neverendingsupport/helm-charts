@@ -197,9 +197,9 @@ An explicit annotation takes precedence even when `reloader.enabled` is true.
 ## Restrict application network access
 
 NetworkPolicy support is disabled by default. Enabling it isolates application
-pods in both directions; configure allowed ingress, DNS, and dependency traffic
+pods in the selected directions (both by default); configure allowed ingress, DNS, and dependency traffic
 before rollout. The chart uses its application selector and Service target
-ports, with explicit peer rules for your cluster.
+ports, with replaceable controller and DNS peers and explicit monitoring peers.
 
 See [Restrict application network access](network-policy.md) for a complete
 example covering ingress controllers, DNS, monitoring, and an external database,
@@ -402,16 +402,22 @@ helm template my-release . \
 | lifecycle | object | `{}` | Main-container lifecycle hooks. A handler must set exactly one of `exec`, `httpGet`, or `sleep`. Keep a preStop hook shorter than `terminationGracePeriodSeconds` so the process still has time to exit. |
 | livenessProbe | string | `nil` | Configure a liveness probe to detect hung or dead containers. The liveness probe determines if a container is still running and healthy. If the liveness probe fails, Kubernetes will restart the container. This is useful for detecting situations where the application is running but unable to make progress (e.g., deadlocked). The liveness probe runs throughout the container's lifetime. More information can be found here: https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/ Example configuration:   livenessProbe:     httpGet:       path: /internal/health       port: http     initialDelaySeconds: 30     periodSeconds: 10 |
 | nameOverride | string | `""` |  |
-| networkPolicy | object | `{"applicationIngress":{"enabled":false,"from":[]},"dnsEgress":{"enabled":false,"to":[]},"egress":[],"enabled":false,"ingress":[]}` | Optional NetworkPolicy for application pods. Enabling it isolates both directions; only the configured rules (and other matching policies) allow traffic. Requires a network plugin that enforces NetworkPolicy. |
-| networkPolicy.applicationIngress | object | `{"enabled":false,"from":[]}` | Allow selected peers to reach the main Service's target ports. The separate metrics Service is not included; use an ingress rule for it. |
+| networkPolicy | object | `{"annotations":{},"applicationIngress":{"enabled":false,"from":[{"namespaceSelector":{"matchLabels":{"kubernetes.io/metadata.name":"ingress-nginx"}},"podSelector":{"matchLabels":{"app.kubernetes.io/component":"controller"}}}]},"dnsEgress":{"enabled":false,"to":[{"namespaceSelector":{"matchLabels":{"kubernetes.io/metadata.name":"kube-system"}},"podSelector":{"matchLabels":{"k8s-app":"kube-dns"}}}]},"egress":[],"enabled":false,"ingress":[],"labels":{},"metricsIngress":{"enabled":false,"from":[]},"policyTypes":["Ingress","Egress"]}` | Optional NetworkPolicy for application pods. Enabling it isolates the selected directions; only the configured rules (and other matching policies) allow traffic. Requires a network plugin that enforces NetworkPolicy. |
+| networkPolicy.annotations | object | `{}` | Extra NetworkPolicy annotations. |
+| networkPolicy.applicationIngress | object | `{"enabled":false,"from":[{"namespaceSelector":{"matchLabels":{"kubernetes.io/metadata.name":"ingress-nginx"}},"podSelector":{"matchLabels":{"app.kubernetes.io/component":"controller"}}}]}` | Allow selected peers to reach the main Service's target ports. The separate metrics Service is not included; use metricsIngress or a native rule. |
 | networkPolicy.applicationIngress.enabled | bool | `false` | Add application ingress independently of DNS egress. |
-| networkPolicy.applicationIngress.from | list | `[]` | Source peers. Required when enabled. An empty namespaceSelector matches all namespaces. |
-| networkPolicy.dnsEgress | object | `{"enabled":false,"to":[]}` | Allow TCP and UDP port 53 to explicit DNS peers. No cluster labels are assumed. |
+| networkPolicy.applicationIngress.from | list | `[{"namespaceSelector":{"matchLabels":{"kubernetes.io/metadata.name":"ingress-nginx"}},"podSelector":{"matchLabels":{"app.kubernetes.io/component":"controller"}}}]` | Source peers. Replace this list for another controller. An empty namespaceSelector matches all namespaces. |
+| networkPolicy.dnsEgress | object | `{"enabled":false,"to":[{"namespaceSelector":{"matchLabels":{"kubernetes.io/metadata.name":"kube-system"}},"podSelector":{"matchLabels":{"k8s-app":"kube-dns"}}}]}` | Allow TCP and UDP port 53 to selected DNS peers. |
 | networkPolicy.dnsEgress.enabled | bool | `false` | Add DNS egress independently of application ingress. |
-| networkPolicy.dnsEgress.to | list | `[]` | Destination peers. Required when enabled. Select the cluster's DNS pods or resolver CIDR. |
+| networkPolicy.dnsEgress.to | list | `[{"namespaceSelector":{"matchLabels":{"kubernetes.io/metadata.name":"kube-system"}},"podSelector":{"matchLabels":{"k8s-app":"kube-dns"}}}]` | Destination peers. Replace this list for other DNS labels or a node-local resolver CIDR. |
 | networkPolicy.egress | list | `[]` | Additional native egress rules, for example database access. An empty rule `{}` allows all egress; omitted or empty `to`/`ports` are unrestricted. |
 | networkPolicy.enabled | bool | `false` | Create the application NetworkPolicy. Disabled preserves existing networking. |
 | networkPolicy.ingress | list | `[]` | Additional native ingress rules, for example monitoring peers. An empty rule `{}` allows all ingress; omitted or empty `from`/`ports` are unrestricted. |
+| networkPolicy.labels | object | `{}` | Extra NetworkPolicy labels. Chart-owned labels take precedence; pod selection is unchanged. |
+| networkPolicy.metricsIngress | object | `{"enabled":false,"from":[]}` | Allow explicit monitoring peers to the ServiceMonitor target port. Requires serviceMonitor.enabled. |
+| networkPolicy.metricsIngress.enabled | bool | `false` | Add metrics ingress independently of application ingress. |
+| networkPolicy.metricsIngress.from | list | `[]` | Trusted scraping peers. Required when enabled; ServiceMonitor selectors do not identify clients. |
+| networkPolicy.policyTypes | list | `["Ingress","Egress"]` | Directions to isolate. Rules and enabled helpers must match these directions. |
 | nodeSelector | object | `{}` | Select specific nodes to run upon Normally this should be an empty map |
 | podAnnotations | object | `{}` | Add additional annotations to the pod. Annotations are generally for "people" uses and interoperability. For more information check out: https://kubernetes.io/docs/concepts/overview/working-with-objects/annotations/ |
 | podDisruptionBudget | object | `{"allowZeroDisruptions":false,"annotations":{},"enabled":false,"maxUnavailable":null,"minAvailable":null,"unhealthyPodEvictionPolicy":null}` | Configure a PodDisruptionBudget for voluntary disruptions such as node drains. Set exactly one of `minAvailable` or `maxUnavailable`; rendering fails when both or neither are set. `minAvailable` cannot require more healthy pods than `replicaCount`, or `autoscaling.minReplicas` when autoscaling is enabled. Percentage limits use Kubernetes' round-up behavior. More information: https://kubernetes.io/docs/tasks/run-application/configure-pdb/ |

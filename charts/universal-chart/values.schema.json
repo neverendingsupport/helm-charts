@@ -974,11 +974,20 @@
     },
     "networkPolicy": {
       "additionalProperties": false,
-      "description": "Optional NetworkPolicy for application pods. Enabling it isolates both\ndirections; only the configured rules (and other matching policies) allow\ntraffic. Requires a network plugin that enforces NetworkPolicy.",
+      "description": "Optional NetworkPolicy for application pods. Enabling it isolates the selected\ndirections; only the configured rules (and other matching policies) allow\ntraffic. Requires a network plugin that enforces NetworkPolicy.",
       "properties": {
+        "annotations": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "Extra NetworkPolicy annotations.",
+          "required": [],
+          "title": "annotations",
+          "type": "object"
+        },
         "applicationIngress": {
           "additionalProperties": false,
-          "description": "Allow selected peers to reach the main Service's target ports.\nThe separate metrics Service is not included; use an ingress rule for it.",
+          "description": "Allow selected peers to reach the main Service's target ports.\nThe separate metrics Service is not included; use metricsIngress or a native rule.",
           "if": {
             "properties": {
               "enabled": {
@@ -1019,7 +1028,7 @@
         },
         "dnsEgress": {
           "additionalProperties": false,
-          "description": "Allow TCP and UDP port 53 to explicit DNS peers. No cluster labels are assumed.",
+          "description": "Allow TCP and UDP port 53 to selected DNS peers.",
           "if": {
             "properties": {
               "enabled": {
@@ -1103,6 +1112,71 @@
           },
           "title": "ingress",
           "type": "array"
+        },
+        "labels": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "Extra NetworkPolicy labels. Chart-owned labels take precedence; pod selection is unchanged.",
+          "required": [],
+          "title": "labels",
+          "type": "object"
+        },
+        "metricsIngress": {
+          "additionalProperties": false,
+          "description": "Allow explicit monitoring peers to the ServiceMonitor target port. Requires serviceMonitor.enabled.",
+          "if": {
+            "properties": {
+              "enabled": {
+                "const": true,
+                "required": []
+              }
+            },
+            "required": [
+              "enabled"
+            ]
+          },
+          "properties": {
+            "enabled": {
+              "default": false,
+              "description": "Add metrics ingress independently of application ingress.",
+              "title": "enabled",
+              "type": "boolean"
+            },
+            "from": {
+              "$ref": "#/definitions/networkPolicyPeers",
+              "required": []
+            }
+          },
+          "required": [],
+          "then": {
+            "properties": {
+              "from": {
+                "minItems": 1,
+                "required": []
+              }
+            },
+            "required": [
+              "from"
+            ]
+          },
+          "title": "metricsIngress",
+          "type": "object"
+        },
+        "policyTypes": {
+          "description": "Directions to isolate. Rules and enabled helpers must match these directions.",
+          "items": {
+            "enum": [
+              "Ingress",
+              "Egress"
+            ],
+            "required": []
+          },
+          "maxItems": 2,
+          "minItems": 1,
+          "title": "policyTypes",
+          "type": "array",
+          "uniqueItems": true
         }
       },
       "required": [],

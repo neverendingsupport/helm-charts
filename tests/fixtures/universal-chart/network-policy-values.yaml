@@ -38,17 +38,15 @@ networkPolicy:
         podSelector:
           matchLabels:
             k8s-app: kube-dns
-  ingress:
-    - from:
-        - namespaceSelector:
-            matchLabels:
-              kubernetes.io/metadata.name: monitoring
-          podSelector:
-            matchLabels:
-              app.kubernetes.io/name: prometheus
-      ports:
-        - port: 9090
-          protocol: TCP
+  metricsIngress:
+    enabled: true
+    from:
+      - namespaceSelector:
+          matchLabels:
+            kubernetes.io/metadata.name: monitoring
+        podSelector:
+          matchLabels:
+            app.kubernetes.io/name: prometheus
   egress:
     - to:
         - ipBlock:

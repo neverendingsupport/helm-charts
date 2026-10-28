@@ -196,9 +196,9 @@ An explicit annotation takes precedence even when `reloader.enabled` is true.
 ## Restrict application network access
 
 NetworkPolicy support is disabled by default. Enabling it isolates application
-pods in both directions; configure allowed ingress, DNS, and dependency traffic
+pods in the selected directions (both by default); configure allowed ingress, DNS, and dependency traffic
 before rollout. The chart uses its application selector and Service target
-ports, with explicit peer rules for your cluster.
+ports, with replaceable controller and DNS peers and explicit monitoring peers.
 
 See [Restrict application network access](network-policy.md) for a complete
 example covering ingress controllers, DNS, monitoring, and an external database,

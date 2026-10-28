@@ -497,12 +497,36 @@ service:
 #           port:
 #             type: integer
 # @schema
-# -- Optional NetworkPolicy for application pods. Enabling it isolates both
+# -- Optional NetworkPolicy for application pods. Enabling it isolates the selected
 # directions; only the configured rules (and other matching policies) allow
 # traffic. Requires a network plugin that enforces NetworkPolicy.
 networkPolicy:
   # -- Create the application NetworkPolicy. Disabled preserves existing networking.
   enabled: false
+  # @schema
+  # type: array
+  # minItems: 1
+  # maxItems: 2
+  # uniqueItems: true
+  # items:
+  #   enum: [Ingress, Egress]
+  # @schema
+  # -- Directions to isolate. Rules and enabled helpers must match these directions.
+  policyTypes: [Ingress, Egress]
+  # @schema
+  # type: object
+  # additionalProperties:
+  #   type: string
+  # @schema
+  # -- Extra NetworkPolicy labels. Chart-owned labels take precedence; pod selection is unchanged.
+  labels: {}
+  # @schema
+  # type: object
+  # additionalProperties:
+  #   type: string
+  # @schema
+  # -- Extra NetworkPolicy annotations.
+  annotations: {}
   # @schema
   # type: object
   # additionalProperties: false
@@ -518,14 +542,43 @@ networkPolicy:
   #       minItems: 1
   # @schema
   # -- Allow selected peers to reach the main Service's target ports.
-  # The separate metrics Service is not included; use an ingress rule for it.
+  # The separate metrics Service is not included; use metricsIngress or a native rule.
   applicationIngress:
     # -- Add application ingress independently of DNS egress.
     enabled: false
     # @schema
     # $ref: "#/definitions/networkPolicyPeers"
     # @schema
-    # -- Source peers. Required when enabled. An empty namespaceSelector matches all namespaces.
+    # -- Source peers. Replace this list for another controller. An empty namespaceSelector matches all namespaces.
+    from:
+      - namespaceSelector:
+          matchLabels:
+            kubernetes.io/metadata.name: ingress-nginx
+        podSelector:
+          matchLabels:
+            app.kubernetes.io/component: controller
+  # @schema
+  # type: object
+  # additionalProperties: false
+  # if:
+  #   properties:
+  #     enabled:
+  #       const: true
+  #   required: [enabled]
+  # then:
+  #   required: [from]
+  #   properties:
+  #     from:
+  #       minItems: 1
+  # @schema
+  # -- Allow explicit monitoring peers to the ServiceMonitor target port. Requires serviceMonitor.enabled.
+  metricsIngress:
+    # -- Add metrics ingress independently of application ingress.
+    enabled: false
+    # @schema
+    # $ref: "#/definitions/networkPolicyPeers"
+    # @schema
+    # -- Trusted scraping peers. Required when enabled; ServiceMonitor selectors do not identify clients.
     from: []
   # @schema
   # type: object
@@ -541,15 +594,21 @@ networkPolicy:
   #     to:
   #       minItems: 1
   # @schema
-  # -- Allow TCP and UDP port 53 to explicit DNS peers. No cluster labels are assumed.
+  # -- Allow TCP and UDP port 53 to selected DNS peers.
   dnsEgress:
     # -- Add DNS egress independently of application ingress.
     enabled: false
     # @schema
     # $ref: "#/definitions/networkPolicyPeers"
     # @schema
-    # -- Destination peers. Required when enabled. Select the cluster's DNS pods or resolver CIDR.
-    to: []
+    # -- Destination peers. Replace this list for other DNS labels or a node-local resolver CIDR.
+    to:
+      - namespaceSelector:
+          matchLabels:
+            kubernetes.io/metadata.name: kube-system
+        podSelector:
+          matchLabels:
+            k8s-app: kube-dns
   # @schema
   # type: array
   # items:

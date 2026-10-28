@@ -1,5 +1,14 @@
 {{- $policy := .Values.networkPolicy | default dict -}}
 {{- if $policy.enabled -}}
+{{- $types := $policy.policyTypes -}}
+{{- if empty $types -}}
+{{- fail "networkPolicy.policyTypes must contain Ingress, Egress, or both" -}}
+{{- end -}}
+{{- range $types -}}
+{{- if not (has . (list "Ingress" "Egress")) -}}
+{{- fail "networkPolicy.policyTypes must contain Ingress, Egress, or both" -}}
+{{- end -}}
+{{- end -}}
 {{- $ingress := $policy.ingress | default list -}}
 {{- $egress := $policy.egress | default list -}}
 {{- range $direction, $rules := dict "ingress" $ingress "egress" $egress -}}
@@ -23,6 +32,16 @@
 {{- end -}}
 {{- $ingress = prepend $ingress (dict "from" $policy.applicationIngress.from "ports" $ports) -}}
 {{- end -}}
+{{- if ($policy.metricsIngress | default dict).enabled -}}
+{{- if empty $policy.metricsIngress.from -}}
+{{- fail "networkPolicy.metricsIngress.from must contain at least one peer" -}}
+{{- end -}}
+{{- if not .Values.serviceMonitor.enabled -}}
+{{- fail "networkPolicy.metricsIngress requires serviceMonitor.enabled" -}}
+{{- end -}}
+{{- $port := default "http" .Values.serviceMonitor.alternatePort -}}
+{{- $ingress = append $ingress (dict "from" $policy.metricsIngress.from "ports" (list (dict "port" $port "protocol" "TCP"))) -}}
+{{- end -}}
 {{- if ($policy.dnsEgress | default dict).enabled -}}
 {{- if empty $policy.dnsEgress.to -}}
 {{- fail "networkPolicy.dnsEgress.to must contain at least one peer" -}}
@@ -30,20 +49,31 @@
 {{- $ports := list (dict "port" 53 "protocol" "UDP") (dict "port" 53 "protocol" "TCP") -}}
 {{- $egress = prepend $egress (dict "to" $policy.dnsEgress.to "ports" $ports) -}}
 {{- end -}}
+{{- range $direction, $rules := dict "Ingress" $ingress "Egress" $egress -}}
+{{- if and (not (has $direction $types)) (not (empty $rules)) -}}
+{{- fail (printf "networkPolicy.policyTypes must include %s when its rules or helpers are configured" $direction) -}}
+{{- end -}}
+{{- end -}}
 {{- /* Keep all generated rules in one policy with explicit isolation types. */}}
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
   name: {{ include "universal-chart.fullname" . }}
   labels:
-    {{- include "universal-chart.labels" . | nindent 4 }}
+    {{- merge (include "universal-chart.labels" . | fromYaml) ($policy.labels | default dict) | toYaml | nindent 4 }}
+  {{- with $policy.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
 spec:
   podSelector:
     matchLabels:
       {{- include "universal-chart.selectorLabels" . | nindent 6 }}
-  policyTypes:
-    - Ingress
-    - Egress
+  policyTypes: {{- toYaml $types | nindent 4 }}
+  {{- if has "Ingress" $types }}
   ingress: {{- toYaml $ingress | nindent 4 }}
+  {{- end }}
+  {{- if has "Egress" $types }}
   egress: {{- toYaml $egress | nindent 4 }}
+  {{- end }}
 {{- end }}

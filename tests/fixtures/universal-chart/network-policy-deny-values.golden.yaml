@@ -5,10 +5,10 @@ kind: NetworkPolicy
 metadata:
   name: universal-chart
   labels:
-    helm.sh/chart: universal-chart-0.0.0-a.placeholder
-    app.kubernetes.io/name: universal-chart
     app.kubernetes.io/instance: universal-chart
     app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/name: universal-chart
+    helm.sh/chart: universal-chart-0.0.0-a.placeholder
 spec:
   podSelector:
     matchLabels:

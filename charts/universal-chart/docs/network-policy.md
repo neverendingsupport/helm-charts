@@ -11,8 +11,12 @@ NetworkPolicy. Kubernetes accepts policies even when the plugin doesn't enforce
 them. You'll need permission to manage NetworkPolicies in the application
 namespace and read the namespaces and pod labels used in your rules.
 
-Enabling this policy isolates application pods for both ingress and egress.
-With no rules, it permits no connections in either direction beyond Kubernetes'
+By default, enabling this policy isolates application pods for ingress and egress.
+Set `networkPolicy.policyTypes` to `[Ingress]` or `[Egress]` to isolate only one
+direction. The excluded direction is unaffected by this policy, though other
+policies may isolate it. Rules or enabled helpers for an excluded direction
+cause a Helm error rather than silently changing the isolation you requested.
+With no rules, it permits no connections in the selected directions beyond Kubernetes'
 built-in exceptions, such as replies and traffic from the pod's node. Other
 policies selecting the same pods can still allow traffic: NetworkPolicies are
 additive, not ordered firewall rules. Check existing policies before rollout.
@@ -23,9 +27,12 @@ dependencies first. Include connections made by init containers and sidecars;
 the policy applies to the whole pod. It doesn't select Redis subchart pods or
 other application releases, and it doesn't automatically allow access to them.
 
-The example below assumes pod-network ingress controllers and CoreDNS. Check
-the actual labels and resolver address in your cluster; these are examples,
-not chart defaults. NodeLocal DNS, `hostNetwork` pods, and Service address
+The application and DNS helpers default to pod-network ingress-nginx controllers
+in `ingress-nginx` and DNS pods labeled `k8s-app: kube-dns` in `kube-system`.
+Both helpers remain disabled until you enable them. Check the actual labels and
+resolver address in your cluster. Override `applicationIngress.from` or
+`dnsEgress.to` to replace the entire peer list; the chart does not append hidden
+defaults. NodeLocal DNS, `hostNetwork` pods, and Service address
 translation can need different rules depending on the network plugin. Consult
 your plugin's documentation and verify traffic in a test namespace before
 rolling this out to production.
@@ -79,17 +86,15 @@ networkPolicy:
         podSelector:
           matchLabels:
             k8s-app: kube-dns
-  ingress:
-    - from:
-        - namespaceSelector:
-            matchLabels:
-              kubernetes.io/metadata.name: monitoring
-          podSelector:
-            matchLabels:
-              app.kubernetes.io/name: prometheus
-      ports:
-        - port: 9090
-          protocol: TCP
+  metricsIngress:
+    enabled: true
+    from:
+      - namespaceSelector:
+          matchLabels:
+            kubernetes.io/metadata.name: monitoring
+        podSelector:
+          matchLabels:
+            app.kubernetes.io/name: prometheus
   egress:
     - to:
         - ipBlock:
@@ -112,16 +117,24 @@ This adds four exceptions to the policy:
 `service.extraPorts` target, preserving each protocol. It uses `targetPort`,
 falling back to `port` when unset, just as the Service does. A named target
 must match a declared container port. The separate metrics Service isn't
-included; add its port to `networkPolicy.ingress` as above. If metrics share
+included. `metricsIngress` uses `serviceMonitor.alternatePort` when set, or
+the named `http` port otherwise. It requires `serviceMonitor.enabled` and
+an explicit, nonempty `from` list of trusted scraping peers. Enabling the
+ServiceMonitor alone never grants access: its selector identifies scrape
+targets, not the clients making connections. If metrics share
 the application port, NetworkPolicy cannot distinguish HTTP paths. Keep the
 chart's public metrics-blocking Ingress or an equivalent application-level
 restriction.
 
-Application ingress and DNS egress are independently disabled by default.
+Application ingress, metrics ingress, and DNS egress are independently disabled by default.
 Each helper requires a nonempty peer list when enabled, even with Helm's
 `--skip-schema-validation` flag. Turning a helper off
 removes its rule; it doesn't remove any equivalent access granted through
 additional rules or another policy.
+
+Use `networkPolicy.labels` and `networkPolicy.annotations` for resource metadata.
+Both accept string values. Chart-owned labels win on collisions; extra labels
+do not change which pods the policy selects.
 
 ## Add native rules
 
@@ -146,6 +159,35 @@ Port ranges require a supporting network plugin. The schema checks structure,
 peer combinations, and selector operators; Helm checks reversed port ranges.
 Kubernetes still validates CIDR syntax, subnet containment, and label syntax.
 This isn't a replacement for server-side validation.
+
+### Allow Kubernetes API access
+
+An application that creates Jobs also needs egress to the Kubernetes API.
+Nothing in this chart automatically grants that access. Add an explicit native
+rule alongside the application's other egress rules, using the destination and
+port your network plugin sees. For example:
+
+```yaml
+networkPolicy:
+  enabled: true
+  egress:
+    - to:
+        - ipBlock:
+            cidr: 192.0.2.20/32
+      ports:
+        - port: 443
+          protocol: TCP
+```
+
+The address is a placeholder, not a Kubernetes API default. Check the cluster's
+API endpoints and the plugin's Service address-translation behavior before
+choosing a CIDR and port; the policy may see the backend endpoint rather than
+the `kubernetes` Service IP. The backend may use a different port, such as 6443.
+Don't omit `to` to work around this: that allows the port to every destination.
+Verify access in a test namespace and account for endpoint changes. Network
+access does not grant credentials or RBAC permissions to create Jobs. Pods
+created by those Jobs need their own policy if they don't match this release's
+application selector.
 
 ## Render, validate, and roll out
 
