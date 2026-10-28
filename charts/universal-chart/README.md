@@ -194,6 +194,44 @@ deployment:
 
 An explicit annotation takes precedence even when `reloader.enabled` is true.
 
+## Restricted security profile
+
+For Linux applications that can run without root privileges, enable the profile
+in your existing application values:
+
+```yaml
+securityProfile:
+  enabled: true
+```
+
+The profile sets pod `runAsNonRoot: true` and `seccompProfile.type: RuntimeDefault`.
+The main and init containers get `allowPrivilegeEscalation: false` and
+`capabilities.drop: [ALL]`. Root filesystems remain writable unless you set
+`securityContext.readOnlyRootFilesystem: true` and provide writable mounts.
+Helm cannot inspect images: each image must declare a nonzero numeric user or
+support a nonzero UID supplied through its security context. Root-only images
+will fail to start with the profile defaults.
+
+`serviceAccount.automount` now defaults to `null`. For chart-created accounts,
+it resolves to `true` when the profile is disabled and `false` when enabled;
+explicit booleans win. With the profile enabled, that choice also applies
+directly to the pod, including when it uses an existing account. With the
+profile disabled, existing accounts retain their own policy. Remove an
+inherited `automount: true` if you want the profile to disable token mounting.
+
+For Helm CLI upgrades, `--reuse-values` can also carry forward the old implicit
+`automount: true`. Use `--reset-then-reuse-values` when adopting the profile,
+and clear any explicit token override you no longer need. See the migration
+guide for the upgrade commands.
+
+Explicit `podSecurityContext` and `securityContext` fields override the profile
+defaults. This is a configurable baseline, not a guarantee of admission under
+Kubernetes' Restricted Pod Security Standard. The profile is disabled by
+default; existing deployments keep their rendered defaults.
+
+See the [security profile migration guide](security-profile.md)
+for image checks, writable mounts, API access, and rollout verification.
+
 ## Using The Chart
 
 Normally, you're going to want to distribute this chart via ArgoCD as an
@@ -386,7 +424,7 @@ helm template my-release . \
 | ingress.tls | list | `[]` | list of TLS certs to use.  The objects in the list have a secret name where the cert will be stored and a list of hosts to include in that cert. Normally this will only be a one item list, but it's technically acceptable to create multiple certs. If ingress.tls.secretName isn't specified, the secret will just be named "tls". |
 | initContainers | list | `[{"command":[],"extraContainerProps":{},"image":null}]` | define init container(s) which will run before the "real" container starts. The init container runs with the same environment, volumes, and security context as the main container. |
 | initContainers[0].command | list | `[]` | the command to run in the init container This overrides the command in the container.  Leave it empty to just run the container's default command. |
-| initContainers[0].extraContainerProps | object | `{}` | a map of additional properties for the init container.  This can technically be any values from the spec, though reusing image, command, securityContext, volumes, env, or envFrom might cause unexpected behavior. |
+| initContainers[0].extraContainerProps | object | `{}` | a map of additional properties for the init container.  This can technically be any values from the spec, though reusing image, command, volumes, env, or envFrom might cause unexpected behavior. With the security profile enabled, securityContext merges over the shared container context; without it, reusing securityContext can produce duplicate YAML keys. |
 | initContainers[0].image | string | `nil` | the image to run on init if this is left as null or a false-ish value, the initContainers section of the deploment will be skipped |
 | lifecycle | object | `{}` | Main-container lifecycle hooks. A handler must set exactly one of `exec`, `httpGet`, or `sleep`. Keep a preStop hook shorter than `terminationGracePeriodSeconds` so the process still has time to exit. |
 | livenessProbe | string | `nil` | Configure a liveness probe to detect hung or dead containers. The liveness probe determines if a container is still running and healthy. If the liveness probe fails, Kubernetes will restart the container. This is useful for detecting situations where the application is running but unable to make progress (e.g., deadlocked). The liveness probe runs throughout the container's lifetime. More information can be found here: https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/ Example configuration:   livenessProbe:     httpGet:       path: /internal/health       port: http     initialDelaySeconds: 30     periodSeconds: 10 |
@@ -401,7 +439,7 @@ helm template my-release . \
 | podDisruptionBudget.minAvailable | string | `nil` | Minimum number or percentage of pods that must remain available. |
 | podDisruptionBudget.unhealthyPodEvictionPolicy | string | `nil` | Optional eviction policy for unhealthy pods (Kubernetes 1.26+). See https://kubernetes.io/docs/tasks/run-application/configure-pdb/#unhealthy-pod-eviction-policy |
 | podLabels | object | `{}` | Add additional labels to the pods. Labels are generally for k8s internal use (pod selectors, etc) For more information check out: https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/ |
-| podSecurityContext | object | `{}` |  |
+| podSecurityContext | object | `{}` | podSecurityContext overrides the restricted profile's pod defaults when enabled. Without the profile, these values render unchanged. |
 | prometheusRule | object | `{"additionalLabels":{},"annotations":{},"defaultRuleLabels":{},"enabled":false,"groups":[],"rules":[]}` | Configure a PrometheusRule for evaluating alerting rules against scraped metrics. Recording rules generated from `autoscaling.hpaScalingRules` use this resource's metadata labels and annotations even when `prometheusRule.enabled` is false. |
 | prometheusRule.additionalLabels | object | `{}` | Additional labels to add to the PrometheusRule metadata. |
 | prometheusRule.annotations | object | `{}` | Additional annotations to add to the PrometheusRule metadata. |
@@ -434,7 +472,9 @@ helm template my-release . \
 | s3.policy | object | `{}` | Bucket policy as a YAML object (will be converted to JSON string). Leave empty for no bucket policy. Use AWS IAM policy format with capitalized keys. Example:   policy:     Version: "2012-10-17"     Statement:       - Sid: PublicReadGetObject         Effect: Allow         Principal: "*"         Action:           - "s3:GetObject"         Resource:           - "arn:aws:s3:::my-bucket-name/*" |
 | s3.s3bucketName | string | `""` | S3 bucket name (required). Must be globally unique and follow S3 naming rules. |
 | s3.versioning | string | `"Suspended"` | Versioning status. Set to "Enabled" to enable versioning, "Suspended" to suspend it. |
-| securityContext | object | `{}` |  |
+| securityContext | object | `{}` | securityContext overrides the restricted profile's container defaults for the main and init containers. Set readOnlyRootFilesystem here after adding writable volumes for the paths your images need. |
+| securityProfile | object | `{"enabled":false}` | securityProfile provides an opt-in restricted baseline for Linux workloads. Explicit security contexts can relax it; this is not an admission policy. |
+| securityProfile.enabled | bool | `false` | enabled applies non-root execution, RuntimeDefault seccomp, no privilege escalation, dropped capabilities, and disables automatic API token mounting. Images must support a nonzero numeric UID. Root filesystems stay writable unless securityContext.readOnlyRootFilesystem is set to true. |
 | service | object | `{"annotations":{},"extraPorts":[],"labels":{},"port":3000,"type":"ClusterIP"}` | A "service" is basically a named port which follows a pod or pods; you should always use a service when networking in k8s. More information can be found here: https://kubernetes.io/docs/concepts/services-networking/service/ |
 | service.annotations | object | `{}` | a map of annotations to define on the main Service resource |
 | service.extraPorts | list | `[]` | Additional ports to expose from the main Service. |
@@ -442,7 +482,7 @@ helm template my-release . \
 | service.port | int | `3000` | Defines the port the service listens upon. This is the *external* port exposed by the container, not necessarily the internal port inside the container.  It also doesn't have to be 80 or 443; an ingress (if used) will listen on a differnet port and communicate with the container on this service/port combination. more information can be found here: https://kubernetes.io/docs/concepts/services-networking/service/#field-spec-ports |
 | service.type | string | `"ClusterIP"` | Define the service type more information can be found here: https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types |
 | serviceAccount.annotations | object | `{}` |  |
-| serviceAccount.automount | bool | `true` |  |
+| serviceAccount.automount | bool or null | `nil` | automount configures token mounting on generated accounts; with the profile enabled it also configures the pod. Null selects true when disabled and false when enabled; explicit booleans win. With the profile disabled, existing accounts retain their own policy. |
 | serviceAccount.create | bool | `true` |  |
 | serviceAccount.name | string | `""` |  |
 | serviceMonitor | object | `{"alternatePort":null,"blockExternalIngress":{"allowRegexIngress":false,"denylistSourceRange":"0.0.0.0/0,::/0","enabled":true,"ingressClassNames":["","nginx"],"path":null,"pathType":"Prefix"},"enabled":false,"interval":null,"path":"/metrics"}` | Configure a ServiceMonitor for scraping metrics from the service. |

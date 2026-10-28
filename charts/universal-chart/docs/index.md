@@ -27,6 +27,7 @@ Kubernetes primitives plus a small number of opinionated platform integrations.
 - optional Redis support
 - optional S3 bucket creation via ACK-backed resources
 - extra volumes and mounts
+- an opt-in [restricted security profile](security-profile.md) for Linux apps
 - spread helpers for AZ and spot-aware scheduling
 - `terminationGracePeriodSeconds` for workloads that need slower shutdown
 
