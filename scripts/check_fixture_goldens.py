@@ -23,6 +23,7 @@ from tests.fixture_layout import (  # noqa: E402  (needs sys.path above)
     CHARTS_DIR,
     FIXTURES_ROOT,
     golden_for,
+    is_values_fixture,
     iter_orphan_fixture_dirs,
     iter_orphan_goldens,
     iter_values_fixtures,
@@ -58,11 +59,18 @@ def main() -> int:
                 )
 
         for golden in iter_orphan_goldens(fixture_dir):
-            errors.append(
-                f"Orphaned golden file: {golden} "
-                f"(no values fixture {values_for(golden).name}; "
-                "delete it or add the fixture)"
-            )
+            source = values_for(golden)
+            if is_values_fixture(source):
+                repair = (
+                    f"no values fixture {source.name}; "
+                    "delete it or add the fixture"
+                )
+            else:
+                repair = (
+                    "expected a *-values.golden.yaml name; rename it and add "
+                    "the matching *-values.yaml fixture, or delete it"
+                )
+            errors.append(f"Orphaned golden file: {golden} ({repair})")
 
     for fixture_dir in iter_orphan_fixture_dirs():
         errors.append(

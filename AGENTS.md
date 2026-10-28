@@ -40,7 +40,8 @@ The `scripts/check_fixture_goldens.py` pre-commit hook may report:
 
 - `Missing fixtures directory for chart 'X': tests/fixtures/X`
 - `Missing golden file for fixture: tests/fixtures/X/foo-values.yaml (expected tests/fixtures/X/foo-values.golden.yaml)`
-- `Orphaned golden file: tests/fixtures/X/foo.golden.yaml (no values fixture foo.yaml; delete it or add the fixture)`
+- `Orphaned golden file: tests/fixtures/X/foo-values.golden.yaml (no values fixture foo-values.yaml; delete it or add the fixture)`
+- `Orphaned golden file: tests/fixtures/X/foo.golden.yaml (expected a *-values.golden.yaml name; rename it and add the matching *-values.yaml fixture, or delete it)`
 - `Orphaned fixtures directory: tests/fixtures/X (no chart at charts/X/Chart.yaml; delete it or restore the chart)`
 
 The hook checks the pairing in both directions: every values fixture needs a
