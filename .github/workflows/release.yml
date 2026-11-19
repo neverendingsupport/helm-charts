@@ -265,6 +265,12 @@ jobs:
       # verifies the controller image is already there — ingress-nginx-nes's
       # release workflow pushes it after its NES registry release is verified,
       # so merge the chart PR only once that release run is green.
+      # The dispatch runs from main. Dispatched on the chart's tag (0.0.18),
+      # the run failed at "Configure AWS credentials" with "Not authorized to
+      # perform sts:AssumeRoleWithWebIdentity"; every successful run has been
+      # from main, so the Marketplace OIDC role's trust policy does not accept
+      # tag refs. The workflow checks out ingress-nginx-<chart_version>
+      # itself, so the published chart is the same.
       - name: Publish Marketplace chart to ECR
         if: matrix.chart == 'ingress-nginx' && steps.version.outputs.changed == 'true'
         env:
@@ -272,7 +278,7 @@ jobs:
           CHART_VERSION: ${{ steps.version.outputs.version }}
         run: |
           gh workflow run marketplace-release.yml \
-            --ref "ingress-nginx-${CHART_VERSION}" \
+            --ref main \
             -f chart_version="${CHART_VERSION}" \
             -f dry_run=false \
             -f mirror_images=true
