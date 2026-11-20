@@ -108,7 +108,7 @@ jobs:
 
       - name: Resolve chart release version
         id: version
-        uses: PaulHatch/semantic-version@9f72830310d5ed81233b641ee59253644cd8a8fc # v6.0.2
+        uses: PaulHatch/semantic-version@5ae1354e589c5a67345fb2c6e65b025ff676d7c7 # v6.0.7
         with:
           tag_prefix: "${{ matrix.chart }}-"
           # Space-separated paths from scripts/chart_release_paths.sh; for
